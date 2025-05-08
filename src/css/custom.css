@@ -1,0 +1,32 @@
+/**
+ * Custom CSS for Rspamd documentation
+ */
+
+:root {
+  --ifm-color-primary: rgb(222, 71, 0);
+  --ifm-color-primary-dark: rgb(200, 64, 0);
+  --ifm-color-primary-darker: rgb(189, 60, 0);
+  --ifm-color-primary-darkest: rgb(156, 50, 0);
+  --ifm-color-primary-light: rgb(244, 78, 0);
+  --ifm-color-primary-lighter: rgb(255, 85, 0);
+  --ifm-color-primary-lightest: rgb(255, 119, 51);
+}
+
+/* Navbar styling */
+.navbar {
+  --ifm-navbar-link-color: rgb(222, 71, 0);
+  --ifm-navbar-link-hover-color: var(--ifm-color-primary-dark);
+}
+
+.navbar__link {
+  font-weight: 500;
+}
+
+.navbar__link--active {
+  font-weight: 700;
+}
+
+/* Title styling */
+.navbar__title {
+  color: rgb(222, 71, 0);
+}

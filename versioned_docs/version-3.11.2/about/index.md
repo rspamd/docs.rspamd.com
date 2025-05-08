@@ -34,4 +34,3 @@ If that is not enough, Rspamd provides an extensive [Lua API](/doc/lua/) to [wri
 ## License
 
 This project is licensed under the [Apache 2.0 License](https://tldrlegal.com/license/apache-license-2.0-(apache-2.0)){:target="&#95;blank"}
-
