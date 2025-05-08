@@ -30,3 +30,15 @@
 .navbar__title {
   color: rgb(222, 71, 0);
 }
+
+/* Support page buttons */
+.buttons-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.button--lg {
+  margin-bottom: 0.5rem;
+}

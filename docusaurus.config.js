@@ -128,6 +128,18 @@ const config = {
             label: 'FAQ',
           },
           {
+            type: 'doc',
+            docId: 'support',
+            position: 'left',
+            label: 'Support',
+          },
+          {
+            type: 'doc',
+            docId: 'downloads',
+            position: 'left',
+            label: 'Downloads',
+          },
+          {
             href: 'https://github.com/rspamd/rspamd',
             label: 'GitHub',
             position: 'right',

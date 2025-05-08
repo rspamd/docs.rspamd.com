@@ -25,6 +25,8 @@ const sidebars = {
         "about/performance"
       ]
     },
+    "support",
+    "downloads",
     {
       "type": "category",
       "label": "Configuration",
