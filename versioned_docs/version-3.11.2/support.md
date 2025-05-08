@@ -34,9 +34,6 @@ Join our community for updates, release announcements, and other news:
   <a className="button button--info button--lg" href="https://t.me/rspamd_ru" target="_blank" rel="noopener noreferrer">
     <i className="fa-solid fa-paper-plane"></i> Telegram (Russian)
   </a>
-  <a className="button button--secondary button--lg" href="ircs://irc.oftc.net/rspamd" target="_blank" rel="noopener noreferrer">
-    <i className="fa-regular fa-comments"></i> IRC (#rspamd on OFTC)
-  </a>
 </div>
 
 ## Donations

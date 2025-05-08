@@ -19,7 +19,7 @@ useful features.
 
 A good starting point to study how to install and configure Rspamd is [the quick start guide](/doc/tutorials/quickstart.html).
 
-Rspamd is [packaged](/downloads.html) for the major Linux distributions, and is also available via [FreeBSD ports](https://freshports.org/mail/rspamd){:target="&#95;blank"}, NetBSD [pkgsrc](https://pkgsrc.org){:target="&#95;blank"} and [OpenBSD ports](https://openports.pl/path/mail/rspamd){:target="&#95;blank"}.
+Rspamd is [packaged](/downloads.html) for the major Linux distributions, and is also available via <a href="https://freshports.org/mail/rspamd" target="_blank" rel="noopener noreferrer">FreeBSD ports</a>, <a href="https://pkgsrc.org" target="_blank" rel="noopener noreferrer">NetBSD pkgsrc</a> and <a href="https://openports.pl/path/mail/rspamd" target="_blank" rel="noopener noreferrer">OpenBSD ports</a>.
 
 You can also watch some [videos about Rspamd](/doc/about/media.html).
 
@@ -33,5 +33,5 @@ If that is not enough, Rspamd provides an extensive [Lua API](/doc/lua/) to [wri
 
 ## License
 
-This project is licensed under the [Apache 2.0 License](https://tldrlegal.com/license/apache-license-2.0-(apache-2.0)){:target="&#95;blank"}
+This project is licensed under the <a href="https://tldrlegal.com/license/apache-license-2.0-(apache-2.0)" target="_blank" rel="noopener noreferrer">Apache 2.0 License</a>
 

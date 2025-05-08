@@ -84,6 +84,8 @@ const config = {
           alt: 'Rspamd Logo',
           src: 'img/rspamd_logo_black.png',
           srcDark: 'img/rspamd_logo_navbar.png',
+          href: 'https://www.rspamd.com',
+          target: '_self',
         },
         items: [
           {

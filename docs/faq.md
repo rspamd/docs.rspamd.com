@@ -14,7 +14,7 @@ This document includes some questions and practical examples that are frequently
 
 ### Where to get help about Rspamd
 
-The most convenient place for asking questions about Rspamd is the IRC channel _#rspamd_ on [OFTC](https://oftc.net). For more information you can also check the [support page](/support.html)
+The most convenient places for asking questions about Rspamd are the mailing list and Telegram group. For more information and links to these resources, please check the [support page](/support.html).
 
 ### What versions of Rspamd are supported
 
