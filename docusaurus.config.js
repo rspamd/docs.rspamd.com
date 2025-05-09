@@ -59,7 +59,7 @@ const config = {
         // The application ID provided by Algolia
         appId: 'OB36AQU7BK',
         // Public API key: it is safe to commit it
-        apiKey: '0b4b496d02c45ba125a56e9a83b58b20',
+        apiKey: '104fe7a0efaab176b8a0b628ffdcde34',
         indexName: 'rspamd',
         // Optional: see doc section below
         contextualSearch: true,
