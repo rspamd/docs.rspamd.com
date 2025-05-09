@@ -4,7 +4,6 @@ title: Clickhouse module
 
 
 # Clickhouse module
-{:.no_toc}
 
 The Clickhouse module pushes a range of message-related metadata to an instance of [Clickhouse](https://clickhouse.yandex/), an open-source column-oriented database management system for real-time analytics. Information that could be collected includes: senders/recipients/scores of scanned messages and metadata such as DKIM/DMARC/bayes/fuzzy status & information about URLs and attachments.
 
