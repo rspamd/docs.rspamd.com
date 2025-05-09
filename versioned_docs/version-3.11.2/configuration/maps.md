@@ -7,21 +7,6 @@ title: Rspamd maps
 
 Maps are one of the most important and flexible features in Rspamd, allowing for dynamic configuration of various elements without requiring service restarts. This article provides a comprehensive overview of Rspamd maps, their types, configuration options, and best practices.
 
-## Table of Contents
-
-1. [What Are Maps?](#what-are-maps)
-2. [Maps Types](#map-types)
-3. [Map Configuration Formats](#map-configuration-formats)
-4. [Map Content Format](#map-content-format)
-5. [HTTP Maps and Caching](#http-maps-and-caching)
-6. [Map Loading Lifecycle](#map-loading-lifecycle)
-7. [External Maps](#external-maps)
-8. [Authentication for HTTP Maps](#authentication-for-http-maps)
-9. [Compression Support](#compression-support)
-10. [Fallback Options](#fallback-options)
-11. [CDB Maps](#cdb-maps)
-12. [Map API Reference](#map-api-reference)
-
 ## What Are Maps?
 
 Maps in Rspamd are dynamic data sources that contain lists of keys or key-value pairs that can be reloaded at runtime without restarting the service. Maps can be defined using various backends including:
