@@ -6,20 +6,6 @@ title: known_senders module
 
 The `known_senders` plugin is designed to help you track and categorize email senders based on their domains. It allows you to maintain a list of known senders and classify incoming emails from these senders. This documentation will guide you through the configuration and usage of the `known_senders` plugin.
 
-## Table of Contents
-
-1. [Plugin Overview](#plugin-overview)
-2. [Configuration](#configuration)
-   - [Domains](#domains)
-   - [Maximum Senders](#maximum-senders)
-   - [Maximum Time to Live](#maximum-time-to-live)
-   - [Use Bloom Filters](#use-bloom-filters)
-   - [Unknown Sender Symbol](#unknown-sender-symbol)
-   - [Verified Incoming Mail Global Symbol](#verified-incoming-mail-global-symbol)
-   - [Verified Incoming Mail Local Symbol](#verified-incoming-mail-local-symbol)
-   - [Sender Prefix](#sender-prefix)
----
-
 ## Plugin Overview
 
 The `known_senders` plugin is used to maintain a list of known sender domains and classify incoming emails based on these domains. It can be especially useful for distinguishing known senders from potentially malicious or unknown ones. Also it can check if incoming `in-reply-to` mail sender and recipients are verified. This plugin is available from the version 3.7.0.
