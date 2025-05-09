@@ -68,7 +68,6 @@ It returns two values:
 
 
 #### Asynchronous HTTP request
-{:.no_toc}
 
 ~~~lua
   -- define a callback
@@ -132,7 +131,6 @@ rspamd_config:register_symbol({
 
 
 #### Synchronous HTTP request
-{:.no_toc}
 
 <small>
 **Please note** that synchronous mode requires symbol to be registered with **coro** flag (see "full example").
@@ -198,7 +196,6 @@ rspamd_config:register_symbol({
 To work with DNS properly, a new module called `rspamd_dns` has been introduced, which replaces the former `task:get_resolver()` calls. The new API requires explicit specification of the type of request, rather than providing a set of `resolve_*` methods.
 
 #### Asynchronous DNS request
-{:.no_toc}
 
 ~~~lua
 local function dns_callback(_, to_resolve, results, err)
@@ -252,7 +249,6 @@ rspamd_config:register_symbol({
 
 
 #### Synchronous DNS request
-{:.no_toc}
 
 <small>
 **Please note** that synchronous mode requires symbol to be registered with **coro** flag (see "full example").
@@ -313,7 +309,6 @@ rspamd_config:register_symbol({
 It is recommended to use `lua_tcp_sync` module to work TCP.
 
 #### Asynchronous TCP request
-{:.no_toc}
 
 ~~~lua
   local function http_read_cb(err, data, conn)
@@ -369,7 +364,6 @@ rspamd_config:register_symbol({
 
 
 #### Synchronous TCP request
-{:.no_toc}
 
 <small>
 **Please note** that synchronous mode requires symbol to be registered with **coro** flag (see "full example").
@@ -485,7 +479,6 @@ rspamd_config:register_symbol({
 ### Redis module {#API-example-Redis-module}
 
 #### Asynchronous Redis request
-{:.no_toc}
 
 ~~~lua
   local function redis_cb(err, data)
@@ -551,7 +544,6 @@ rspamd_config:register_symbol({
 </div></div>
 
 #### Synchronous Redis request
-{:.no_toc}
 
 <small>
 **Please note** that synchronous mode requires symbol to be registered with **coro** flag (see "full example").
