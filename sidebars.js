@@ -125,7 +125,47 @@ const sidebars = {
         "type": "doc",
         "id": "lua/index"
       },
-      "items": []
+      "items": [
+        {
+          "type": "category",
+          "label": "Rspamd Lua C API",
+          "items": [
+            "lua/rspamd_task",
+            "lua/rspamd_mimepart",
+            "lua/rspamd_config",
+            "lua/rspamd_html",
+            "lua/rspamd_map",
+            "lua/ucl",
+            "lua/rspamd_regexp",
+            "lua/rspamd_ip",
+            "lua/rspamd_http",
+            "lua/rspamd_trie",
+            "lua/rspamd_resolver",
+            "lua/rspamd_expression",
+            "lua/rspamd_redis",
+            "lua/rspamd_upstream",
+            "lua/rspamd_logger",
+            "lua/rspamd_cryptobox",
+            "lua/rspamd_url",
+            "lua/rspamd_tcp",
+            "lua/rspamd_udp",
+            "lua/rspamd_mempool",
+            "lua/rspamd_util",
+            "lua/rspamd_text"
+          ]
+        },
+        {
+          "type": "category",
+          "label": "Rspamd Plain Lua API",
+          "items": [
+            "lua/lua_redis",
+            "lua/lua_util",
+            "lua/lua_maps",
+            "lua/lua_selectors",
+            "lua/lua_clickhouse"
+          ]
+        }
+      ]
     },
     {
       "type": "category",
