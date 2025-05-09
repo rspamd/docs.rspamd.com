@@ -3,7 +3,6 @@ title: Upgrading
 ---
 
 # Updating Rspamd
-{:.no_toc}
 
 This document outlines the modifications to Rspamd in recent versions, including any incompatible changes, and provides instructions for updating your rules and configuration accordingly.
 
