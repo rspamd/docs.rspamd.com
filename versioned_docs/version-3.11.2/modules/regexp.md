@@ -4,7 +4,6 @@ title: Regexp module
 
 
 # Rspamd regexp module
-{:.no_toc}
 
 This is a core module that deals with regular expressions, internal functions and Lua code to filter messages.
 
