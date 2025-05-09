@@ -4,25 +4,6 @@ title: Universal configuration language (UCL)
 
 # UCL configuration language
 
-**Table of Contents**
-
-- [Introduction](#introduction)
-- [Basic structure](#basic-structure)
-- [Improvements to the json notation](#improvements-to-the-json-notation)
-	- [General syntax sugar](#general-syntax-sugar)
-	- [Automatic arrays creation](#automatic-arrays-creation)
-	- [Named keys hierarchy](#named-keys-hierarchy)
-	- [Convenient numbers and booleans](#convenient-numbers-and-booleans)
-- [General improvements](#general-improvements)
-	- [Comments](#comments)
-	- [Macros support](#macros-support)
-	- [Variables support](#variables-support)
-	- [Multiline strings](#multiline-strings)
-- [Emitter](#emitter)
-- [Validation](#validation)
-- [Performance](#performance)
-- [Conclusion](#conclusion)
-
 ## Introduction {#introduction}
 
 This document describes the main features and principles of the configuration
