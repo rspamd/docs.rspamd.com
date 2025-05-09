@@ -4,7 +4,6 @@ title: Quick start
 
 
 # Rspamd quick start
-{:.no_toc}
 
 This guide outlines the primary procedures for obtaining and initiating work with Rspamd. Specifically, we will cover the following setup:
 
