@@ -4,7 +4,6 @@ title: Composite symbols
 
 
 # Rspamd composite symbols
-{:.no_toc}
 
 Rspamd composites are used to combine rules and create more complex rules. Composite rules are defined in the `composites` section of the configuration. 
 
