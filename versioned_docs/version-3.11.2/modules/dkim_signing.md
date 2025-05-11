@@ -4,7 +4,6 @@ title: DKIM signing module
 
 
 # DKIM signing module
-{:.no_toc}
 
 The Rspamd 1.5 version has introduced a convenient method of configuring DKIM signing through the addition of the DKIM signing module. A more customizable option is available in the DKIM module through the [sign_condition](/doc/modules/dkim.html#dkim-signatures).
 
