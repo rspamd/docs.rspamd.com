@@ -7,8 +7,8 @@ const config = {
   tagline: 'Fast, free and open-source spam filtering system',
   url: 'https://rspamd.com',
   baseUrl: '/',
-  onBrokenLinks: 'warn',
-  onBrokenMarkdownLinks: 'warn',
+  onBrokenLinks: 'ignore',
+  onBrokenMarkdownLinks: 'ignore',
   favicon: 'img/favicon.png',
   markdown: {
     format: 'detect',
@@ -77,6 +77,7 @@ const config = {
       docs: {
         sidebar: {
           hideable: true,
+          autoCollapseCategories: true,
         },
       },
       colorMode: {

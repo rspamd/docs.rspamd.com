@@ -9,7 +9,7 @@ tags: [performance, benchmarks]
 
 Rspamd has always been oriented on the performance but it was always quite hard to measure how fast it was as normally it runs *just fast enough*.
 
-However, I was recently offered to process [Abusix Intelligence](https://www.abusix.ai/) feeds using Rspamd. These feeds are used to improve Rspamd [fuzzy storage]({{ site.baseurl }}/doc/modules/fuzzy_check.html) quality, to feed URLs and Emails to the DNS black lists provided by Rspamd project and used in [SURBL module]({{ site.baseurl }}/doc/modules/surbl.html).
+However, I was recently offered to process [Abusix Intelligence](https://www.abusix.ai/) feeds using Rspamd. These feeds are used to improve Rspamd fuzzy storage quality, to feed URLs and Emails to the DNS black lists provided by Rspamd project and used in SURBL module.
 
 <!--truncate-->
 
@@ -96,7 +96,7 @@ MiB Swap:   4092.0 total,   3925.5 free,    166.5 used. 100018.6 avail Mem
 </div>
 </pre>
 
-Rspamd is also being fed via [proxy worker]({{ site.baseurl }}/doc/workers/rspamd_proxy.html) that runs on another host and performs initial data collection and emitting messages via the Internet providing transport encryption using HTTPCrypt. However, its CPU usage is quite negligible - it uses only a single CPU core by around 40% in average.
+Rspamd is also being fed via proxy worker that runs on another host and performs initial data collection and emitting messages via the Internet providing transport encryption using HTTPCrypt. However, its CPU usage is quite negligible - it uses only a single CPU core by around 40% in average.
 
 ## Results analytics
 
@@ -190,15 +190,15 @@ As you can see, full GC iter takes quite a significant time. However, it still k
 
 Here are some UI captures taken from a previous machine:
 
-<img width="75%" class="img-fluid" src="{{ site.baseurl }}/img/perf_webui1.png">
+<img width="75%" class="img-fluid" src="/img/perf_webui1.png">
 
-<img width="75%" class="img-fluid" src="{{ site.baseurl }}/img/perf_webui2.png">
+<img width="75%" class="img-fluid" src="/img/perf_webui2.png">
 
 As you can observe, there was some HAM portion increase over the recent days, however, it was caused by adding new sampling logic and duplicates filtering to save CPU resources (these messages are marked as ham and excepted from scan).
 
 There is also a [Clickhouse](https://clickhouse.yandex) based dashboard that's created using [Redash](https://redash.io):
 
-<img width="75%" class="img-fluid" src="{{ site.baseurl }}/img/perf_redash.png">
+<img width="75%" class="img-fluid" src="/img/perf_redash.png">
 
 Since we have Clickhouse on board, we can do various analytics. Here is an average scan time for messages:
 
