@@ -44,7 +44,13 @@ const config = {
           beforeDefaultRemarkPlugins: [],
           beforeDefaultRehypePlugins: [],
         },
-        blog: false,
+        blog: {
+          showReadingTime: true,
+          editUrl: 'https://github.com/rspamd/docs.rspamd.com/edit/master/',
+          blogTitle: 'Rspamd Blog',
+          blogDescription: 'News and updates from the Rspamd project',
+          postsPerPage: 5,
+        },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
         },
@@ -140,6 +146,11 @@ const config = {
             docId: 'downloads',
             position: 'left',
             label: 'Downloads',
+          },
+          {
+            to: '/blog',
+            label: 'Blog',
+            position: 'left',
           },
           {
             href: 'https://github.com/rspamd/rspamd',

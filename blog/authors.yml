@@ -1,0 +1,5 @@
+rspamd:
+  name: Rspamd Team
+  title: Rspamd Maintainers
+  url: https://github.com/rspamd
+  image_url: https://github.com/rspamd.png
