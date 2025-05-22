@@ -11,6 +11,8 @@ Rspamd has always been oriented on the performance but it was always quite hard 
 
 However, I was recently offered to process [Abusix Intelligence](https://www.abusix.ai/) feeds using Rspamd. These feeds are used to improve Rspamd [fuzzy storage]({{ site.baseurl }}/doc/modules/fuzzy_check.html) quality, to feed URLs and Emails to the DNS black lists provided by Rspamd project and used in [SURBL module]({{ site.baseurl }}/doc/modules/surbl.html).
 
+<!--truncate-->
+
 ## Problem statement
 
 The amount of data that required to be processing is huge - it is about 100 millions of messages per day.
