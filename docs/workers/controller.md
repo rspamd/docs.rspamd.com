@@ -63,6 +63,7 @@ You can use that line as `password` (priv) and `enable_password` values.
 * `/learnham` (priv)
 * `/fuzzyadd` (priv)
 * `/fuzzydel` (priv)
+* `/fuzzydelhash` (priv)
 * `/saveactions` (priv)
 * `/savesymbols` (priv)
 * `/savemap` (priv)
