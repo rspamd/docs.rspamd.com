@@ -58,7 +58,7 @@ rules {
   }
   generic_reputation =  {
     selector "generic" {
-      selector = "ip"; # see https://rspamd.com/doc/configuration/selectors.html
+      selector = "ip"; # see https://docs.rspamd.com/configuration/selectors
     }
     backend "redis" {
       servers = "localhost";
@@ -151,6 +151,6 @@ There are couple of pre-defined selector types, specifically:
 * DKIM reputation - `dkim` selector
 * IP, asn, country and network reputation - `ip` selector
 * URLs reputation - `url` selector
-* Generic reputation based on [selectors framework](../configuration/selectors.html) - `generic` selector
+* Generic reputation based on [selectors framework](../configuration/selectors) - `generic` selector
 
 All selector types except for `generic` do not require explicit configuration. The `generic` selector, on the other hand, necessitates the setting of a selector attribute. For more advanced `selector` configurations, you may refer to the module's source code.
