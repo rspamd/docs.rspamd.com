@@ -119,18 +119,13 @@ When filling these buckets, the score may also be taken into account. Additional
 * time window;
 * score multiplier;
 
-Each bucket uses discrete time windows that are specified. By default, two buckets are defined for Redis:
+Each bucket uses discrete time windows that are specified. By default, one bucket with a time window of 30 days is defined for Redis:
 
 ~~~hcl
 buckets = [
   {
-    time = 1h,
-    name = '1h',
-    mult = 1.5,
-  },
-  {
-    time = 1d,
-    name = '1d',
+    time = 60 * 60 * 24 * 30,
+    name = '1m',
     mult = 1.0,
   }
 ];
