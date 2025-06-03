@@ -12,8 +12,8 @@ In essence, it operates as a web server that accepts requests and delivers respo
 
 The Rspamd controller worker offers the following configuration options:
 
-* `password`: This sets the password required for read-only commands.
-* `enable_password`: This sets the password required for write commands.
+* `password`: This sets the password required for write commands.
+* `enable_password`: This sets the password required for read-only commands.
 * `secure_ip`: A list or map containing IP addresses designated as "secure." All commands are allowed from these IPs without the need for passwords. If a reverse proxy sets an `X-Forwarded-For` header, both the proxy's IP and the actual client's IP must be included in `secure_ip`.
 * `static_dir`: This specifies the directory where static files for the web interface are located. Typically, this would be `${WWWDIR}`.
 * `stats_path`: This sets the path where the controller worker stores persistent statistics about Rspamd, such as the count of scanned messages.
@@ -46,7 +46,7 @@ Rspamd now suggests to encrypt passwords when storing them in a configuration. C
     Enter passphrase: <hidden input>
     $1$cybjp37q4w63iogc4erncz1tgm1ce9i5$kxfx9xc1wk9uuakw7nittbt6dgf3qyqa394cnradg191iqgxr8kb
 
-You can use that line as `password` and `enable_password` values.
+You can use that line as `password` (priv) and `enable_password` values.
 
 ## Supported commands
 
@@ -61,6 +61,8 @@ You can use that line as `password` and `enable_password` values.
 * `/historyreset` (priv)
 * `/learnspam` (priv)
 * `/learnham` (priv)
+* `/fuzzyadd` (priv)
+* `/fuzzydel` (priv)
 * `/saveactions` (priv)
 * `/savesymbols` (priv)
 * `/savemap` (priv)
@@ -71,3 +73,5 @@ You can use that line as `password` and `enable_password` values.
 * `/statreset` (priv)
 * `/counters`
 * `/metrics`
+
+More details available at [Controller HTTP endpoints](/doc/developers/protocol/#controller-http-endpoints).
