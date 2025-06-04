@@ -102,11 +102,6 @@ const config = {
             label: 'Documentation',
           },
           {
-            type: 'docsVersionDropdown',
-            position: 'right',
-            dropdownActiveClassDisabled: true,
-          },
-          {
             type: 'doc',
             docId: 'about/index',
             position: 'left',
