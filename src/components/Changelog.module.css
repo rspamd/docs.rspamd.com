@@ -22,9 +22,8 @@
 
 .subtitle {
   font-size: 1.2rem;
-  color: var(--ifm-color-secondary);
+  color: var(--ifm-color-content-secondary);
   margin: 0;
-  opacity: 0.8;
 }
 
 .filters {
@@ -70,13 +69,13 @@
   text-align: center;
   padding: 4rem 2rem;
   font-size: 1.2rem;
-  color: var(--ifm-color-secondary);
+  color: var(--ifm-color-content-secondary);
 }
 
 .noReleases {
   text-align: center;
   padding: 3rem 2rem;
-  color: var(--ifm-color-secondary);
+  color: var(--ifm-color-content-secondary);
   font-size: 1.1rem;
   font-style: italic;
 }
