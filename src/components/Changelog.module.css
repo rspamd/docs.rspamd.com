@@ -1,0 +1,102 @@
+.changelog {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.header h1 {
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+.subtitle {
+  font-size: 1.2rem;
+  color: var(--ifm-color-secondary);
+  margin: 0;
+  opacity: 0.8;
+}
+
+.filters {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.filterButton {
+  padding: 0.7rem 1.2rem;
+  border: 2px solid #e1e5e9;
+  background: var(--ifm-background-surface-color);
+  color: var(--ifm-color-content);
+  border-radius: 25px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.filterButton:hover {
+  border-color: #3498db;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.15);
+}
+
+.filterButton.active {
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  color: white;
+  border-color: #3498db;
+  box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+}
+
+.releases {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.loading {
+  text-align: center;
+  padding: 4rem 2rem;
+  font-size: 1.2rem;
+  color: var(--ifm-color-secondary);
+}
+
+.noReleases {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: var(--ifm-color-secondary);
+  font-size: 1.1rem;
+  font-style: italic;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .changelog {
+    padding: 1rem 0.5rem;
+  }
+  
+  .header h1 {
+    font-size: 2.5rem;
+  }
+  
+  .filters {
+    gap: 0.3rem;
+  }
+  
+  .filterButton {
+    padding: 0.5rem 0.8rem;
+    font-size: 0.8rem;
+  }
+} 

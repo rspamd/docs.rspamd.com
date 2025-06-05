@@ -149,6 +149,11 @@ const config = {
             position: 'left',
           },
           {
+            to: '/changelog',
+            label: 'Changelog',
+            position: 'left',
+          },
+          {
             href: 'https://github.com/rspamd/rspamd',
             label: 'GitHub',
             position: 'right',
