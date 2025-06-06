@@ -31,7 +31,7 @@ the value of this option is 'postmaster, mailer-daemon'. Supported entries are:
 - `whitelisted_user` - a map of usernames which are excluded from user ratelimits
 - `expire` - maximum lifetime for any limit bucket (2 days by default)
 - `dynamic_rate_limit` (3.9.0+) - enable dynamic ratelimit multipliers (default: false)
-- `ham_factor_rate` - multiplier for rate when a ham message arrives (default: 1.01) 
+- `ham_factor_rate` - multiplier for rate when a ham message arrives (default: 1.01)
 - `spam_factor_rate` - multiplier for rate when a spam message arrives (default: 0.99)
 - `ham_factor_burst` - multiplier for burst when a ham message arrives (default: 1.02)
 - `spam_factor_burst` - multiplier for burst when a spam message arrives (default: 0.98)
@@ -43,7 +43,7 @@ the value of this option is 'postmaster, mailer-daemon'. Supported entries are:
 
 ### Ratelimit record
 
-Starting from version 1.8.2, it is possible to define ratelimit buckets using the [selectors framework](../configuration/selectors.html). 
+Starting from version 1.8.2, it is possible to define ratelimit buckets using the [selectors framework](../configuration/selectors.html).
 This means that you can opt to use either a selector or one of the predefine ratelimits:
 
 - `bounce_to`: limit bounces per recipient
@@ -92,7 +92,7 @@ This means that you can opt to use either a selector or one of the predefine rat
 The following settings are valid inside `bucket` configuration:
 
 - `burst`: numeric value specifying the capacity of the bucket
-- `rate`: rate at which tokens are added to the bucket, expressed as numeric value (equivalent to messages per minute) or string (number per period)
+- `rate`: rate at which tokens are added to the bucket, expressed as numeric value (equivalent to messages per second) or string (number per period)
 Since version 2.0:
 - `skip_recipients`: if set to `true`, the number of recipients is not used as a multiplier
 Since version 3.1:
