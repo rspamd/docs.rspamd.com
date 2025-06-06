@@ -46,7 +46,7 @@ Rspamd now suggests to encrypt passwords when storing them in a configuration. C
     Enter passphrase: <hidden input>
     $1$cybjp37q4w63iogc4erncz1tgm1ce9i5$kxfx9xc1wk9uuakw7nittbt6dgf3qyqa394cnradg191iqgxr8kb
 
-You can use that line as `password` and `enable_password` values.
+You can use that line as `password` and `enable_password` (priv) values.
 
 ## Supported commands
 
@@ -61,6 +61,9 @@ You can use that line as `password` and `enable_password` values.
 * `/historyreset` (priv)
 * `/learnspam` (priv)
 * `/learnham` (priv)
+* `/fuzzyadd` (priv)
+* `/fuzzydel` (priv)
+* `/fuzzydelhash` (priv)
 * `/saveactions` (priv)
 * `/savesymbols` (priv)
 * `/savemap` (priv)
@@ -71,3 +74,5 @@ You can use that line as `password` and `enable_password` values.
 * `/statreset` (priv)
 * `/counters`
 * `/metrics`
+
+More details available at [Controller HTTP endpoints](/doc/developers/protocol/#controller-http-endpoints).
