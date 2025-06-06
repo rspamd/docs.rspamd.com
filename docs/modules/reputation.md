@@ -58,7 +58,7 @@ rules {
   }
   generic_reputation =  {
     selector "generic" {
-      selector = "ip"; # see https://rspamd.com/doc/configuration/selectors.html
+      selector = "ip"; # see https://docs.rspamd.com/configuration/selectors
     }
     backend "redis" {
       servers = "localhost";
@@ -76,7 +76,7 @@ You also need to **define the scores** for symbols added by this module:
 group "reputation" {
     symbols = {
         "IP_REPUTATION_HAM" {
-            weight = 1.0;
+            weight = -1.0;
         }
         "IP_REPUTATION_SPAM" {
             weight = 4.0;
@@ -87,7 +87,7 @@ group "reputation" {
         }
 
         "SPF_REPUTATION_HAM" {
-            weight = 1.0;
+            weight = -1.0;
         }
         "SPF_REPUTATION_SPAM" {
             weight = 2.0;
@@ -119,18 +119,13 @@ When filling these buckets, the score may also be taken into account. Additional
 * time window;
 * score multiplier;
 
-Each bucket uses discrete time windows that are specified. By default, two buckets are defined for Redis:
+Each bucket uses discrete time windows that are specified. By default, one bucket with a time window of 30 days is defined for Redis:
 
 ~~~hcl
 buckets = [
   {
-    time = 1h,
-    name = '1h',
-    mult = 1.5,
-  },
-  {
-    time = 1d,
-    name = '1d',
+    time = 60 * 60 * 24 * 30,
+    name = '1m',
     mult = 1.0,
   }
 ];
@@ -156,6 +151,6 @@ There are couple of pre-defined selector types, specifically:
 * DKIM reputation - `dkim` selector
 * IP, asn, country and network reputation - `ip` selector
 * URLs reputation - `url` selector
-* Generic reputation based on [selectors framework](../configuration/selectors.html) - `generic` selector
+* Generic reputation based on [selectors framework](../configuration/selectors) - `generic` selector
 
 All selector types except for `generic` do not require explicit configuration. The `generic` selector, on the other hand, necessitates the setting of a selector attribute. For more advanced `selector` configurations, you may refer to the module's source code.
