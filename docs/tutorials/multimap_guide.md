@@ -37,25 +37,55 @@ Create trusted and blocked domain lists:
 
 TRUSTED_DOMAINS {
   type = "from";
+  filter = "email:domain";
+  extract_from = "smtp";  # Check SMTP envelope from (default)
   map = "/etc/rspamd/maps/trusted_domains.map";
   score = -10.0;
   description = "Trusted sender domains";
-  action = "accept";
 }
 
 BLOCKED_DOMAINS {
   type = "from"; 
+  filter = "email:domain";
+  extract_from = "smtp";  # Check SMTP envelope from
   map = "/etc/rspamd/maps/blocked_domains.map";
   score = 15.0;
   description = "Blocked sender domains";
-  action = "reject";
+}
+
+# Alternative: Check MIME From header instead of SMTP envelope
+BLOCKED_MIME_DOMAINS {
+  type = "from";
+  filter = "email:domain";
+  extract_from = "mime";  # Check From: header
+  map = "/etc/rspamd/maps/blocked_mime_domains.map";
+  score = 8.0;
+  description = "Blocked domains in From header";
 }
 
 BLOCKED_RECIPIENTS {
   type = "rcpt";
+  filter = "email:addr";  # Check full email address
   map = "/etc/rspamd/maps/blocked_recipients.map"; 
   score = 10.0;
   description = "Block mail to specific recipients";
+}
+```
+
+**Key Concepts:**
+
+- **SMTP From** (`extract_from = "smtp"`): The envelope sender (MAIL FROM command) - what the receiving server sees
+- **MIME From** (`extract_from = "mime"`): The From: header - what users see in their email client
+- **Score vs Action**: Use `score` for weighted decisions allowing other rules to influence the final action. Use `action` only for prefilter rules that need immediate decisions (like IP whitelisting)
+
+**Example: Prefilter for immediate decisions:**
+```hcl
+TRUSTED_IPS_PREFILTER {
+  type = "ip";
+  map = "/etc/rspamd/maps/trusted_ips.map";
+  prefilter = true;   # Runs before other rules
+  action = "accept";  # Immediately accept, no scoring
+  description = "Trusted IPs - bypass all checks";
 }
 ```
 
@@ -84,28 +114,38 @@ Use Redis for dynamic IP scoring:
 ```hcl
 IP_WHITELIST {
   type = "ip";
-  map = "redis+selector";
-  selector = "ip";
+  map = "redis://ip_whitelist";
   score = -5.0;
   description = "Whitelisted IPs in Redis";
 }
 
 IP_REPUTATION {
   type = "ip";
-  map = "redis+selector";
-  selector = "ip";
+  map = "redis://ip_blacklist";
   score = 8.0;
   description = "Bad IP reputation";
 }
 ```
 
+Configure Redis connection in multimap:
+```hcl
+# Also add Redis configuration
+redis {
+  servers = "127.0.0.1:6379";
+  # password = "your_redis_password";  # if needed
+}
+```
+
 Add IPs to Redis:
 ```bash
-# Whitelist an IP
-redis-cli HSET rspamd_ip_wl "192.168.1.100" "trusted_server"
+# Whitelist an IP (key in hash = IP, value = description)
+redis-cli HSET ip_whitelist "192.168.1.100" "trusted_server"
 
 # Add bad reputation IP  
-redis-cli HSET rspamd_ip_bl "203.0.113.5" "spam_source"
+redis-cli HSET ip_blacklist "203.0.113.5" "spam_source"
+
+# You can also use CIDR notation
+redis-cli HSET ip_blacklist "203.0.113.0/24" "spam_network"
 ```
 
 ### Example 3: Advanced Header Checks
@@ -121,31 +161,35 @@ SUSPICIOUS_MAILERS {
     "/Bulk.*Mail/i", 
     "/spam/i"
   ];
+  regexp = true;  # Required for regex patterns
   score = 5.0;
   description = "Suspicious mail clients";
 }
 
 FORGED_OUTLOOK {
-  type = "header";
-  header = "X-Mailer";
-  filter = "email:domain:addr";
+  type = "from";
+  filter = "email:domain";
+  extract_from = "smtp";
   map = [
     "outlook.com",
     "hotmail.com", 
     "live.com"
   ];
   score = 7.0;
-  description = "Forged Outlook sender";
-  regexp = true;
+  description = "Checks if sender claims to be from major email providers";
+  # This checks SMTP envelope, combine with DKIM/SPF for spoofing detection
 }
 
-MISSING_DATE {
+BULK_MAIL_HEADERS {
   type = "header";
-  header = "Date";
-  map = "";
+  header = "Precedence";
+  map = [
+    "bulk",
+    "list",
+    "junk"
+  ];
   score = 2.0;
-  description = "Missing Date header";
-  missing = true;
+  description = "Bulk mail precedence headers";
 }
 ```
 
@@ -183,19 +227,19 @@ ARCHIVE_WITH_EXE {
     "/.*\\.zip:.*\\.exe$/i",
     "/.*\\.rar:.*\\.scr$/i"
   ];
+  regexp = true;  # Required for regex patterns
   score = 20.0;
   description = "Archive containing executable";
-  regexp = true;
 }
 ```
 
 Create the TLD map:
 ```bash
 # /etc/rspamd/maps/blocked_tlds.map
-.tk
-.ml
-.ga
-.cf
+tk
+ml
+ga
+cf
 ```
 
 ### Example 5: Per-User/Per-Domain Rules
@@ -232,48 +276,57 @@ MARKETING_DOMAINS {
 }
 ```
 
-### Example 6: Complex Conditional Logic
+### Example 6: Content and URL Filtering
 
-Use symbol dependencies and conditions:
+Filter message content and URLs for security:
 
 ```hcl
-EXTERNAL_SENDER {
-  type = "from";
-  filter = "email:domain";
-  map = "/etc/rspamd/maps/internal_domains.map";
-  score = 0.0;
-  description = "External sender marker";
-  symbols_set = ["EXTERNAL"];
-}
-
-EXTERNAL_WITH_INTERNAL_LINKS {
-  type = "url";
-  filter = "tld";
-  map = "/etc/rspamd/maps/internal_domains.map";
-  score = 8.0;
-  description = "External sender with internal links";
-  require_symbols = "EXTERNAL";
-}
-
-BULK_MAIL_HEADERS {
-  type = "header";
-  header = "Precedence";
+FORBIDDEN_CONTENT {
+  type = "content";
+  filter = "oneline";  # Decoded text without newlines
   map = [
-    "bulk",
-    "list"
+    "/urgent.*transfer.*funds/i",
+    "/click.*here.*immediately/i",
+    "/congratulations.*winner/i"
   ];
-  score = 0.0;
-  description = "Bulk mail marker";
-  symbols_set = ["BULK_MAIL"];
+  regexp = true;
+  score = 8.0;
+  description = "Suspicious content patterns";
 }
 
-BULK_TO_SINGLE_USER {
-  type = "rcpt";
-  filter = "email:user";
-  map = "/etc/rspamd/maps/single_users.map";
+PHISHING_URLS {
+  type = "url";
+  filter = "host";  # Check hostname part of URLs
+  map = "/etc/rspamd/maps/phishing_domains.map";
+  score = 12.0;
+  description = "Known phishing domains";
+}
+
+SUSPICIOUS_SHORTENERS {
+  type = "url";
+  filter = "host";
+  map = [
+    "bit.ly",
+    "tinyurl.com", 
+    "goo.gl",
+    "t.co"
+  ];
+  score = 2.0;
+  description = "URL shortener services";
+}
+
+SENSITIVE_KEYWORDS {
+  type = "content";
+  filter = "text";  # Check all text parts
+  map = [
+    "/\\bssn\\b/i",           # Social Security Number
+    "/\\b\\d{3}-\\d{2}-\\d{4}\\b/",  # SSN format
+    "/\\bcredit card\\b/i",
+    "/\\bpassword\\b/i"
+  ];
+  regexp = true;
   score = 5.0;
-  description = "Bulk mail to single user";
-  require_symbols = "BULK_MAIL";
+  description = "Contains sensitive information";
 }
 ```
 
@@ -300,29 +353,27 @@ PHISHING_DOMAINS {
 }
 ```
 
-### Example 8: Advanced Selectors
+### Example 8: Advanced Selector Maps
 
-Use complex selectors for sophisticated matching:
+Use Rspamd selectors for sophisticated matching:
 
 ```hcl
 SPF_FAIL_FREEMAIL {
-  type = "combined";
-  filter = "email:domain";
-  selector = "from";
+  type = "selector";
+  selector = "from:domain";
   map = "/etc/rspamd/maps/freemail_domains.map";
   score = 5.0;
   description = "SPF fail from freemail";
   require_symbols = "R_SPF_FAIL";
 }
 
-DKIM_SIGNED_MISMATCH {
-  type = "header";
-  header = "from";
+AUTHENTICATED_USER_DOMAIN {
+  type = "selector";
+  selector = "user";  # Gets authenticated username
   filter = "email:domain";
-  selector = "dkim:domain";
-  score = 3.0;
-  description = "DKIM domain differs from From";
-  comparison = "ne";
+  map = "/etc/rspamd/maps/allowed_user_domains.map";
+  score = -3.0;
+  description = "Authenticated user from allowed domain";
 }
 ```
 
@@ -348,8 +399,8 @@ DKIM_SIGNED_MISMATCH {
 3. **Use Redis for dynamic data**:
    ```hcl
    # Instead of file updates
-   map = "redis+selector";
-   selector = "ip";
+   map = "redis://hashkey_name";
+   # Configure Redis servers in multimap config
    ```
 
 ### Map Management
@@ -377,7 +428,6 @@ DKIM_SIGNED_MISMATCH {
 1. **Enable debug logging**:
    ```hcl
    # /etc/rspamd/local.d/logging.inc
-   level = "debug";
    debug_modules = ["multimap"];
    ```
 
@@ -390,26 +440,6 @@ DKIM_SIGNED_MISMATCH {
    rspamc symbols
    ```
 
-## Common Use Cases
-
-### Email Security
-
-- **Phishing protection**: Block known phishing domains
-- **Malware filtering**: Block dangerous file extensions
-- **Data loss prevention**: Block sensitive keywords
-- **Business email compromise**: Detect spoofed executives
-
-### Compliance
-
-- **GDPR compliance**: Different rules per region
-- **Industry regulations**: Financial/healthcare specific rules
-- **Corporate policies**: Block personal email domains
-
-### Performance
-
-- **VIP handling**: Fast-track important senders
-- **Bulk mail routing**: Separate processing for newsletters
-- **Resource protection**: Rate limiting per domain
 
 ## Troubleshooting
 
@@ -437,44 +467,3 @@ DKIM_SIGNED_MISMATCH {
    # Check Redis connection
    # Use appropriate map types
    ```
-
-### Testing
-
-```bash
-# Test specific multimap rules
-echo "Test message" | rspamc -v
-
-# Check loaded maps
-rspamc stat | grep -i map
-
-# Reload maps without restart
-rspamc reload
-```
-
-## Advanced Examples
-
-### Machine Learning Integration
-
-```hcl
-ML_SUSPICIOUS_DOMAINS {
-  type = "url";
-  filter = "host";
-  map = "http://ml-service.internal/suspicious_domains";
-  score = 8.0;
-  description = "ML-detected suspicious domains";
-}
-```
-
-### Threat Intelligence Feeds
-
-```hcl
-THREAT_INTEL_IPS {
-  type = "ip";
-  map = "http://threat-feed.company.com/ips.json";
-  score = 12.0;
-  description = "Threat intelligence IPs";
-  prefilter = true;
-}
-```
-
-This guide provides a solid foundation for using multimap effectively. Start with simple rules and gradually build more complex filtering logic as needed. 

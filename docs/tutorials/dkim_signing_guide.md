@@ -482,16 +482,13 @@ sign_networks = [
    ```bash
    # Verify DNS record
    dig TXT mail._domainkey.example.com
-   
-   # Test with external tools
-   rspamadm dkim_keygen -t -s mail -d example.com
+
    ```
 
 3. **Signing not working**:
    ```bash
    # Enable debug logging
    # /etc/rspamd/local.d/logging.inc
-   level = "debug";
    debug_modules = ["dkim_signing"];
    
    # Check logs
