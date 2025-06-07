@@ -149,7 +149,17 @@ const sidebars = {
         "tutorials/stunnel_setup",
         "tutorials/integration",
         "tutorials/feedback_from_users_with_IMAPSieve",
-        "tutorials/site_contributing"
+        "tutorials/site_contributing",
+        {
+          "type": "category",
+          "label": "Module Guides",
+          "items": [
+            "tutorials/multimap_guide",
+            "tutorials/settings_guide", 
+            "tutorials/dkim_signing_guide",
+            "tutorials/clickhouse_analytics"
+          ]
+        }
       ]
     },
     {
