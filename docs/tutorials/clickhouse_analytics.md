@@ -66,12 +66,6 @@ data_retention {
   period = "90d";
 }
 
-# Log these events
-log_clean = true;
-log_spam = true;
-log_ham = true;
-log_probable_spam = true;
-
 # Additional fields using both built-in and custom selectors
 extra_columns = {
   # Built-in selectors
