@@ -113,7 +113,7 @@ vip_customers {
     actions {
       reject = 25.0;
       add_header = 20.0;
-      greylist = -1;    # Disable greylisting
+      greylist = null;    # Disable greylisting
     }
     
     # Disable reputation checks
@@ -130,9 +130,6 @@ vip_customers {
     # Custom headers
     milter_headers {
       extended_spam_headers = true;
-      add_headers {
-        "X-VIP-Processing" = "enabled";
-      }
     }
   }
 }
@@ -147,9 +144,9 @@ vip_senders {
   
   apply {
     actions {
-      reject = -1;      # Never reject
-      add_header = -1;  # Never add headers
-      greylist = -1;    # Never greylist
+      reject = null;      # Never reject
+      add_header = null;  # Never add headers
+      greylist = null;    # Never greylist
     }
     
     # Bypass most checks
@@ -176,14 +173,13 @@ authenticated_users {
     actions {
       reject = 30.0;
       add_header = 25.0;
-      greylist = -1;
+      greylist = null;
     }
     
     # Disable inbound-specific checks
     symbols_disabled = [
       "BAYES_SPAM",
-      "SURBL_MULTI",
-      "RBL_*"
+      "SURBL_MULTI"
     ];
     
     # Enable outbound-specific checks
@@ -191,13 +187,6 @@ authenticated_users {
       "DKIM_SIGN",
       "ARC_SIGN"
     ];
-    
-    # Custom DKIM signing
-    dkim_signing {
-      domain = "%{selector_domain}";
-      selector = "outbound";
-      path = "/etc/rspamd/dkim/outbound.key";
-    }
   }
 }
 
@@ -242,13 +231,12 @@ internal_network {
     actions {
       reject = 20.0;
       add_header = 15.0;
-      greylist = -1;
+      greylist = null;
     }
     
     # Skip external checks
     symbols_disabled = [
-      "RBL_*",
-      "SURBL_*",
+      "RBL_CHECK",
       "PHISHING"
     ];
   }
@@ -266,7 +254,7 @@ trusted_relays {
     actions {
       reject = 25.0;
       add_header = 20.0;
-      greylist = -1;
+      greylist = null;
     }
     
     symbols_disabled = [
@@ -276,330 +264,6 @@ trusted_relays {
   }
 }
 
-# High-risk countries
-high_risk_geoip {
-  ip = [
-    "CN",    # China
-    "RU",    # Russia  
-    "KP"     # North Korea
-  ];
-  
-  apply {
-    actions {
-      reject = 8.0;     # Very strict
-      add_header = 3.0;
-      greylist = 1.0;
-    }
-    
-    # Extra scrutiny
-    symbols_enabled = [
-      "SUSPICIOUS_GEO",
-      "ENHANCED_PHISHING_CHECK"
-    ];
-  }
-}
-```
-
-### Example 5: Service-Level Configurations
-
-Different service tiers:
-
-```hcl
-# Premium service customers
-premium_service {
-  rcpt = "@premium.company.com";
-  
-  apply {
-    # Advanced features enabled
-    neural {
-      enabled = true;
-      max_trains = 5000;
-    }
-    
-    actions {
-      reject = 18.0;
-      add_header = 8.0;
-      greylist = 5.0;
-    }
-    
-    # Enable premium modules
-    symbols_enabled = [
-      "NEURAL_SPAM",
-      "ADVANCED_PHISHING",
-      "ATTACHMENT_SCAN",
-      "URL_REPUTATION"
-    ];
-    
-    # Custom processing
-    milter_headers {
-      extended_spam_headers = true;
-      add_headers {
-        "X-Service-Level" = "premium";
-        "X-Scan-Time" = "%{scan_time}";
-      }
-    }
-  }
-}
-
-# Basic service
-basic_service {
-  rcpt = "@basic.company.com";
-  
-  apply {
-    actions {
-      reject = 12.0;
-      add_header = 6.0;
-      greylist = 4.0;
-    }
-    
-    # Limited feature set
-    symbols_disabled = [
-      "NEURAL_*",
-      "CLICKHOUSE",
-      "ADVANCED_*"
-    ];
-    
-    milter_headers {
-      add_headers {
-        "X-Service-Level" = "basic";
-      }
-    }
-  }
-}
-```
-
-### Example 6: Conditional Module Configuration
-
-Enable/disable modules based on conditions:
-
-```hcl
-# Enable neural networks for high-volume domains
-neural_enabled {
-  rcpt = [
-    "@highvolume.com",
-    "@enterprise.org"
-  ];
-  
-  apply {
-    neural {
-      enabled = true;
-      servers = "redis://neural-redis:6379/2";
-      max_trains = 10000;
-      max_usages = 50;
-    }
-  }
-}
-
-# Disable Bayes for certain domains (GDPR compliance)
-bayes_disabled {
-  rcpt = [
-    "@eu-only.company.eu",
-    "@privacy-sensitive.org"
-  ];
-  
-  apply {
-    classifier "bayes" {
-      enabled = false;
-    }
-    
-    symbols_disabled = [
-      "BAYES_SPAM", 
-      "BAYES_HAM"
-    ];
-    
-    milter_headers {
-      add_headers {
-        "X-Privacy-Mode" = "gdpr-compliant";
-      }
-    }
-  }
-}
-
-# Enable ClickHouse logging for audit domains
-audit_logging {
-  rcpt = [
-    "@financial.company.com",
-    "@compliance.company.com"
-  ];
-  
-  apply {
-    clickhouse {
-      enabled = true;
-      server = "clickhouse://audit-db:8123/";
-      table = "rspamd_audit";
-      retention {
-        enable = true;
-        period = "1y";
-      }
-    }
-  }
-}
-```
-
-### Example 7: Complex Conditional Logic
-
-Advanced condition combinations:
-
-```hcl
-# Authenticated internal users with special handling
-auth_internal {
-  and = [
-    {authenticated = true},
-    {ip = "192.168.0.0/16"}
-  ];
-  
-  apply {
-    actions {
-      reject = 25.0;
-      add_header = 20.0;
-      greylist = -1;
-    }
-    
-    # Enable DKIM signing for internal auth
-    dkim_signing {
-      enabled = true;
-      selector = "internal";
-    }
-  }
-}
-
-# External authenticated but suspicious
-suspicious_auth {
-  and = [
-    {authenticated = true},
-    {not = {ip = "192.168.0.0/16"}},
-    {symbols = ["SUSPICIOUS_LOGIN"]}
-  ];
-  
-  apply {
-    actions {
-      reject = 12.0;
-      add_header = 6.0;
-      greylist = 4.0;
-    }
-    
-    symbols_enabled = [
-      "AUTH_ANOMALY_DETECT"
-    ];
-  }
-}
-
-# First-time senders to VIP recipients  
-first_time_to_vip {
-  and = [
-    {rcpt = "@executives.company.com"},
-    {not = {symbols = ["KNOWN_SENDER"]}}
-  ];
-  
-  apply {
-    actions {
-      reject = 8.0;      # Extra strict
-      add_header = 3.0;
-      greylist = 2.0;
-    }
-    
-    symbols_enabled = [
-      "FIRST_TIME_SENDER",
-      "EXECUTIVE_PROTECTION"
-    ];
-  }
-}
-```
-
-### Example 8: Time-Based Settings
-
-Different rules based on time:
-
-```hcl
-# Business hours - more relaxed for expected mail
-business_hours {
-  and = [
-    {time = "9:00-17:00"},
-    {weekday = "1-5"}
-  ];
-  
-  apply {
-    actions {
-      reject = 18.0;
-      add_header = 8.0;
-      greylist = 5.0;
-    }
-  }
-}
-
-# After hours - stricter filtering
-after_hours {
-  or = [
-    {time = "17:01-8:59"},
-    {weekday = "6-7"}
-  ];
-  
-  apply {
-    actions {
-      reject = 10.0;     # Much stricter
-      add_header = 4.0;
-      greylist = 2.0;
-    }
-    
-    symbols_enabled = [
-      "AFTER_HOURS_ANOMALY"
-    ];
-  }
-}
-```
-
-## Advanced Features
-
-### Using Selectors in Settings
-
-```hcl
-# Based on custom header values
-department_routing {
-  selector = "header('X-Department')";
-  value = "finance";
-  
-  apply {
-    actions {
-      reject = 20.0;     # Finance needs higher threshold
-      add_header = 15.0;
-    }
-    
-    symbols_enabled = [
-      "FINANCIAL_COMPLIANCE"
-    ];
-  }
-}
-
-# Based on message size
-large_messages {
-  selector = "size";
-  value = ">1048576";    # > 1MB
-  
-  apply {
-    symbols_enabled = [
-      "LARGE_MESSAGE_SCAN"
-    ];
-    
-    # Different timeouts for large messages
-    options {
-      task_timeout = 120;
-    }
-  }
-}
-```
-
-### Dynamic Settings from Redis
-
-```hcl
-# Load settings from Redis
-redis_settings {
-  redis_key = "rspamd_settings_%{rcpt_domain}";
-  
-  apply {
-    # Settings loaded from Redis value
-    dynamic = true;
-  }
-}
 ```
 
 ## Best Practices
@@ -674,12 +338,6 @@ redis_settings {
    grep "applied.*setting" /var/log/rspamd/rspamd.log
    ```
 
-3. **Monitor setting usage**:
-   ```bash
-   # See setting statistics  
-   rspamc stat | grep -A5 "Settings"
-   ```
-
 ## Troubleshooting
 
 ### Common Issues
@@ -691,9 +349,6 @@ redis_settings {
    
    # Verify conditions match
    grep "setting.*applied" /var/log/rspamd/rspamd.log
-   
-   # Debug mode for detailed info
-   rspamc -v -f test@domain.com < message.eml
    ```
 
 2. **Conflicting settings**:
@@ -713,11 +368,10 @@ redis_settings {
 ### Debugging
 
 ```hcl
+# local.d/settings.conf
+
 # Enable debug logging for settings
-logging {
-  level = "debug";
-  debug_modules = ["settings"];
-}
+debug_modules = ["settings"];
 ```
 
 ```bash
@@ -727,22 +381,3 @@ rspamc --header="X-Test: value" -f sender@test.com -r recipient@domain.com < tes
 # Check setting application in logs
 tail -f /var/log/rspamd/rspamd.log | grep -i setting
 ```
-
-## Common Use Cases
-
-### Multi-Tenant Hosting
-- Different thresholds per customer domain
-- Isolated configurations per tenant
-- Billing-based feature enablement
-
-### Enterprise Deployment
-- Department-specific filtering rules
-- Executive protection policies
-- Compliance requirements per region
-
-### Service Provider
-- Tiered service offerings
-- Customer-specific customizations
-- SLA-based configurations
-
-This guide provides a comprehensive foundation for implementing sophisticated per-domain and per-user configurations with Rspamd settings. 
