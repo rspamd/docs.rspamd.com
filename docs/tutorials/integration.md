@@ -122,7 +122,7 @@ acl_check_spam:
   accept
 ```
 
-For further information please refer to the [Exim specification](https://www.exim.org/exim-html-current/doc/html/spec_html/){:target="&#95;blank"}, especially the [chapter about content scanning](https://www.exim.org/exim-html-current/doc/html/spec_html/ch-content_scanning_at_acl_time.html){:target="&#95;blank"}.
+For further information please refer to the [Exim specification](https://www.exim.org/exim-html-current/doc/html/spec_html/), especially the [chapter about content scanning](https://www.exim.org/exim-html-current/doc/html/spec_html/ch-content_scanning_at_acl_time.html).
 
 ## Using Rspamd with Sendmail MTA
 
@@ -135,19 +135,21 @@ Once this is done, the standard procedure of compiling m4 to cf should be follow
 
 ## Integration with Haraka MTA
 
-The Haraka email server, version 2.7.0 and above, offers support for Rspamd through the [Haraka Rspamd plugin](https://haraka.github.io/plugins/rspamd/){:target="&#95;blank"}.
+The Haraka email server, version 2.7.0 and above, offers support for Rspamd through the [Haraka Rspamd plugin](https://haraka.github.io/plugins/rspamd/){target="_blank"}.
 
 To activate this feature: run `npm install haraka-plugin-rspamd`, add `rspamd` to the `DATA` section of your `config/plugins` file and create a `config/rspamd.ini` file to suit your needs if needed.
 
+For more information, see the <a href="https://haraka.github.io/plugins/rspamd/" target="_blank">Haraka rspamd plugin documentation</a>.
+
 ## Integration with EmailSuccess MTA
 
-Support for rspamd is available from [EmailSuccess v11.19](https://www.emailsuccess.com/emailsuccess-introduces-rspamd-integration){:target="&#95;blank"}.
+Support for rspamd is available from <a href="https://www.emailsuccess.com/emailsuccess-introduces-rspamd-integration" target="_blank">EmailSuccess v11.19</a>.
 
 To enable it, navigate to the administration console and type `filter-module-set rspamd enabled true`. Customize your filtering options using the `filter-module-show rspamd` and `filter-module-set rspamd` commands to suit your preferences.
 
 Additionally, you will need to enable the filter for each input interface (both SMTP and API) using the `input-set INPUT1 filter enabled`, `ws-set rest_filter true` and `ws-set soap_filter true` commands.
 
-For further information, refer to the [EmailSuccess documentation](https://doc.emailsuccess.com){:target="&#95;blank"}.
+For further information, refer to the <a href="https://doc.emailsuccess.com" target="_blank">EmailSuccess documentation</a>.
 
 ## LDA mode
 

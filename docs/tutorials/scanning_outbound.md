@@ -10,21 +10,21 @@ Sending outbound spam can have severe negative consequences on your system's ema
 
 ## Scanning outbound with Rspamd
 
-Rspamd is specifically designed to facilitate straightforward configuration for outbound scanning. With proper [integration](/doc/tutorials/integration.html) Rspamd  can identify the authenticated user and IP address that a mail was sent from. If mail was received from an authenticated user or an IP address listed in [local_addrs](/doc/configuration/options.html) several checks are automatically disabled: 
+Rspamd is specifically designed to facilitate straightforward configuration for outbound scanning. With proper [integration](tutorials/integration.html) Rspamd  can identify the authenticated user and IP address that a mail was sent from. If mail was received from an authenticated user or an IP address listed in [local_addrs](configuration/options.html) several checks are automatically disabled: 
 
- - [ASN](/doc/modules/asn.html): checking is disabled for local IPs, unless `check_local` is set to `true`
- - [DKIM](/doc/modules/dkim.html): checking is disabled; signing is **enabled** on the contrary if the appropriate key and rule are found
- - [DMARC](/doc/modules/dmarc.html): is disabled
- - [Greylist](/doc/modules/greylisting.html): is disabled
- - [HFilter](/doc/modules/hfilter.html): only URL-checks are applied
- - [MX Check](/doc/modules/mx_check.html): is disabled
- - [One Received header policy](/doc/modules/once_received.html): is disabled
- - [Ratelimit](/doc/modules/ratelimit.html): only `user` ratelimit is applied (to authenticated users - does not deal with `local_addrs`)
- - [RBL](/doc/modules/rbl.html): RBLs are disabled according to `exclude_users` and `exclude_local` settings for RBL rules (for example, URL lists should be checked for all directions)
- - [Replies](/doc/modules/replies.html): action is not forced
- - [SPF](/doc/modules/spf.html): is disabled
+ - [ASN](modules/asn.html): checking is disabled for local IPs, unless `check_local` is set to `true`
+ - [DKIM](modules/dkim.html): checking is disabled; signing is **enabled** on the contrary if the appropriate key and rule are found
+ - [DMARC](modules/dmarc.html): is disabled
+ - [Greylist](modules/greylisting.html): is disabled
+ - [HFilter](modules/hfilter.html): only URL-checks are applied
+ - [MX Check](modules/mx_check.html): is disabled
+ - [One Received header policy](modules/once_received.html): is disabled
+ - [Ratelimit](modules/ratelimit.html): only `user` ratelimit is applied (to authenticated users - does not deal with `local_addrs`)
+ - [RBL](modules/rbl.html): RBLs are disabled according to `exclude_users` and `exclude_local` settings for RBL rules (for example, URL lists should be checked for all directions)
+ - [Replies](modules/replies.html): action is not forced
+ - [SPF](modules/spf.html): is disabled
 
-Additionally, it is possible to disable/enable checks selectively and/or rescore checks for your authenticated users or relay IPs using [settings module](/doc/configuration/settings.html).
+Additionally, it is possible to disable/enable checks selectively and/or rescore checks for your authenticated users or relay IPs using [settings module](configuration/settings.html).
 
 ### MTA with milter support (e.g. Postfix or Sendmail)
 

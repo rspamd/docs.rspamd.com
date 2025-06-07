@@ -17,11 +17,11 @@ useful features.
 
 ## Getting Started
 
-A good starting point to study how to install and configure Rspamd is [the quick start guide](/doc/tutorials/quickstart.html).
+A good starting point to study how to install and configure Rspamd is [the quick start guide](tutorials/quickstart.html).
 
-Rspamd is [packaged](/downloads.html) for the major Linux distributions, and is also available via [FreeBSD ports](https://freshports.org/mail/rspamd){:target="&#95;blank"}, NetBSD [pkgsrc](https://pkgsrc.org){:target="&#95;blank"} and [OpenBSD ports](https://openports.pl/path/mail/rspamd){:target="&#95;blank"}.
+Rspamd is [packaged](/downloads.html) for the major Linux distributions, and is also available via [FreeBSD ports](https://freshports.org/mail/rspamd), [NetBSD pkgsrc](https://pkgsrc.org) and [OpenBSD ports](https://openports.pl/path/mail/rspamd).
 
-You can also watch some [videos about Rspamd](/doc/about/media.html).
+You can also watch some [videos about Rspamd](about/media.html).
 
 ## Spam filtering features
 
@@ -33,4 +33,4 @@ If that is not enough, Rspamd provides an extensive [Lua API](/doc/lua/) to [wri
 
 ## License
 
-This project is licensed under the [Apache 2.0 License](https://tldrlegal.com/license/apache-license-2.0-(apache-2.0)){:target="&#95;blank"}
+This project is licensed under the [Apache 2.0 License](https://tldrlegal.com/license/apache-license-2.0-(apache-2.0))

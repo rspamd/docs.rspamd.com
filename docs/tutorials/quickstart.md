@@ -3,7 +3,6 @@ title: Quick start
 ---
 
 # Rspamd quick start
-{:.no_toc}
 
 **Rspamd** is a powerful, fast and free spam filtering system that uses multiple analysis techniques to identify spam. This guide will help you understand, install, and configure Rspamd step by step.
 
@@ -26,7 +25,7 @@ Rspamd is a spam filtering daemon that integrates with your mail server (MTA) to
 
 ## Understanding Rspamd Configuration
 
-Before diving into installation, it's important to understand what you can configure in Rspamd. Based on the excellent [alternative introduction guide](https://www.0xf8.org/2018/05/an-alternative-introduction-to-rspamd-configuration-introduction/){:target="&#95;blank"}, here's what Rspamd allows you to configure:
+Before diving into installation, it's important to understand what you can configure in Rspamd. Based on the excellent [alternative introduction guide](https://www.0xf8.org/2018/05/an-alternative-introduction-to-rspamd-configuration-introduction/), here's what Rspamd allows you to configure:
 
 ### 1. **Modules** - What tests to perform
 Modules are units of code that analyze messages. Each test produces a **symbol** (like `FORGED_SENDER`) if the test matches.
@@ -56,14 +55,14 @@ This guide covers setting up Rspamd with:
 
 Before installing Rspamd, ensure you have:
 
-1. **A working mail server (MTA)** - This guide uses [Postfix](https://www.postfix.org/){:target="&#95;blank"}, but Rspamd works with other MTAs too (see [integration document](/doc/tutorials/integration.html))
+1. **A working mail server (MTA)** - This guide uses [Postfix](https://www.postfix.org/), but Rspamd works with other MTAs too (see [integration document](tutorials/integration.html))
 2. **Root access** to your server
 3. **A domain** configured for email 
 4. **Basic familiarity** with Linux command line
 
 **Note**: While Rspamd can work with Exim, it has limited support and is not recommended.
 
-Consider setting up your own [local DNS resolver](/doc/faq.html#resolver-setup) for better performance.
+Consider setting up your own [local DNS resolver](faq.html#resolver-setup) for better performance.
 
 ## Step 1: Install Rspamd
 
@@ -198,7 +197,7 @@ sudo systemctl restart rspamd
 sudo systemctl restart postfix
 ```
 
-**Note**: For complete Postfix/Dovecot setup details, TLS configuration, and other mail server settings, see the [MTA Integration Guide](/doc/tutorials/integration.html).
+**Note**: For complete Postfix/Dovecot setup details, TLS configuration, and other mail server settings, see the [MTA Integration Guide](tutorials/integration.html).
 
 ## Step 5: Test Your Setup
 
@@ -378,7 +377,7 @@ Symbols are organized into logical groups you can adjust:
 - **`headers_group.conf`** - Email header analysis
 - **`phishing_group.conf`** - URL and content analysis
 
-Learn more about [actions and scores](/doc/faq.html#what-are-rspamd-actions) in the documentation.
+Learn more about [actions and scores](faq.html#what-are-rspamd-actions) in the documentation.
 
 ## Troubleshooting
 
@@ -433,34 +432,34 @@ sudo rspamadm configtest
 For experienced users who want to dive deeper:
 
 ### Multiple Mail Server Integration
-- [MTA Integration Guide](/doc/tutorials/integration.html)
-- [Milter Protocol Configuration](/doc/workers/rspamd_proxy.html)
+- [MTA Integration Guide](tutorials/integration.html)
+- [Milter Protocol Configuration](workers/rspamd_proxy.html)
 
 ### Large-Scale Deployments
-- [Redis Replication](/doc/tutorials/redis_replication.html) 
-- [Neural Networks Setup](/doc/modules/neural.html)
-- [Clickhouse Analytics](/doc/modules/clickhouse.html)
+- [Redis Replication](tutorials/redis_replication.html) 
+- [Neural Networks Setup](modules/neural.html)
+- [Clickhouse Analytics](modules/clickhouse.html)
 
 ### Security Considerations
-- [RBL Usage Policies](/doc/modules/rbl.html) - Important licensing information
+- [RBL Usage Policies](modules/rbl.html) - Important licensing information
 - Network security and firewall configuration
-- TLS setup with [Let's Encrypt](https://letsencrypt.org){:target="&#95;blank"}
+- TLS setup with [Let's Encrypt](https://letsencrypt.org)
 
 ## Additional Resources
 
 ### Official Documentation
-- [Complete Configuration Reference](/doc/configuration/index.html)
-- [Module Documentation](/doc/modules/)
+- [Complete Configuration Reference](configuration/index.html)
+- [Module Documentation](modules/)
 - [WebUI Guide](/webui)
 
 ### Community Resources
-- [An alternative introduction to rspamd configuration](https://www.0xf8.org/2018/05/an-alternative-introduction-to-rspamd-configuration-introduction/){:target="&#95;blank"} - Detailed configuration guide
-- [Own mail server tutorial](https://thomas-leister.de/en/mailserver-debian-stretch/){:target="&#95;blank"} - Complete mail server setup
-- [FreeBSD setup guide](https://web.archive.org/web/20240914211825/www.c0ffee.net/blog/mail-server-guide){:target="&#95;blank"} - Alternative platform guide
+- [An alternative introduction to rspamd configuration](https://www.0xf8.org/2018/05/an-alternative-introduction-to-rspamd-configuration-introduction/) - Detailed configuration guide
+- [Own mail server tutorial](https://thomas-leister.de/en/mailserver-debian-stretch/) - Complete mail server setup
+- [FreeBSD setup guide](https://web.archive.org/web/20240914211825/www.c0ffee.net/blog/mail-server-guide) - Alternative platform guide
 
 ### Tools and Add-ons
-- [Thunderbird Rspamd Add-on](https://addons.thunderbird.net/thunderbird/addon/rspamd-spamness/){:target="&#95;blank"} - Visualize spam scores
-- [Rspamd Stats Visualization](https://github.com/moisseev/rspamd-spamness/){:target="&#95;blank"}
+- [Thunderbird Rspamd Add-on](https://addons.thunderbird.net/thunderbird/addon/rspamd-spamness/) - Visualize spam scores
+- [Rspamd Stats Visualization](https://github.com/moisseev/rspamd-spamness/)
 
 **Congratulations!** You now have a working Rspamd installation. Start with the basic configuration and gradually explore advanced features as your needs grow.
 
