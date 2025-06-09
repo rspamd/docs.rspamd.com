@@ -70,14 +70,14 @@ To minimize redundant processing, Rspamd enables an MTA to transmit pre-processe
 | `Pass`       | If this header has `all` value, all filters would be checked for this message. |
 | `Subject`    | Defines subject of message (is used for non-mime messages). |
 | `User`       | Defines username for authenticated SMTP client. |
-| `Settings-ID` | Defines [settings id](../configuration/settings.html) to apply. |
-| `Settings` | Defines list of rules ([settings](../configuration/settings.html) `apply` part) as raw json block to apply. |
+| `Settings-ID` | Defines [settings id](/configuration/settings) to apply. |
+| `Settings` | Defines list of rules ([settings](/configuration/settings) `apply` part) as raw json block to apply. |
 | `User-Agent` | Defines user agent (special processing if it is `rspamc`). |
 | `MTA-Tag` | MTA defined tag (can be used in settings). |
 | `MTA-Name` | Defines MTA name, used in `Authentication-Results` routines. |
 | `TLS-Cipher` | Defines TLS cipher name. |
 | `TLS-Version` | Defines TLS version. |
-| `TLS-Cert-Issuer` | Defines Cert issuer, can be used in conjunction with `client_ca_name` in [proxy worker](../workers/rspamd_proxy.html). |
+| `TLS-Cert-Issuer` | Defines Cert issuer, can be used in conjunction with `client_ca_name` in [proxy worker](/workers/rspamd_proxy). |
 | `URL-Format` | Supported from version 1.9: return all URLs and email if this header is `extended`. |
 | `Filename` | Hint for filename if used with some file. |
 

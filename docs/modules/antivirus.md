@@ -21,7 +21,7 @@ The Antivirus module, available from Rspamd version 1.4, seamlessly integrates w
 
 The configuration for an antivirus setup is accomplished by defining rules. If the antivirus reports one or more viruses, the configured symbol (e.g. CLAM_VIRUS) will be set, with the viruses as the description. If set, the reset action will be triggered.
 
-In case of errors during the connection or if the antivirus reports failures, the fail symbol (e.g. CLAM_VIRUS_FAIL) will be set, with the error message as the description. The [force_actions](/doc/modules/force_actions.html) plugin can be used to perform a `soft reject` if the antivirus has failed to scan the email, such as during a database reloading.
+In case of errors during the connection or if the antivirus reports failures, the fail symbol (e.g. CLAM_VIRUS_FAIL) will be set, with the error message as the description. The [force_actions](/modules/force_actions) plugin can be used to perform a `soft reject` if the antivirus has failed to scan the email, such as during a database reloading.
 
 In addition to the `SYMBOLNAME` and `SYMBOLNAME_FAIL` symbols, there are currently two special symbols indicating that the scanner has reported encrypted parts or parts with Office macros: `SYMBOLNAME_ENCRYPTED` and `SYMBOLNAME_MACRO`
 
@@ -62,7 +62,7 @@ The `mime_parts_filter_regex` option matches the content-type detected by Rspamd
 
 By default, the complete email will be sent to the antivirus system. This behavior can be changed by setting the `scan_mime_parts`option to true, which will send all detected attachments as separate mime parts. The options `scan_text_mime` or `scan_image_mime` can also be set to true if you want text mimes and images sent to the AV scanner.
 
-By default, if [Redis](/doc/configuration/redis.html) is configured globally and the `antivirus` option is not explicitly disabled in the Redis configuration, the results will be cached in Redis according to message checksums.
+By default, if [Redis](/configuration/redis) is configured globally and the `antivirus` option is not explicitly disabled in the Redis configuration, the results will be cached in Redis according to message checksums.
 
 Settings should be added to `/etc/rspamd/local.d/antivirus.conf` file:
 
@@ -216,7 +216,7 @@ avast {
 
 ## Generic Anti-Virus support via ICAP protocol
 
-The ICAP protocol is implemented in [external_services](/doc/modules/external_services.html#icap-protocol-specific-details).
+The ICAP protocol is implemented in [external_services](/modules/external_services#icap-protocol-specific-details).
 
 Currently these products are tested with Rspamd (please report others):
 

@@ -84,7 +84,7 @@ Maps in Rspamd refer to files or HTTP links that are automatically monitored and
 
 Rspamd offers the option to save traffic for HTTP maps using cached maps, while also respecting `304 Not modified responses`, Cache-Control headers, and ETags. Additionally, the maps data is shared between workers, and only the first controller worker is allowed to fetch remote maps.
 
-By default, the configuration of this module actively utilises compound maps, which define a map as an array of sources with a local fallback location. While this redundancy may be unnecessary for user-defined maps, further details are available in the following [FAQ section](/doc/faq.html#what-are-maps).
+By default, the configuration of this module actively utilises compound maps, which define a map as an array of sources with a local fallback location. While this redundancy may be unnecessary for user-defined maps, further details are available in the following [FAQ section](/faq#what-are-maps).
 
 ## Troubleshooting
 
@@ -173,7 +173,7 @@ When using header maps, it is essential to specify the exact `header` by utilizi
 
 It is important to note that there is often confusion between the `type` and `filter` parameters for the multimap module. The general rule of thumb is that `type` refers to *what information* is checked in the map, such as URLs, IPs, and headers. On the other hand, the `filter` attribute refers to *how this information is transformed* before being checked, such as extracting domains.
 
-**Selector** maps are using [selectors](../configuration/selectors.html), which defines both extraction and transformation. Consequently, this type of map can be considered as the most basic and flexible. All other types of maps can be expressed using a selector map. Furthermore, it is possible to store [dependent maps](#dependent-maps) in Redis using the selectors framework.
+**Selector** maps are using [selectors](/configuration/selectors), which defines both extraction and transformation. Consequently, this type of map can be considered as the most basic and flexible. All other types of maps can be expressed using a selector map. Furthermore, it is possible to store [dependent maps](#dependent-maps) in Redis using the selectors framework.
 
 ### Map field syntax
 
@@ -185,7 +185,7 @@ It is important to note that there is often confusion between the `type` and `fi
 |  `/path/to/list` | shorter form of a file map
 | `cdb://path/to/list.cdb` | [CDB](https://www.corpit.ru/mjt/tinycdb.html) map in file, cannot be signed
 | `redis://<hashkey>` | Redis map, read field in the hash stored at key
-| `redis+selector://selector` | (from version 2.0) similar to the former one Redis map where a hash key is acquired by application of some [selector](../configuration/selectors.html) that allows to create dependent maps
+| `redis+selector://selector` | (from version 2.0) similar to the former one Redis map where a hash key is acquired by application of some [selector](/configuration/selectors) that allows to create dependent maps
 
 A combination of files and HTTP can be used to create a resulting map that is a joint list of its elements, as shown in the following example:
 
@@ -274,10 +274,10 @@ Type attribute means what is matched with this map. The following types are supp
 
 | Type            | Description                       |
 | :-------------- | :-------------------------------- |
-| `asn` | matches ASN number passed by [ASN module](asn.html)
+| `asn` | matches ASN number passed by [ASN module](/modules/asn)
 | `content` | matches specific content of a message (e.g. headers, body or even a full message) against some map, usually regular expressions map
-| `country` | matches country code of AS passed by [ASN module](asn.html)
-| `dnsbl` | matches IP of the host that performed message handoff against some DNS blacklist (consider using [RBL](rbl.html) module for this)
+| `country` | matches country code of AS passed by [ASN module](/modules/asn)
+| `dnsbl` | matches IP of the host that performed message handoff against some DNS blacklist (consider using [RBL](/modules/rbl) module for this)
 | `filename` | matches attachment filenames and filenames in archives against map. It also includes detected filename match from version 2.0. For example, if some attachment has `.png` extension but it has real type detected as `image/jpeg` then two checks would be performed: for the original attachment and for the detected one. This does not include files in archives as Rspamd does not extract them.
 | `from` | matches **envelope** from (or header `From` if envelope from is absent)
 | `header` | matches any header specified (must have `header = "Header-Name"` configuration attribute)
@@ -287,12 +287,12 @@ Type attribute means what is matched with this map. The following types are supp
 | `mempool` | matches contents of a mempool variable (specified with `variable` parameter)
 | `received` | (new in 1.5) matches elements of `Received` headers
 | `rcpt` | matches any of  **envelope** rcpt or header `To` if envelope info is missing
-| `selector` | applies generic [selector](../configuration/selectors.html) and check data returned in the specific map. This type must have `selector` option and an optional `delimiter` option that defines how to join multiple selectors (an empty string by default). If a selector returns multiple values, e.g. `urls`, then all values are checked. Normal filter logic can also be applied to the selector's results.
+| `selector` | applies generic [selector](/configuration/selectors) and check data returned in the specific map. This type must have `selector` option and an optional `delimiter` option that defines how to join multiple selectors (an empty string by default). If a selector returns multiple values, e.g. `urls`, then all values are checked. Normal filter logic can also be applied to the selector's results.
 | `symbol_options` | (new in 1.6.3) match 'options' yielded by whichever symbol of interest (requires `target_symbol` parameter)
 | `url` | matches URLs in messages against maps (this excludes by default images urls and urls extracted from content parts, e.g. PDF parts)
 | `user` | matches authenticated username against maps
 
-DNS maps are considered legacy and it is not encouraged to use them in new projects. Instead, [rbl](rbl.html) should be used for that purpose.
+DNS maps are considered legacy and it is not encouraged to use them in new projects. Instead, [rbl](/modules/rbl) should be used for that purpose.
 
 Maps can also be specified as [CDB](https://www.corpit.ru/mjt/tinycdb.html) databases, which might be useful for large maps:
 

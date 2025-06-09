@@ -26,11 +26,11 @@ The hashes lifetime is depicted in the following scheme:
 
 <img class="img-fluid" width="75%" src="/img/greylisting.png">
 
-The greylisting module triggers a `soft reject` action, which is intended to be interpreted by the MTA as a temporary rejection (typically through the Milter interface). For Exim, you can configure it to recognize `soft reject` using the guidelines provided in the [integration guide](/doc/tutorials/integration.html#integration-with-exim-mta) for details. For Haraka, support is available from version 2.9.0 onward.
+The greylisting module triggers a `soft reject` action, which is intended to be interpreted by the MTA as a temporary rejection (typically through the Milter interface). For Exim, you can configure it to recognize `soft reject` using the guidelines provided in the [integration guide](/tutorials/integration#integration-with-exim-mta) for details. For Haraka, support is available from version 2.9.0 onward.
 
 ## Module configuration
 
-To use the greylisting module, you must first set up a Redis server to store hashes. You can find detailed instructions on how to do this in the [following document](/doc/configuration/redis.html). Once the Redis server is set up, you can modify a few specific options for the greylisting module. It is recommended that you define these options in `local.d/greylist.conf`:
+To use the greylisting module, you must first set up a Redis server to store hashes. You can find detailed instructions on how to do this in the [following document](/configuration/redis). Once the Redis server is set up, you can modify a few specific options for the greylisting module. It is recommended that you define these options in `local.d/greylist.conf`:
 
 * **`expire`**: setup hashes expire time (1 day by default)
 * **`greylist_min_score`**: messages with scores below this threshold are not greylisted (default unset)
@@ -45,9 +45,9 @@ To use the greylisting module, you must first set up a Redis server to store has
 * **`report_time`**: tell when greylisting is expired (appended to `message`)
 * **`whitelist_symbols`**: skip greylisting when specific symbols have been found (from 1.9.1)
 
-If you want to skip greylisting based on other conditions, you can simply disable the `GREYLIST_CHECK` and `GREYLIST_SAVE` symbols using the [settings module](/doc/configuration/settings.html).
+If you want to skip greylisting based on other conditions, you can simply disable the `GREYLIST_CHECK` and `GREYLIST_SAVE` symbols using the [settings module](/configuration/settings).
 
-To enable the module with its default settings, you must define at least one [redis](/doc/configuration/redis.html) server to store greylisting data. You can do this by adding the following lines to `local.d/greylist.conf`:
+To enable the module with its default settings, you must define at least one [redis](/configuration/redis) server to store greylisting data. You can do this by adding the following lines to `local.d/greylist.conf`:
 
 ~~~hcl
 # local.d/greylist.conf

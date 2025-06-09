@@ -17,7 +17,7 @@ The Rspamd controller worker offers the following configuration options:
 * `secure_ip`: A list or map containing IP addresses designated as "secure." All commands are allowed from these IPs without the need for passwords. If a reverse proxy sets an `X-Forwarded-For` header, both the proxy's IP and the actual client's IP must be included in `secure_ip`.
 * `static_dir`: This specifies the directory where static files for the web interface are located. Typically, this would be `${WWWDIR}`.
 * `stats_path`: This sets the path where the controller worker stores persistent statistics about Rspamd, such as the count of scanned messages.
-* `bind_socket`: A string defining the bind address for the controller worker (web interface). If the port number is omitted, it defaults to port 11334. You can also refer to [the common worker options](/doc/workers/#common-worker-options) for additional details.
+* `bind_socket`: A string defining the bind address for the controller worker (web interface). If the port number is omitted, it defaults to port 11334. You can also refer to [the common worker options](/workers/#common-worker-options) for additional details.
 
 ## Encryption support
 
@@ -75,4 +75,4 @@ You can use that line as `password` and `enable_password` (priv) values.
 * `/counters`
 * `/metrics`
 
-More details available at [Controller HTTP endpoints](/doc/developers/protocol/#controller-http-endpoints).
+More details available at [Controller HTTP endpoints](/developers/protocol#controller-http-endpoints).

@@ -53,7 +53,7 @@ The `exclude_private_ips` setting in RBL module no longer exists in this release
 
 ## Migration to Rspamd 3.7.2
 
-This release introduces [returncodes matchers](/doc/modules/rbl.html#returncodes-matchers) in RBL module. Previously returncodes were always treated as Lua patterns, now this behaviour is enabled by setting `matcher = "luapattern"` on the rule. For backwards-compatibility this matcher may be enabled implicitly where Lua patterns are detected but they may not be correctly detected in all cases. If you use custom RBL module configuration that makes use of Lua patterns please review it and explicitly set matcher where necessary.
+This release introduces [returncodes matchers](/modules/rbl#returncodes-matchers) in RBL module. Previously returncodes were always treated as Lua patterns, now this behaviour is enabled by setting `matcher = "luapattern"` on the rule. For backwards-compatibility this matcher may be enabled implicitly where Lua patterns are detected but they may not be correctly detected in all cases. If you use custom RBL module configuration that makes use of Lua patterns please review it and explicitly set matcher where necessary.
 
 ## Migration to Rspamd 3.3
 
@@ -61,11 +61,11 @@ When migrating to Rspamd 3.3, exercise caution if you are utilizing custom passt
 
 Users of the `neural` plugin may experience a significant Redis storage leak in version 3.2. This issue is resolved in version 3.3 with [the following commit](https://github.com/rspamd/rspamd/commit/f9cfbba2c84e01f18e65618587e6854681843ff1), however, this fix will not remove any existing stale keys. These keys also do not have an expiration set. One solution to clean up the database is to remove all keys starting with the `rn_` prefix. There are various options available to accomplish this, such as exploring the [following conversation](https://stackoverflow.com/questions/4006324/how-to-atomically-delete-keys-matching-a-pattern-using-redis) on Stackoverflow.
 
-Starting from this version, building Rspamd requires a **C++20** compatible compiler and toolchain. For Ubuntu Bionic users, this means adding the LLVM repository for the compatible C++20 standard library runtime. The necessary steps are outlined on the [downloads page](/downloads.html).
+Starting from this version, building Rspamd requires a **C++20** compatible compiler and toolchain. For Ubuntu Bionic users, this means adding the LLVM repository for the compatible C++20 standard library runtime. The necessary steps are outlined on the [downloads page](/downloads).
 
 ## Migration to Rspamd 3.0
 
-The functionality for DMARC reporting is no longer included in the DMARC module. To send DMARC reports, you must now run the `rspamadm dmarc_report` command on a regular basis, such as through a cron job. Additionally, the configuration for reporting has undergone incompatible changes, so please refer to the [module documentation](/doc/modules/dmarc.html) for further information.
+The functionality for DMARC reporting is no longer included in the DMARC module. To send DMARC reports, you must now run the `rspamadm dmarc_report` command on a regular basis, such as through a cron job. Additionally, the configuration for reporting has undergone incompatible changes, so please refer to the [module documentation](/modules/dmarc) for further information.
 
 
 ## Migration to Rspamd 2.6
@@ -74,7 +74,7 @@ To ensure proper functionality of the GUI after upgrading to 2.6, it is necessar
 
 Additionally, the `Neural networks` plugin's training data will be lost as the internal structure of the NN has been redesigned in an incompatible manner. However, training can continue as normal.
 
-If you encounter complaints about `SENDER_REP_HAM` and `SENDER_REP_SPAM` symbols in Rspamd logs, you may need to define scores for these symbols. Refer to the documentation https://rspamd.com/doc/modules/reputation.html). This issue will be fixed in future Rspamd releases.
+If you encounter complaints about `SENDER_REP_HAM` and `SENDER_REP_SPAM` symbols in Rspamd logs, you may need to define scores for these symbols. Refer to the [reputation module documentation](/modules/reputation). This issue will be fixed in future Rspamd releases.
 
 
 ## Migration to Rspamd 2.0
@@ -233,7 +233,7 @@ In this version, due to the implementation of the new milter interface, there is
 
 The `milter_headers` module now skips adding headers for local networks and authenticated users by default. This behavior can be re-enabled by setting `skip_local = false` and/or `skip_authenticated = false` in the module configuration. Alternatively, you can set `authenticated_headers` and/or `local_headers` to a list of headers that should not be skipped.
 
-Additionally, a [proxy worker](/doc/workers/rspamd_proxy.html) has been added to the default configuration and listens on all interfaces on TCP port 11332. If you do not need it, you can set `enabled = false` in `local.d/worker-proxy.inc`.
+Additionally, a [proxy worker](/workers/rspamd_proxy) has been added to the default configuration and listens on all interfaces on TCP port 11332. If you do not need it, you can set `enabled = false` in `local.d/worker-proxy.inc`.
 
 This release also eliminates the configuration split for systemd/sysv platforms. To ensure proper functionality, custom init scripts should utilize `rspamd.conf` instead of `rspamd.sysvinit.conf`. For those utilizing systemd and prefer logging to the systemd journal, the following should be added to `local.d/logging.inc`:
 
@@ -248,7 +248,7 @@ A significant overhaul of the Lua libraries has occurred in Rspamd 1.6. Some cus
 require "global_functions" ()
 ~~~
 
-The Rmilter tool is now deprecated in favor of milter protocol support in the [rspamd proxy](/doc/workers/rspamd_proxy.html). Examples of some specific features previously implemented in Rmilter can be found in the [milter headers module](/doc/modules/milter_headers.html). It is recommended to migrate from Rmilter as soon as possible, as Rspamd 1.6 will be the last version to support the Rmilter tool. In future major releases (starting from 1.7), there will be **no guarantees** of compatibility with Rmilter.
+The Rmilter tool is now deprecated in favor of milter protocol support in the [rspamd proxy](/workers/rspamd_proxy). Examples of some specific features previously implemented in Rmilter can be found in the [milter headers module](/modules/milter_headers). It is recommended to migrate from Rmilter as soon as possible, as Rspamd 1.6 will be the last version to support the Rmilter tool. In future major releases (starting from 1.7), there will be **no guarantees** of compatibility with Rmilter.
 
 For example, if you need the old behaviour for `extended_spam_headers` in Rmilter is desired, the following snippet can be added to `local.d/milter_headers.conf`:
 
@@ -280,12 +280,12 @@ Additionally, if composites have been defined in `local.d/composites.conf` or `o
 
 You are also suggested to disable outdated and no longer supported features of Rmilter and switch them to Rspamd:
 
-- Greylisting - provided by [greylisting module](/doc/modules/greylisting.html)
-- Ratelimit - is done by [ratelimit module](/doc/modules/ratelimit.html)
-- Replies whitelisting - is implemented in [replies module](/doc/modules/replies.html)
-- Antivirus filtering - provided now by [antivirus module](/doc/modules/antivirus.html)
-- DCC checks - are now done in [dcc module](/doc/modules/dcc.html)
-- Dkim signing - can be done now by using of [dkim module](/doc/modules/dkim.html#dkim-signatures) and also by a more simple [dkim signing module](/doc/modules/dkim_signing.html)
+- Greylisting - provided by [greylisting module](/modules/greylisting)
+- Ratelimit - is done by [ratelimit module](/modules/ratelimit)
+- Replies whitelisting - is implemented in [replies module](/modules/replies)
+- Antivirus filtering - provided now by [antivirus module](/modules/antivirus)
+- DCC checks - are now done in [dcc module](/modules/dcc)
+- Dkim signing - can be done now by using of [dkim module](/modules/dkim#dkim-signatures) and also by a more simple [dkim signing module](/modules/dkim_signing)
 
 All duplicate features are still present in Rmilter for compatibility purposes. However, it is unlikely that any further development or bug fixes will be applied to them.
 
@@ -496,7 +496,7 @@ worker {
 
 ### Settings changes
 
-The settings system in Rspamd has undergone a complete overhaul. It is now implemented as a Lua plugin that registers pre-filters and assigns settings based on dynamic maps or a static configuration. To use the new settings system, please refer to the updated [documentation](/doc/configuration/settings.html). The previous settings system has been entirely removed from Rspamd.
+The settings system in Rspamd has undergone a complete overhaul. It is now implemented as a Lua plugin that registers pre-filters and assigns settings based on dynamic maps or a static configuration. To use the new settings system, please refer to the updated [documentation](/configuration/settings). The previous settings system has been entirely removed from Rspamd.
 
 ### Lua changes
 
@@ -545,7 +545,7 @@ local dm = task:get_date{format = 'message'} -- MIME message date
 local dt = task:get_date{format = 'connect'} -- check date
 ~~~
 
-* `get_header` - this function has undergone significant changes. The new version of `get_header` returns a decoded string, `get_header_raw` returns an undecoded string, and `get_header_full` returns a full list of tables. For more information, please refer to the updated [documentation](/doc/lua/rspamd_task.html). You may need to update your existing code that uses the `task:get_header` method.
+* `get_header` - this function has undergone significant changes. The new version of `get_header` returns a decoded string, `get_header_raw` returns an undecoded string, and `get_header_full` returns a full list of tables. For more information, please refer to the updated [documentation](/lua/rspamd_task). You may need to update your existing code that uses the `task:get_header` method.
 Old version:
 
 ~~~lua

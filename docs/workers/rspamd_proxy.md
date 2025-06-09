@@ -15,7 +15,7 @@ This worker provides various functionalities for building multi-layered systems 
 * Comparing results of mirrored requests
 * Performing message scans autonomously (self-scan mode)
 
-The `hosts` option for the `upstream` and `mirror` can specify IP addresses or Unix domain sockets, as described in the [upstreams documentation](/doc/configuration/upstream.html). If the port number is omitted, port 11333 is assumed.
+The `hosts` option for the `upstream` and `mirror` can specify IP addresses or Unix domain sockets, as described in the [upstreams documentation](/configuration/upstream). If the port number is omitted, port 11333 is assumed.
 
 For a full list of options, please refer to `rspamadm confighelp workers.rspamd_proxy`.
 
@@ -25,13 +25,13 @@ The proxy worker's most widely useful feature is its ability to communicate usin
 
 This means that users who require Milter protocol support in their installations can use it straight out of the box.
 
-For users who do not need Milter support, it's generally more efficient to use normal workers directly and [disable](/doc/workers/#common-worker-options) the proxy worker to save resources.
+For users who do not need Milter support, it's generally more efficient to use normal workers directly and [disable](/workers/#common-worker-options) the proxy worker to save resources.
 
 ## Milter support
 
 Starting from Rspamd 1.6, the rspamd proxy worker supports the `milter` protocol, which is compatible with popular MTAs like Postfix and Sendmail. This new feature also marks the obsolescence of the [Rmilter](/rmilter/) project in recognition of the improved integration method.
 
-To enable Milter mode, use the `milter` boolean worker option. When enabled, the proxy communicates exclusively in the Milter protocol. If disabled, the proxy can be used with Rspamd's native [HTTP protocol](/doc/developers/protocol.html) and the legacy protocol used by Exim.
+To enable Milter mode, use the `milter` boolean worker option. When enabled, the proxy communicates exclusively in the Milter protocol. If disabled, the proxy can be used with Rspamd's native [HTTP protocol](/developers/protocol) and the legacy protocol used by Exim.
 
 It's important to note that Milter support is available in the `rspamd_proxy` worker only. There are two ways to use the Milter protocol:
 
@@ -56,14 +56,14 @@ upstream "local" {
 #bind_socket = localhost:11332;
 ~~~
 
-Also you can disable<sup>[1](#fn1)</sup> [normal](normal.html) worker to free up system resources as it is not necessary in `self-scan` mode:
+Also you can disable<sup>[1](#fn1)</sup> [normal](/workers/normal) worker to free up system resources as it is not necessary in `self-scan` mode:
 
 ~~~hcl
 # local.d/worker-normal.inc
 enabled = false;
 ~~~
 
-But there is a drawback: since `rspamc` uses [normal](normal.html) worker by default you need to explicitly point it to [controller](controller.html) worker port (11334)<sup>[2](#fn1)</sup>:
+But there is a drawback: since `rspamc` uses [normal](/workers/normal) worker by default you need to explicitly point it to [controller](/workers/controller) worker port (11334)<sup>[2](#fn1)</sup>:
 
 ~~~
 rspamc -h rspamd.example.org:11334 input-file
@@ -131,7 +131,7 @@ mirror "test" {
 
 ### User settings
 
-The proxy worker can apply a specific setting using the `settings_id` configured in an upstream through the [user settings module](/doc/configuration/settings.html). Ensure that the user settings module includes a setting with the same name as defined in `settings_id`.
+The proxy worker can apply a specific setting using the `settings_id` configured in an upstream through the [user settings module](/configuration/settings). Ensure that the user settings module includes a setting with the same name as defined in `settings_id`.
 
 ### Compare scripts
 

@@ -12,7 +12,7 @@ Rspamd is a universal spam filtering system based on an event-driven processing 
 - `BAYES_SPAM` - means that a message is statistically considered as spam;
 - `FORGED_OUTLOOK_MID` - message ID seems to be forged for the Outlook MUA.
 
-Rules are defined by [modules](../modules/). For instance, if there is a module that performs SPF checks, it may define several rules based on SPF policy:
+Rules are defined by [modules](/modules/). For instance, if there is a module that performs SPF checks, it may define several rules based on SPF policy:
 
 - `SPF_ALLOW` - a sender is allowed to send messages for this domain;
 - `SPF_DENY` - a sender is denied by SPF policy;
@@ -29,7 +29,7 @@ options {
 
 ## Protocol
 
-Rspamd uses the HTTP protocol for all operations. This protocol is described in the [protocol section](protocol.html).
+Rspamd uses the HTTP protocol for all operations. This protocol is described in the [protocol section](/developers/protocol).
 
 ## Metrics
 

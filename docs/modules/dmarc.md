@@ -36,7 +36,7 @@ Starting from Rspamd 3.0, the recommended way to send DMARC `aggregate` reports 
 
 If you're upgrading from a previous version, make sure that you remove the `reporting = true;` setting from `rspamadm configdump dmarc`. This setting has been intentionally converted to the new options schema to prevent misconfiguration. The line `reporting = true;` **must** be removed from the `local.d/dmarc.conf` if it is there.
 
-DMARC reporting information is stored in Redis. Please refer to [this guide](/doc/configuration/redis.html) for instructions on how to configure Redis.
+DMARC reporting information is stored in Redis. Please refer to [this guide](/configuration/redis) for instructions on how to configure Redis.
 
 Below are the configuration parameters for DMARC reporting, along with corresponding comments:
 

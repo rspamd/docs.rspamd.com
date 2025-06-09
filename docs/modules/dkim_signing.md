@@ -6,9 +6,9 @@ title: DKIM signing module
 # DKIM signing module
 {:.no_toc}
 
-The Rspamd 1.5 version has introduced a convenient method of configuring DKIM signing through the addition of the DKIM signing module. A more customizable option is available in the DKIM module through the [sign_condition](/doc/modules/dkim.html#dkim-signatures).
+The Rspamd 1.5 version has introduced a convenient method of configuring DKIM signing through the addition of the DKIM signing module. A more customizable option is available in the DKIM module through the [sign_condition](/modules/dkim#dkim-signatures).
 
-DKIM signing currently works with Milter based MTAs (Sendmail, Postfix), Haraka & Communigate. For DKIM signing to work, you must [scan outbound mail with rspamd](/doc/tutorials/scanning_outbound.html).
+DKIM signing currently works with Milter based MTAs (Sendmail, Postfix), Haraka & Communigate. For DKIM signing to work, you must [scan outbound mail with rspamd](/tutorials/scanning_outbound).
 
 
 
@@ -324,7 +324,7 @@ To simplify REST services integration, Rspamd offers the option of DKIM signing 
 `DkimSelector` | Selector for signing
 `DkimPrivateKey` | Private key encoded in Base64
 
-To ensure proper functionality, it's crucial to follow the mandatory header requirements and enable the `DKIM_CHECK` in user settings. This will enable the automatic DKIM check dependency and allow for the use of the `Setting` header, which facilitates bypassing of other checks. For further information, refer to the (see [Users settings](/doc/configuration/settings.html)) documentation.
+To ensure proper functionality, it's crucial to follow the mandatory header requirements and enable the `DKIM_CHECK` in user settings. This will enable the automatic DKIM check dependency and allow for the use of the `Setting` header, which facilitates bypassing of other checks. For further information, refer to the (see [Users settings](/configuration/settings)) documentation.
 
 ## DKIM signing using Vault
 
@@ -332,7 +332,7 @@ Starting from version 1.9.3, Rspamd has the capability to use [Hashicorp Vault](
 
 To store DKIM keys using Vault, you must create a KV storage version 1. For more information, see the Vault Secrets Engine [guide](https://learn.hashicorp.com/vault/getting-started/secrets-engines).
 
-To integrate Vault-stored keys with Rspamd, simply add the following lines to your `local.d/dkim_signing.conf` (or `arc.conf` for [ARC signing](arc.html)):
+To integrate Vault-stored keys with Rspamd, simply add the following lines to your `local.d/dkim_signing.conf` (or `arc.conf` for [ARC signing](/modules/arc)):
 
 ~~~hcl
 use_vault = true;
@@ -504,11 +504,11 @@ and deserve consideration.
   settings of Rspamd do the verifying (inbound) and signing (outbound)
   so that the version that arrives at the signing instance is already
   in the rewritten form, guaranteeing the input and output are the same
-  and thus the signature matches the payload. You can do such a split using [user settings](/doc/configuration/settings.html).
+  and thus the signature matches the payload. You can do such a split using [user settings](/configuration/settings).
 
 ## Optimize signing only mode
 
-If you intend to run Rspamd for DKIM signing only in certain conditions, then please use the [user settings](/doc/configuration/settings.html) as following:
+If you intend to run Rspamd for DKIM signing only in certain conditions, then please use the [user settings](/configuration/settings) as following:
 
 ~~~hcl
 # local.d/settings.conf

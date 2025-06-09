@@ -164,7 +164,7 @@ DKIM_MIXED {
 }
 ~~~
 
-You can also disable composites from the [users settings](settings.html) from Rspamd `1.9`.
+You can also disable composites from the [users settings](/configuration/settings) from Rspamd `1.9`.
 
 ## Composites on symbol options
 

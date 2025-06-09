@@ -10,7 +10,7 @@ The spamtrap module enables you to catch trapped spam emails, and even those fro
 
 The spamtrap plugin can utilise either a map comprising regular expressions representing email addresses or domains, or Redis, where addresses are stored as keys with values that can take any form. You may opt to use either method. When specifying a map parameter, Redis is automatically disabled.
 
-To use Redis - [see here](/doc/configuration/redis.html) for information about configuring Redis.
+To use Redis - [see here](/configuration/redis) for information about configuring Redis.
 
 An example of a map is shown below.
 
@@ -61,7 +61,7 @@ The first is a full email address, while the second is a catch-all domain.
 
 ## User settings
 
-Please see [settings module documentation](/doc/configuration/settings.html) for more information about using this module; some examples are provided below for convenience.
+Please see [settings module documentation](/configuration/settings) for more information about using this module; some examples are provided below for convenience.
 
 ### Advanced: settings_redis example
 

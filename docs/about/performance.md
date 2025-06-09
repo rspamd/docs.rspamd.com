@@ -9,7 +9,7 @@ Rspamd has been started to handle mail flows that has grown over the last decade
 
 You can also check the recent [performance analyse article](/misc/2019/05/16/rspamd-performance.html) to have a better impression about how fast Rspamd could be.
 
-Rspamd can be regarded as a significantly faster alternative to the [SpamAssassin](https://spamassassin.apache.org) mail filter, with the capability to process **ten times** the number of messages while using the **same** rules (via the [SpamAssassin plugin](/doc/modules/spamassassin.html)). The following graph illustrates how the transition from <abbr title="SpamAssassin">SA</abbr> to Rspamd has reduced CPU loads on scanning machines:
+Rspamd can be regarded as a significantly faster alternative to the [SpamAssassin](https://spamassassin.apache.org) mail filter, with the capability to process **ten times** the number of messages while using the **same** rules (via the [SpamAssassin plugin](/modules/spamassassin)). The following graph illustrates how the transition from <abbr title="SpamAssassin">SA</abbr> to Rspamd has reduced CPU loads on scanning machines:
 
 <img class="img-fluid" src="/img/graph2.png" width="50%">
 

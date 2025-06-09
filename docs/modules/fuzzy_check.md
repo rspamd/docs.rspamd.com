@@ -5,7 +5,7 @@ title: Fuzzy check module
 # Fuzzy check module
 
 The purpose of this module is to verify messages for certain fuzzy patterns that are stored in the
-[fuzzy storage workers](../workers/fuzzy_storage.html). At the same time, this module
+[fuzzy storage workers](/workers/fuzzy_storage). At the same time, this module
 is responsible for teaching fuzzy storage with message patterns.
 
 ## Fuzzy patterns
@@ -92,7 +92,7 @@ fuzzy_check {
 
 A fuzzy `rule` is defined as a set of `rule` definitions. Each `rule` is required to have a `servers` list for checking or teaching (training), along with a set of flags and optional parameters. 
 
-The `servers` parameter defines [upstream](/doc/configuration/upstream.html) object that can be configured to rotate or shard as needed. Sharding is performed based on the hash value itself.
+The `servers` parameter defines [upstream](/configuration/upstream) object that can be configured to rotate or shard as needed. Sharding is performed based on the hash value itself.
 
 The available parameters include:
 
@@ -265,6 +265,6 @@ rspamd selects a server in a round-robin manner.
 ## Usage of the feeds provided by `rspamd.com`
 
 By default, `rspamd.com` feeds are enabled. However, if you decide to use these feeds, 
-it's important to ensure that you comply with the [**free usage policy**](/doc/other/usage_policy.html). 
+it's important to ensure that you comply with the [**free usage policy**](/other/usage_policy). 
 Failure to do so may result in being blocked from using the service. In such cases, the special `FUZZY_BLOCKED` symbol 
 will be assigned to the messages in question. It's worth noting that this symbol has no weight and will not affect any mail processing operations.

@@ -17,18 +17,16 @@ useful features.
 
 ## Getting Started
 
-A good starting point to study how to install and configure Rspamd is [the quick start guide](tutorials/quickstart.html).
+A good starting point to study how to install and configure Rspamd is [the quick start guide](/tutorials/quickstart).
 
-Rspamd is [packaged](/downloads.html) for the major Linux distributions, and is also available via <a href="https://freshports.org/mail/rspamd" target="_blank" rel="noopener noreferrer">FreeBSD ports</a>, <a href="https://pkgsrc.org" target="_blank" rel="noopener noreferrer">NetBSD pkgsrc</a> and <a href="https://openports.pl/path/mail/rspamd" target="_blank" rel="noopener noreferrer">OpenBSD ports</a>.
-
-You can also watch some [videos about Rspamd](about/media.html).
+Rspamd is [packaged](/downloads) for the major Linux distributions, and is also available via <a href="https://freshports.org/mail/rspamd" target="_blank" rel="noopener noreferrer">FreeBSD ports</a>, <a href="https://pkgsrc.org" target="_blank" rel="noopener noreferrer">NetBSD pkgsrc</a> and <a href="https://openports.pl/path/mail/rspamd" target="_blank" rel="noopener noreferrer">OpenBSD ports</a>.
 
 ## Spam filtering features
 
 Rspamd is shipped with various spam filtering modules and features enabled just out of the box.
-The full list of built-in modules could be found in the [modules documentation](modules/).
+The full list of built-in modules could be found in the [modules documentation](/modules/).
 
-If that is not enough, Rspamd provides an extensive [Lua API](lua/) to [write your own rules and plugins](developers/writing_rules.html).
+If that is not enough, Rspamd provides an extensive [Lua API](/lua/) to [write your own rules and plugins](/developers/writing_rules).
 
 
 ## License

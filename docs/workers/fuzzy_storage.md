@@ -154,5 +154,5 @@ worker "fuzzy" {
 
 Rspamd fuzzy storage version `0.8` is compatible with Rspamd clients of all versions.
 However, all updates from legacy versions (less than `0.8`) won't update the fuzzy shingles
-database. The Rspamd [fuzzy check module](../modules/fuzzy_check.html) can work **only**
+database. The Rspamd [fuzzy check module](/modules/fuzzy_check) can work **only**
 with the recent Rspamd fuzzy storage and won't retrieve anything from the legacy storages.

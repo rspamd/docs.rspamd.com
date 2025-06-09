@@ -213,9 +213,9 @@ EOD;
 }
 ~~~
 
-Redis servers are configured as per usual - see [here](/doc/configuration/redis.html) for details.
+Redis servers are configured as per usual - see [here](/configuration/redis) for details.
 
-Below is an example documentation section for the external_map feature in settings.lua. It combines details from the current code and the existing settings documentation, and it incorporates references from several sources such as [rspamd.com](https://www.rspamd.com/doc/developers/writing_rules.html) and the [Lua 5.4 Reference Manual](https://www.lua.org/manual/5.4/manual.html).
+Below is an example documentation section for the external_map feature in settings.lua. It combines details from the current code and the existing settings documentation, and it incorporates references from several sources such as [rspamd.com](/developers/writing_rules) and the [Lua 5.4 Reference Manual](https://www.lua.org/manual/5.4/manual.html).
 
 ---
 

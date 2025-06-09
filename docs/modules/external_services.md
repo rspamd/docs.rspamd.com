@@ -52,7 +52,7 @@ Furthermore, there are two types of MIME part filters available:
 
 Apart from the default settings, specific configuration options need to be set for each rule as described below.
 
-By default, if [Redis](/doc/configuration/redis.html) is configured globally and `external_services` is not disabled in the Redis configuration, the results will be cached in Redis based on message checksums.
+By default, if [Redis](/configuration/redis) is configured globally and `external_services` is not disabled in the Redis configuration, the results will be cached in Redis based on message checksums.
 
 To add settings, modify the `/etc/rspamd/local.d/external_services.conf` file:
 

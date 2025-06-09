@@ -8,7 +8,7 @@ title: IP Score module
 # Deprecation warning!
 
 This module is deprecated and is removed from Rspamd 2.0 due to several serious design flaws, e.g. reputation tokens had no decay leading to a situation with a positive loopback link and thus incorrect reputation calculations. 
-The existing configuration could be automatically transferred to [reputation module](reputation.html).
+The existing configuration could be automatically transferred to [reputation module](/modules/reputation).
 Unfortunately, the existing reputation built cannot be transferred for many reasons. One of the reasons is that it was simply wrong in many cases.
 
 ### Theory of operation
@@ -70,7 +70,7 @@ Subscores are added to each other to determine a total. If `min_score` or `max_s
 
 ### Configuration
 
-Refer to example configuration below for available settings. To use default settings, just [configure Redis](/doc/configuration/redis.html) either globally or just for `ip_score` and assign a weight to the `IP_SCORE` symbol. Module configuration should be added to `/etc/rspamd/local.d/ip_score.conf`.
+Refer to example configuration below for available settings. To use default settings, just [configure Redis](/configuration/redis) either globally or just for `ip_score` and assign a weight to the `IP_SCORE` symbol. Module configuration should be added to `/etc/rspamd/local.d/ip_score.conf`.
 
 ~~~hcl
 # how each action is treated in scoring

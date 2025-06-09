@@ -361,7 +361,7 @@ Application Options:
 
 ## Rspamadm statconvert
 
-This is a command for converting statistics from SQLite to Redis. A typical invocation to convert spam/ham databases and learn cache can be found in the [FAQ](https://rspamd.com/doc/faq.html#which-backend-should-i-use-for-statistics).
+This is a command for converting statistics from SQLite to Redis. A typical invocation to convert spam/ham databases and learn cache can be found in the [FAQ](/faq#which-backend-should-i-use-for-statistics).
 
 ~~~
 Application Options:

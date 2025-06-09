@@ -105,7 +105,7 @@ The following settings can be defined on any rule:
 
  - `channel` (required): defines Pub/Sub channel to post content to
 
-See [here](/doc/configuration/redis.html) for information on configuring Redis servers.
+See [here](/configuration/redis) for information on configuring Redis servers.
 
 ### Settings: `send_mail` backend
 

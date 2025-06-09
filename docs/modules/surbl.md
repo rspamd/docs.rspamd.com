@@ -218,4 +218,4 @@ rules {
 
 ## Use of URL redirectors
 
-SURBL module is designed to work with [url_redirector module](./url_redirector.html) which can help to resolve some known redirectors and extract the real URL to check with this module. Please refer to the module's documentation about how to work with it. SURBL module will automatically use that results.
+SURBL module is designed to work with [url_redirector module](/modules/url_redirector) which can help to resolve some known redirectors and extract the real URL to check with this module. Please refer to the module's documentation about how to work with it. SURBL module will automatically use that results.

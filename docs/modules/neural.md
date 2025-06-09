@@ -21,7 +21,7 @@ After a set number of training iterations (by default, `10`), the training proce
 
 By default, this module is explicitly **disabled**, so you will need to enable it either in the local or override configuration.
 
-Ensure that at least one Redis server is [specified](/doc/configuration/redis.html) in the common `redis` section. Alternatively, you can define the Redis server in the module configuration:
+Ensure that at least one Redis server is [specified](/configuration/redis) in the common `redis` section. Alternatively, you can define the Redis server in the module configuration:
 
 ~~~hcl
 # local.d/neural.conf
@@ -73,7 +73,7 @@ Rspamd can use the same neural network from multiple processes running on multip
 
 ### Settings usage
 
-Rspamd automatically selects different networks for different sets of [user settings](../configuration/settings.html) based on their settings ID. The settings ID is appended to the neural network name to identify which network to use. This feature can be useful for splitting neural networks for inbound and outbound users identified by settings.
+Rspamd automatically selects different networks for different sets of [user settings](/configuration/settings) based on their settings ID. The settings ID is appended to the neural network name to identify which network to use. This feature can be useful for splitting neural networks for inbound and outbound users identified by settings.
 
 To set which rules in `neural.conf` apply to different settings IDs, you can either set `allowed_settings = "all";` in the rules section to allow messages with all possible settings IDs to train the rule, or `allowed_settings = [ "settings-id1", "settings-id2" ];` to allow only messages with specific settings IDs to do so.
 

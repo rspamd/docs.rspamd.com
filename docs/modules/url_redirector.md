@@ -5,7 +5,7 @@ title: URL redirector module
 
 # URL redirector module
 
-This module provides a hook for [RBL](/doc/modules/rbl.html) module to resolve redirects.
+This module provides a hook for [RBL](/modules/rbl) module to resolve redirects.
 To enable this module one should add a `redirector_hosts_map` option to the module's configuration, i.e. by adding the following to `local.d/url_redirector.conf`:
 ~~~hcl
 redirector_hosts_map = "${LOCAL_CONFDIR}/local.d/maps.d/redirectors.inc";
@@ -13,7 +13,7 @@ redirector_hosts_map = "${LOCAL_CONFDIR}/local.d/maps.d/redirectors.inc";
 
 This file/URL should contain a list of domains that should be checked by URL redirector.
 
-Dereferenced links are cached in Redis (see [here](/doc/configuration/redis.html) for information on configuring redis), checked by SURBL module and added as tags for other modules.
+Dereferenced links are cached in Redis (see [here](/configuration/redis) for information on configuring redis), checked by SURBL module and added as tags for other modules.
 
 # Configuration
 

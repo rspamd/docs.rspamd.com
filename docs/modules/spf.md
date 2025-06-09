@@ -34,4 +34,4 @@ To configure the SPF module, you have the option to manually specify the cache s
 
 ## Using SPF with forwarding
 
-If your MTA is placed behind some trusted forwarder you can still check SPF policies for the originating domains and IP addresses. Please consider checking the [external relay](external_relay.html) documentation. There is a legacy option `external_relay` in SPF plugin itself but it is kept for compatibility and should not be used nowadays.
+If your MTA is placed behind some trusted forwarder you can still check SPF policies for the originating domains and IP addresses. Please consider checking the [external relay](/modules/external_relay) documentation. There is a legacy option `external_relay` in SPF plugin itself but it is kept for compatibility and should not be used nowadays.

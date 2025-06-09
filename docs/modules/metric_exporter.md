@@ -9,7 +9,7 @@ Metric exporter collects statistics from Rspamd and feeds them to external monit
 [Graphite](https://graphiteapp.org/) is the only supported backend for now. 
 
 Besides, if you want to use `pull` model to collect statistics from Rspamd, we provide support for [Prometheus](https://prometheus.io/) endpoint.
-Please have a look at [Controller worker](/doc/workers/controller.html) and [Controller HTTP endpoints](/doc/developers/protocol.html#controller-http-endpoints)
+Please have a look at [Controller worker](/workers/controller) and [Controller HTTP endpoints](/developers/protocol#controller-http-endpoints)
 for further information.
 
 ### Configuration

@@ -22,9 +22,9 @@ The following elements are valid in the rules of this module:
 
 Only one of `honor_action` or `require_action` should be set on a given rule.
 
-[Composite expressions](/doc/configuration/composites.html#composite-expressions) can be used for `expression`.
+[Composite expressions](/configuration/composites#composite-expressions) can be used for `expression`.
 
-[Selectors](../configuration/selectors.html) can be used to generate dynamic `message`. The selector expression must be enclosed in `${}`.
+[Selectors](/configuration/selectors) can be used to generate dynamic `message`. The selector expression must be enclosed in `${}`.
 
 ### Execution Order
 

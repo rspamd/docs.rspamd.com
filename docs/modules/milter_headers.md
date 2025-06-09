@@ -6,13 +6,13 @@ title: Milter headers module
 # Milter headers module
 {:.no_toc}
 
-The `milter headers` module (formerly known as `rmilter headers`) has been added in Rspamd 1.5 to provide a relatively simple way to configure adding/removing of headers via Rmilter (the alternative being to use the [API](/doc/lua/rspamd_task.html#me7351)). Despite its name, it is not tied to the `milter` protocol and also works with supported mailservers that use the HTTP interface such as Haraka and OpenSMTPD.
+The `milter headers` module (formerly known as `rmilter headers`) has been added in Rspamd 1.5 to provide a relatively simple way to configure adding/removing of headers via Rmilter (the alternative being to use the [API](/lua/rspamd_task#me7351)). Despite its name, it is not tied to the `milter` protocol and also works with supported mailservers that use the HTTP interface such as Haraka and OpenSMTPD.
 
 
 
 ## Principles of operation
 
-The `milter headers` module offers several routines for adding/removing common headers, which can be selectively enabled and configured according to specific needs. Additionally, users have the flexibility to add their own custom routines to the configuration or add them directly from [Lua](/doc/lua/rspamd_task.html#m70081).
+The `milter headers` module offers several routines for adding/removing common headers, which can be selectively enabled and configured according to specific needs. Additionally, users have the flexibility to add their own custom routines to the configuration or add them directly from [Lua](/lua/rspamd_task#m70081).
 
 ## Configuration
 
@@ -399,7 +399,7 @@ routines {
 }
 ~~~
 
-If the [Antivirus module](/doc/modules/antivirus.html) detects any viruses in an email, the module adds a header that contains the names of the viruses detected by the configured scanners.
+If the [Antivirus module](/modules/antivirus) detects any viruses in an email, the module adds a header that contains the names of the viruses detected by the configured scanners.
 
 ## Custom routines
 

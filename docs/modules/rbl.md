@@ -106,7 +106,7 @@ Optional parameters (and their defaults if applicable) are as follows:
 - `resolve_ip` - resolve the domain to IP address
 - `returnbits` - dictionary of symbols mapped to bit positions; if the bit in the specified position is set the symbol will be returned
 - `returncodes` - dictionary of symbols mapped to lua patterns; if result returned by the RBL matches the pattern the symbol will be returned
-- `returncodes_matcher` - a specific mechanism for testing `returncodes`, see [details](/doc/modules/rbl.html#returncodes-matchers)
+- `returncodes_matcher` - a specific mechanism for testing `returncodes`, see [details](/modules/rbl#returncodes-matchers)
 - `selector_flatten` (true) - when disabled will lookup result of chained selector as a single label without any separator
 - `selector` - one or more selectors producing data to look up in this RBL; see section on selectors for more information
 - `unknown` (false) - yield default symbol if `returncodes` or `returnbits` is specified and RBL returns unrecognised result
@@ -526,7 +526,7 @@ rules {
 
 ## Use of URL redirectors
 
-The SURBL module is designed to work in conjunction with the [url_redirector module](./url_redirector.html) which is capable of resolving known redirectors and extracting the actual URL for the SURBL module to check. You can refer to the url_redirector module's documentation for more information on how to use it. Once the url_redirector module has resolved the actual URL, the SURBL module will automatically use the results to perform its checks.
+The SURBL module is designed to work in conjunction with the [url_redirector module](/modules/url_redirector) which is capable of resolving known redirectors and extracting the actual URL for the SURBL module to check. You can refer to the url_redirector module's documentation for more information on how to use it. Once the url_redirector module has resolved the actual URL, the SURBL module will automatically use the results to perform its checks.
 
 ## Selectors
 
