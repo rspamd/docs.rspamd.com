@@ -12,6 +12,7 @@ const config = {
   favicon: 'img/favicon.png',
   markdown: {
     format: 'detect',
+    mermaid: true,
     mdx1Compat: {
       comments: true,
       admonitions: true,
@@ -57,6 +58,8 @@ const config = {
       }),
     ],
   ],
+
+  themes: ['@docusaurus/theme-mermaid'],
 
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
@@ -226,6 +229,17 @@ const config = {
           ]
         },
         additionalLanguages: ['lua', 'nginx'],
+      },
+      mermaid: {
+        theme: {
+          light: 'neutral',
+          dark: 'dark',
+        },
+        options: {
+          maxTextSize: 50,
+          maxEdges: 20,
+          maxHeight: 2000,
+        },
       },
     }),
 };
