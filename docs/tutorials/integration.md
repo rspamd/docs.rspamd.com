@@ -32,33 +32,72 @@ Milter integration is widely supported by traditional MTAs and offers:
 ### HTTP-based Integration with HTTPS Security
 
 ```mermaid
-graph LR
-    subgraph "Secure HTTP Integration"
-        MTA[Mail Transfer Agent<br/>Postfix/Exim/Haraka] --> nginx[nginx Reverse Proxy<br/>HTTPS/TLS]
-        nginx --> rspamd[Rspamd<br/>HTTP API]
-        
-        subgraph "Alternative: HTTPCrypt"
-            MTA2[Mail Transfer Agent] --> rspamdclient[rspamdclient library<br/>HTTPCrypt encryption]
-            rspamdclient --> rspamd2[Rspamd<br/>HTTPCrypt endpoint]
-        end
+graph TD
+    subgraph "Email Infrastructure"
+        MTA[Mail Transfer Agent]
     end
+    
+    subgraph "Security Layer"
+        nginx[nginx Reverse Proxy]
+        tls{TLS Encryption}
+    end
+    
+    subgraph "Rspamd Core"
+        rspamd[Rspamd Endpoint]
+        redis[(Redis database)]
+    end
+    
+    subgraph "Alternative: HTTPCrypt"
+        client[rspamdclient Library]
+        crypt{HTTPCrypt}
+        rspamd2[Rspamd Endpoint]
+    end
+    
+    MTA --> nginx
+    nginx --> tls
+    tls --> rspamd
+    rspamd --> redis
+    
+    MTA -.-> client
+    client --> crypt
+    crypt --> rspamd2
+    rspamd2 --> redis
 ```
 
 ### Milter Protocol Integration
 
 ```mermaid
-graph LR
-    subgraph "Milter Integration"
-        MTA[Mail Transfer Agent<br/>Postfix/Sendmail] --> proxy[Rspamd Proxy Worker<br/>Milter Protocol]
-        proxy --> worker[Rspamd Scanner Worker]
-        
-        subgraph "Rspamd Components"
-            proxy
-            worker
-            redis[(Redis<br/>Statistics & Cache)]
-            worker --> redis
-        end
+graph TD
+    subgraph "Mail Infrastructure"
+        postfix[Postfix MTA]
+        sendmail[Sendmail MTA]
     end
+    
+    subgraph "Rspamd Milter Layer"
+        proxy[Rspamd Proxy Worker]
+        milter{Milter Protocol}
+    end
+    
+    subgraph "Processing Core"
+        scanner[Scanner Worker]
+        modules[Analysis Modules]
+        redis[(Redis Database)]
+    end
+    
+    subgraph "Response"
+        actions[Actions]
+        response[SMTP Response]
+    end
+    
+    postfix --> proxy
+    sendmail --> proxy
+    proxy --> milter
+    milter --> scanner
+    scanner --> modules
+    modules --> redis
+    scanner --> actions
+    actions --> response
+    response --> proxy
 ```
 
 ## Supported MTAs and Integration Methods
