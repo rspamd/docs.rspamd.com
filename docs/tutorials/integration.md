@@ -2,33 +2,96 @@
 title: MTA integration
 ---
 
-
 # MTA integration
 
-Rspamd is easily integrable with [Exim](/doc/tutorials/integration.html#integration-with-exim-mta) and [Postfix](/doc/tutorials/integration.html#using-rspamd-with-postfix-mta) among other opensource & commercial MTAs.
+Rspamd provides flexible integration options with mail transfer agents (MTAs) through two primary methods: **HTTP-based integration** and **Milter protocol integration**. Each method has its advantages and is suitable for different deployment scenarios.
 
-Refer to the table below for integration instructions relevant to your MTA:
+## Integration Methods Overview
 
-| MTA | Integration | License |
-| --- | ----------- | ------- |
-| [Apache James](/doc/tutorials/integration.html#integration-with-apache-james) | HTTP | Apache 2.0 |
-| Axigen | Milter | Proprietary |
-| Communigate Pro | Custom/HTTP | Proprietary |
-| [EmailSuccess](/doc/tutorials/integration.html#integration-with-emailsuccess-mta) | HTTP? | Proprietary |
-| [**Exim**](/doc/tutorials/integration.html#integration-with-exim-mta) | RSPAMC (Legacy); LDA; custom | GPL v2 |
-| [Haraka](/doc/tutorials/integration.html#integration-with-haraka-mta) | HTTP | MIT |
-| [Maddy](https://maddy.email/reference/checks/rspamd) | HTTP | GPL v3 |
-| [OpenSMTPD](https://github.com/poolpOrg/filter-rspamd) | Custom/HTTP | ISC, BSD |
-| [**Postfix**](/doc/tutorials/integration.html#using-rspamd-with-postfix-mta) | Milter; LDA | IBM Public License or Eclipse Public License |
-| [Sendmail](/doc/tutorials/integration.html#using-rspamd-with-sendmail-mta) | Milter; LDA | Sendmail License |
-| SmarterMail | HTTP? | Proprietary |
-| [Stalwart Mail](/doc/tutorials/integration.html#integration-with-stalwart-mail-server) | Milter | AGPL v3 or Commercial |
+### HTTP-based Integration (Recommended)
 
-In addition, [this section of the document](/doc/tutorials/integration.html#lda-mode) delves into rspamc as LDA, a versatile tool that can be employed by virtually any MTA.
+HTTP integration is the **preferred method** when supported by your MTA, offering several advantages:
+
+- **Enhanced Security**: Traffic can be secured using HTTPS through reverse proxies like nginx
+- **Encrypted Communication**: HTTPCrypt protocol support via libraries like the [rspamdclient Rust library](https://github.com/rspamd/rspamdclient-rs)
+- **Scalability**: Better load balancing and horizontal scaling capabilities
+- **Network Flexibility**: Can work across different network segments and remote servers
+- **Protocol Simplicity**: Standard HTTP/HTTPS protocols with JSON payloads
+
+### Milter Protocol Integration
+
+Milter integration is widely supported by traditional MTAs and offers:
+
+- **Broad Compatibility**: Supported by Postfix, Sendmail, and other milter-compatible MTAs
+- **Direct Integration**: Native integration without requiring HTTP libraries
+- **Real-time Processing**: Stream-based processing during SMTP session
+- **Legacy Support**: Works with older MTA configurations
+
+## Integration Architecture Diagrams
+
+### HTTP-based Integration with HTTPS Security
+
+```mermaid
+graph LR
+    subgraph "Secure HTTP Integration"
+        MTA[Mail Transfer Agent<br/>Postfix/Exim/Haraka] --> nginx[nginx Reverse Proxy<br/>HTTPS/TLS]
+        nginx --> rspamd[Rspamd<br/>HTTP API]
+        
+        subgraph "Alternative: HTTPCrypt"
+            MTA2[Mail Transfer Agent] --> rspamdclient[rspamdclient library<br/>HTTPCrypt encryption]
+            rspamdclient --> rspamd2[Rspamd<br/>HTTPCrypt endpoint]
+        end
+    end
+```
+
+### Milter Protocol Integration
+
+```mermaid
+graph LR
+    subgraph "Milter Integration"
+        MTA[Mail Transfer Agent<br/>Postfix/Sendmail] --> proxy[Rspamd Proxy Worker<br/>Milter Protocol]
+        proxy --> worker[Rspamd Scanner Worker]
+        
+        subgraph "Rspamd Components"
+            proxy
+            worker
+            redis[(Redis<br/>Statistics & Cache)]
+            worker --> redis
+        end
+    end
+```
+
+## Supported MTAs and Integration Methods
+
+The table below shows integration options available for different MTAs:
+
+| MTA | HTTP Integration | Milter Integration | License |
+| --- | :--------------: | :----------------: | ------- |
+| [Apache James](tutorials/integration#integration-with-apache-james) | ✅ | ❌ | Apache 2.0 |
+| Axigen | ❌ | ✅ | Proprietary |
+| Communigate Pro | ✅ | ❌ | Proprietary |
+| [EmailSuccess](tutorials/integration#integration-with-emailsuccess-mta) | ✅ | ❌ | Proprietary |
+| [**Exim**](tutorials/integration#integration-with-exim-mta) | ✅ | ❌ | GPL v2 |
+| [Haraka](tutorials/integration#integration-with-haraka-mta) | ✅ | ❌ | MIT |
+| [Maddy](https://maddy.email/reference/checks/rspamd) | ✅ | ❌ | GPL v3 |
+| [OpenSMTPD](https://github.com/poolpOrg/filter-rspamd) | ✅ | ❌ | ISC, BSD |
+| [**Postfix**](tutorials/integration#using-rspamd-with-postfix-mta) | ❌ | ✅ | IBM Public License |
+| [Sendmail](tutorials/integration#using-rspamd-with-sendmail-mta) | ❌ | ✅ | Sendmail License |
+| SmarterMail | ✅ | ❌ | Proprietary |
+| [Stalwart Mail](tutorials/integration#integration-with-stalwart-mail-server) | ❌ | ✅ | AGPL v3 or Commercial |
+
+:::tip Security Recommendation
+When using HTTP integration, always implement HTTPS encryption using either:
+- **nginx reverse proxy** with TLS certificates
+- **HTTPCrypt protocol** for end-to-end encryption
+- **VPN or private networks** for additional network security
+:::
+
+In addition to the primary integration methods, [LDA mode](tutorials/integration#lda-mode) provides a versatile solution that can be employed by virtually any MTA for message processing.
 
 ## Using Rspamd with Postfix MTA
 
-Starting with version 1.6, for integrating Rspamd with Postfix, it is recommended to utilize the Rspamd proxy worker in Milter mode, as described in [rspamd proxy worker](../workers/rspamd_proxy.html). 
+Starting with version 1.6, for integrating Rspamd with Postfix, it is recommended to utilize the Rspamd proxy worker in Milter mode, as described in [rspamd proxy worker](workers/rspamd_proxy). 
 
 ### Configuring Postfix
 
@@ -135,21 +198,21 @@ Once this is done, the standard procedure of compiling m4 to cf should be follow
 
 ## Integration with Haraka MTA
 
-The Haraka email server, version 2.7.0 and above, offers support for Rspamd through the [Haraka Rspamd plugin](https://haraka.github.io/plugins/rspamd/){target="_blank"}.
+The Haraka email server, version 2.7.0 and above, offers support for Rspamd through the [Haraka Rspamd plugin](https://haraka.github.io/plugins/rspamd/).
 
 To activate this feature: run `npm install haraka-plugin-rspamd`, add `rspamd` to the `DATA` section of your `config/plugins` file and create a `config/rspamd.ini` file to suit your needs if needed.
 
-For more information, see the <a href="https://haraka.github.io/plugins/rspamd/" target="_blank">Haraka rspamd plugin documentation</a>.
+For more information, see the [Haraka rspamd plugin documentation](https://haraka.github.io/plugins/rspamd/).
 
 ## Integration with EmailSuccess MTA
 
-Support for rspamd is available from <a href="https://www.emailsuccess.com/emailsuccess-introduces-rspamd-integration" target="_blank">EmailSuccess v11.19</a>.
+Support for rspamd is available from [EmailSuccess v11.19](https://www.emailsuccess.com/emailsuccess-introduces-rspamd-integration).
 
 To enable it, navigate to the administration console and type `filter-module-set rspamd enabled true`. Customize your filtering options using the `filter-module-show rspamd` and `filter-module-set rspamd` commands to suit your preferences.
 
 Additionally, you will need to enable the filter for each input interface (both SMTP and API) using the `input-set INPUT1 filter enabled`, `ws-set rest_filter true` and `ws-set soap_filter true` commands.
 
-For further information, refer to the <a href="https://doc.emailsuccess.com" target="_blank">EmailSuccess documentation</a>.
+For further information, refer to the [EmailSuccess documentation](https://doc.emailsuccess.com).
 
 ## LDA mode
 
@@ -188,7 +251,7 @@ For further information, please refer to the James' extensions for Rspamd docume
 
 ## Integration with Stalwart Mail Server
 
-Rspamd can easily be integrated with Stalwart Mail Server using the `milter` protocol. In order to enable Milter support in rspamd, follow the instructions in the [proxy worker](../workers/rspamd_proxy.html) chapter. 
+Rspamd can easily be integrated with Stalwart Mail Server using the `milter` protocol. In order to enable Milter support in rspamd, follow the instructions in the [proxy worker](workers/rspamd_proxy) chapter. 
 
 After setting up the proxy worker to handle milter requests, configure Stalwart Mail Server to use rspamd via milter by adding the following entries to the `etc/config.toml` configuration file:
 
