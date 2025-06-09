@@ -21,6 +21,7 @@
     "@docusaurus/theme-mermaid": "^3.8.1",
     "@docusaurus/theme-search-algolia": "^3.8.1",
     "@mdx-js/react": "^3.0.0",
+    "marked": "^15.0.12",
     "prism-react-renderer": "^2.3.0",
     "rehype-raw": "^7.0.0",
     "remark-gfm": "^4.0.0"

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { marked } from 'marked';
 import styles from './ChangelogEntry.module.css';
 
 export default function ChangelogEntry({ release, typeInfo }) {
@@ -10,6 +11,19 @@ export default function ChangelogEntry({ release, typeInfo }) {
       month: 'long',
       day: 'numeric'
     });
+  };
+
+  // Configure marked for inline rendering
+  const renderMarkdown = (text) => {
+    // Configure marked to only render inline elements (no paragraphs)
+    marked.setOptions({
+      breaks: false,
+      gfm: true,
+    });
+    
+    // Remove wrapping <p> tags for inline rendering
+    const html = marked.parse(text);
+    return html.replace(/^<p>|<\/p>$/g, '');
   };
 
   const renderChangeSection = (sectionName, items) => {
@@ -47,9 +61,11 @@ export default function ChangelogEntry({ release, typeInfo }) {
         </h4>
         <ul className={styles.changeList}>
           {items.map((item, index) => (
-            <li key={index} className={styles.changeItem}>
-              {item}
-            </li>
+            <li 
+              key={index} 
+              className={styles.changeItem}
+              dangerouslySetInnerHTML={{ __html: renderMarkdown(item) }}
+            />
           ))}
         </ul>
       </div>
