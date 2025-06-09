@@ -34,11 +34,11 @@ urls:get_tld
 
 Afterwards, these values can be used in various plugins:
 
-* [`multimap`](../modules/multimap.html) - map type equal to `selector`
-* [`ratelimit`](../modules/ratelimit.html) - rate bucket description with `selector` field
-* [`reputation`](../modules/reputation.html) - generic selector rules
-* [`regexp`](../modules/regexp.html) - regular expressions based on selector's data
-* [`rbl`](../modules/rbl.html) - allows selectors in data queries
+* [`multimap`](/modules/multimap) - map type equal to `selector`
+* [`ratelimit`](/modules/ratelimit) - rate bucket description with `selector` field
+* [`reputation`](/modules/reputation) - generic selector rules
+* [`regexp`](/modules/regexp) - regular expressions based on selector's data
+* [`rbl`](/modules/rbl) - allows selectors in data queries
 * [`clustering`] - TBD
 
 Here is an example of Rspamd multimap rule that uses selectors to block bad Sendgrid senders using [Invaluement SPBL](https://www.invaluement.com/serviceproviderdnsbl/):
@@ -332,7 +332,7 @@ You can use these functions in your selectors subsequently.
 
 ## Regular expressions selectors
 
-You can also leverage selectors with Rspamd's [regexp module](../modules/regexp.html). This approach allows you to utilize the data extracted and processed by the selector framework to match it against various regular expressions.
+You can also leverage selectors with Rspamd's [regexp module](/modules/regexp). This approach allows you to utilize the data extracted and processed by the selector framework to match it against various regular expressions.
 
 To start, you'll need to register a selector in the regexp module. You can achieve this by adding the following code to your `rspamd.local.lua` file:
 

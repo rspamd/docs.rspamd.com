@@ -20,7 +20,7 @@ By default, no cache servers are specified in the configuration, meaning that th
 
 `Ratelimit` module supports the following configuration options:
 
-- `servers` - list of servers where ratelimit data is stored; [global settings](/doc/configuration/redis.html) used if not set
+- `servers` - list of servers where ratelimit data is stored; [global settings](/configuration/redis) used if not set
 - `symbol` - if this option is specified, then `ratelimit` plugin just adds the corresponding symbol instead of setting pre-result, the value is scaled as $$ 2 * tanh(\frac{bucket}{threshold * 2}) $$, where `tanh` is the hyperbolic tangent function
 - `info_symbol` (1.7.0+) - if this option is specified the corresponding symbol is inserted *in addition to* setting pre-result.
 - `whitelisted_rcpts` - comma separated list of whitelisted recipients. By default
@@ -43,7 +43,7 @@ the value of this option is 'postmaster, mailer-daemon'. Supported entries are:
 
 ### Ratelimit record
 
-Starting from version 1.8.2, it is possible to define ratelimit buckets using the [selectors framework](../configuration/selectors.html).
+Starting from version 1.8.2, it is possible to define ratelimit buckets using the [selectors framework](/configuration/selectors).
 This means that you can opt to use either a selector or one of the predefine ratelimits:
 
 - `bounce_to`: limit bounces per recipient
@@ -182,7 +182,7 @@ end
 return custom_keywords
 ~~~
 
-The "custom_keywords" table should define one or more functions that receive the [task object](/doc/lua/rspamd_task.html) as input. Each function should return a Redis hash _and_ a limit, for example `return my_redis_hash, "10 / 1m"`. Alternatively, a function can return `nil` to indicate that the ratelimit should not be applied. The ratelimit returned can be in simplified form or a bucket config table.
+The "custom_keywords" table should define one or more functions that receive the [task object](/lua/rspamd_task) as input. Each function should return a Redis hash _and_ a limit, for example `return my_redis_hash, "10 / 1m"`. Alternatively, a function can return `nil` to indicate that the ratelimit should not be applied. The ratelimit returned can be in simplified form or a bucket config table.
 
 ### Legacy ratelimit record
 

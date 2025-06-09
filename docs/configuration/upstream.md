@@ -78,7 +78,7 @@ When an upstream reaches the error rate limit, Rspamd marks it as inactive and w
 
 <img class="img-fluid" width="75%" src="/img/upstreams.png">
 
-To tune these settings, please see the [Upstream options](/doc/configuration/options.html#upstreams-options) documentation.
+To tune these settings, please see the [Upstream options](/configuration/options#upstreams-options) documentation.
 
 ## Name resolution
 

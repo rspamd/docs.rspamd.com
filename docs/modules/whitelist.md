@@ -6,7 +6,7 @@ title: Whitelist module
 # Whitelist module
 
 Whitelist module is intended to decrease or increase scores for some messages that are known to
-be from the trusted sources **based on DKIM/SPF/DMARC policies** (for generic lists please use [multimap module](multimap.html)). 
+be from the trusted sources **based on DKIM/SPF/DMARC policies** (for generic lists please use [multimap module](/modules/multimap)). 
 
 This module exists because the design flaws in the `SMTP` protocol make it relatively simple to forge a sender. Consequently, rspamd endeavors to verify the sender's authenticity by considering the following supplementary policies:
 

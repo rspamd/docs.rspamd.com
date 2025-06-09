@@ -32,7 +32,7 @@ There are a couple of things you need to know before transition:
 2. Rspamd uses `Lua` for plugins and rules, so basic knowledge of this language is more than useful for playing with Rspamd; however, Lua is very simple and can be learned [very quickly](http://lua-users.org/wiki/LuaTutorial)
 3. Rspamd uses the `HTTP` protocol to communicate with the MTA or milter, so SA native milters might not communicate with Rspamd. There is some limited support of the SpamAssassin protocol, though some commands are not supported, in particular those which require copying of data between scanner and milter. More importantly, `Length`-less messages are not supported by Rspamd as they completely break HTTP semantics and will never be supported. To achieve the same functionality, a dedicated scanner could use, e.g. HTTP `chunked` encoding.
 4. Rspamd is **NOT** intended to work with blocking libraries or services, hence, something like `mysql` or `postgresql` will likely not be supported
-5. Rspamd is developing quickly so you should be aware that there might be some incompatible changes between major versions - they are usually listed in the [migration](migration.html) section of the site.
+5. Rspamd is developing quickly so you should be aware that there might be some incompatible changes between major versions - they are usually listed in the [migration](/tutorials/migration) section of the site.
 6. Unlike SA where there are only `spam` and `ham` results, Rspamd supports five levels of messages called `actions`:
 	+ `no action` - ham message
 	+ `greylist` - turn on adaptive greylisting (which is also used on higher levels)
@@ -48,11 +48,11 @@ SA `spam` is almost equal to the Rspamd `add header` action in the default setup
 
 ## First steps with Rspamd
 
-To install Rspamd, I recommend using one of the [official packages](/downloads.html) that are available for many popular platforms. If you'd like to have more features then you can consider the `experimental` branch of packages, while if you would like to have more stability then you can select the `stable` branch. However, normally even the `experimental` branch is stable enough for production use, and bugs are fixed more quickly in the `experimental` branch.
+To install Rspamd, I recommend using one of the [official packages](/downloads) that are available for many popular platforms. If you'd like to have more features then you can consider the `experimental` branch of packages, while if you would like to have more stability then you can select the `stable` branch. However, normally even the `experimental` branch is stable enough for production use, and bugs are fixed more quickly in the `experimental` branch.
 
 ## General SpamAssassin rules
 
-For those who have a lot of custom rules, there is good news: Rspamd supports a certain set of SpamAssassin rules via a special [plugin](../modules/spamassassin.html) that allows **direct** loading of SA rules into Rspamd. You just need to specify your SA configuration files in the plugin configuration:
+For those who have a lot of custom rules, there is good news: Rspamd supports a certain set of SpamAssassin rules via a special [plugin](/modules/spamassassin) that allows **direct** loading of SA rules into Rspamd. You just need to specify your SA configuration files in the plugin configuration:
 
 ~~~hcl
 spamassassin {
@@ -65,7 +65,7 @@ On the other hand, if you don't have a lot of custom rules and primarily use the
 
 ## Integration
 
-If you have your SA up and running it is usually possible to switch the system to Rspamd using the existing tools. However, please check the [integration document](/doc/tutorials/integration.html) for further details.
+If you have your SA up and running it is usually possible to switch the system to Rspamd using the existing tools. However, please check the [integration document](/tutorials/integration) for further details.
 
 ## Statistics
 

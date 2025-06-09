@@ -58,7 +58,7 @@ Rspamd typically defines two types of rules:
 
 Lua rules are useful for performing complex tasks, such as checking DNS, querying Redis or HTTP, and examining task-specific details. Regexp rules are optimized by Rspamd (especially when Hyperscan is enabled) and can be used to match custom patterns in headers, URLs, text parts, and even the entire message body.
 
-There is another option called [selectors](/doc/configuration/selectors.html) that allows you to combine data extraction and transformation routines, so you don't have to write custom Lua code. The selectors framework is also useful for reusing custom extraction/transformation routines in different plugins and even in regular expression constructions.
+There is another option called [selectors](/configuration/selectors) that allows you to combine data extraction and transformation routines, so you don't have to write custom Lua code. The selectors framework is also useful for reusing custom extraction/transformation routines in different plugins and even in regular expression constructions.
 
 ### Rule weights
 
@@ -117,7 +117,7 @@ Keep in mind that the scores you define directly from Lua have lower priority an
 
 ## Regexp rules
 
-Regexp rules are executed by the `regexp` module of Rspamd. You can find a detailed description of the syntax in [the regexp module documentation](/doc/modules/regexp.html)
+Regexp rules are executed by the `regexp` module of Rspamd. You can find a detailed description of the syntax in [the regexp module documentation](/modules/regexp)
 
 To maximize the performance of your regexp rules, consider the following:
 
@@ -183,7 +183,7 @@ rspamd_config.SYMBOL = {
 
 ### Useful task manipulations
 
-There are a number of methods in [task](/doc/lua/rspamd_task.html) objects. For example, you can get any part of a message:
+There are a number of methods in [task](/lua/rspamd_task) objects. For example, you can get any part of a message:
 
 ~~~lua
 rspamd_config.HTML_MESSAGE = {
@@ -269,7 +269,7 @@ rspamd_config.SUBJ_ALL_CAPS = {
 }
 ~~~
 
-You can also access HTTP headers, URLs and other useful properties of Rspamd tasks. Moreover, you can use global convenience modules exported by Rspamd, such as [rspamd_util](/doc/lua/rspamd_util.html) or [rspamd_logger](/doc/lua/rspamd_logger.html) by requiring them in your rules:
+You can also access HTTP headers, URLs and other useful properties of Rspamd tasks. Moreover, you can use global convenience modules exported by Rspamd, such as [rspamd_util](/lua/rspamd_util) or [rspamd_logger](/lua/rspamd_logger) by requiring them in your rules:
 
 ~~~lua
 rspamd_config.SUBJ_ALL_CAPS = {
@@ -400,7 +400,7 @@ if rule['score'] then
 end
 ~~~
 
-You can also use [`coroutines`](/doc/developers/sync_async.html) to simplify your asynchronous code.
+You can also use [`coroutines`](/developers/sync_async) to simplify your asynchronous code.
 
 ## Redis requests
 

@@ -13,7 +13,7 @@ Conversely, if a domain has a high reputation, the DKIM_ALLOW score will have a 
 
 Additionally, this module encompasses the functionality of the following modules:
 
-* [ip_score](ip_score.html) - by means of `ip` component
+* [ip_score](/modules/ip_score) - by means of `ip` component
 * url_reputation - by means of `url` component (removed in Rspamd 2.0)
 
 ## Configuration and principles of work
@@ -151,6 +151,6 @@ There are couple of pre-defined selector types, specifically:
 * DKIM reputation - `dkim` selector
 * IP, asn, country and network reputation - `ip` selector
 * URLs reputation - `url` selector
-* Generic reputation based on [selectors framework](../configuration/selectors) - `generic` selector
+* Generic reputation based on [selectors framework](/configuration/selectors) - `generic` selector
 
 All selector types except for `generic` do not require explicit configuration. The `generic` selector, on the other hand, necessitates the setting of a selector attribute. For more advanced `selector` configurations, you may refer to the module's source code.

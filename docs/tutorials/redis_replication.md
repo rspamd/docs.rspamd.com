@@ -120,7 +120,7 @@ If needed, the `maxmemory` is adjusted for specific instances according to expec
 
 ## Setting up encrypted tunnel using stunnel
 
-Please refer to the [Setting up encrypted tunnel using stunnel](./stunnel_setup.html) guide.
+Please refer to the [Setting up encrypted tunnel using stunnel](/tutorials/stunnel_setup/) guide.
 
 ## Replica instances configuration
 

@@ -70,8 +70,8 @@ The match type is defined by a flag that appears after the last `/` symbol. This
 | `Q`  | `{raw_mime}`    | Text MIME part raw content (unmodified by Rspamd) |
 | `C`  | `{sa_body}`     | SpamAssassin `body` analogue (see body pattern test description in [SpamAssassin documentation](https://spamassassin.apache.org/full/3.4.x/doc/Mail_SpamAssassin_Conf.html#RULE-DEFINITIONS-AND-PRIVILEGED-SETTINGS)); if charset is not UTF-8, Rspamd tries to convert text to UTF-8 |
 | `D`  | `{sa_raw_body}` | SpamAssassin `rawbody` analogue (raw data inside text parts, base64/quoted-printable is decoded, but HTML tags and line breaks are preserved) |
-| `U`  | `{url}`         | URLs (before 2.4 also email addresses extracted from the message body, in the same form as returned by [url:tostring()](../lua/rspamd_url.html#m6b648)) |
-| `$`  | `{selector}`    | Strings returned by a [selector](../configuration/selectors.html#regular-expressions-selectors) (from 1.8) |
+| `U`  | `{url}`         | URLs (before 2.4 also email addresses extracted from the message body, in the same form as returned by [url:tostring()](/lua/rspamd_url#m6b648)) |
+| `$`  | `{selector}`    | Strings returned by a [selector](/configuration/selectors#regular-expressions-selectors) (from 1.8) |
 |      | `{email}`       | Emails extracted from the message body (from 2.4) |
 |      | `{words}`       | Unicode normalized (to [NFKC](https://www.unicode.org/reports/tr15/#Norm_Forms)) and lower-cased words extracted from the text (excluding URLs), subject and From displayed name |
 |      | `{raw_words}`   | The same words, but without normalization (converted to utf8 however) |
@@ -173,7 +173,7 @@ config.regexp.BLA = {
 }
 ~~~
 
-Please note that you **cannot** use asynchronous functions, including those with  [coroutines](/doc/developers/sync_async.html), in these Lua snippets, as Rspamd will not wait for them to finish. The only way to use such functions in Regexp expressions is to create a dedicated rule that performs asynchronous tasks, register the dependency for the regexp symbol using `rspamd_config:register_dependency('RE_SYMBOL', 'ASYNC_SYMBOL')`, and then call `task:has_symbol('ASYNC_SYMBOL')` in the Lua function defined in the Regexp expression.
+Please note that you **cannot** use asynchronous functions, including those with  [coroutines](/developers/sync_async), in these Lua snippets, as Rspamd will not wait for them to finish. The only way to use such functions in Regexp expressions is to create a dedicated rule that performs asynchronous tasks, register the dependency for the regexp symbol using `rspamd_config:register_dependency('RE_SYMBOL', 'ASYNC_SYMBOL')`, and then call `task:has_symbol('ASYNC_SYMBOL')` in the Lua function defined in the Regexp expression.
 
 ## Regexp prefilters
 

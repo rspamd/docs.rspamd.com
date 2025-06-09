@@ -95,7 +95,7 @@ To increase the `expire` value, it is necessary first to make the tokens persist
 
 The memory usage of the statistics dataset can be managed using the Redis `maxmemory` directive and `volatile-ttl` eviction policy. If the memory usage exceeds the set "maxmemory" limit, Redis will evict keys with shorter TTLs in accordance with the policy. Additionally, memory usage can be maintained at a nearly constant level by setting the TTL to an extremely high value, causing keys to be evicted instead of expiring.
 
-To ensure that the memory limit and eviction policy only apply to the Bayesian statistics dataset, it should be stored in a separate Redis instance. A comprehensive explanation on configuring multi-instance Redis can be found in the [Redis replication](../tutorials/redis_replication.html) tutorial.
+To ensure that the memory limit and eviction policy only apply to the Bayesian statistics dataset, it should be stored in a separate Redis instance. A comprehensive explanation on configuring multi-instance Redis can be found in the [Redis replication](/tutorials/redis_replication) tutorial.
 
 `local.d/classifier-bayes.conf`:
 

@@ -436,8 +436,8 @@ For experienced users who want to dive deeper:
 - [Milter Protocol Configuration](/workers/rspamd_proxy)
 
 ### Large-Scale Deployments
-- [Redis Replication](/tutorials/redis_replication.html) 
-- [Neural Networks Setup](/modules/neural.html)
+- [Redis Replication](/tutorials/redis_replication) 
+- [Neural Networks Setup](/modules/neural)
 - [Clickhouse Analytics](./clickhouse_analytics)
 
 ### Security Considerations

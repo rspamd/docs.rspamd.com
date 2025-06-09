@@ -73,7 +73,7 @@ classifier "bayes" {
 .include(try=true; priority=10) "$LOCAL_CONFDIR/override.d/statistic.conf"
 ~~~
 
-You are also recommended to use [`bayes_expiry` module](/doc/modules/bayes_expiry.html) to maintain your statistics database.
+You are also recommended to use [`bayes_expiry` module](/modules/bayes_expiry) to maintain your statistics database.
 
 Please note that `classifier-bayes.conf` is include config of `statistic.conf` which created for user's simplicity.
 
@@ -155,7 +155,7 @@ EOD
 
 #### Sharding
 
-Starting from version 3.9, per-user statistics can be sharded across different Redis servers using the [hash algorithm](/doc/configuration/upstream.html#hash-algorithm).
+Starting from version 3.9, per-user statistics can be sharded across different Redis servers using the [hash algorithm](/configuration/upstream#hash-algorithm).
 
 Example of using two stand-alone master shards without read replicas:
 ~~~hcl

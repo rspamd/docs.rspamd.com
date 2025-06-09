@@ -5,7 +5,7 @@ title: Usage of fuzzy hashes
 
 # Usage of fuzzy hashes
 
-[Russian version](./fuzzy_storage.ru.html)
+[Russian version](/tutorials/fuzzy_storage.ru/)
 
 ## Introduction
 
@@ -25,9 +25,9 @@ The source data for fuzzy hash storage includes both spam and legitimate (non-sp
 
 This page is intended for mail system administrators who want to create and maintain their own hash storage and for those who want to understand how rspamd.com serves as a third-party resource. More details can be found in other pages here, including:
 
-- [Fuzzy Check module](/doc/modules/fuzzy_check.html)
-- [Fuzzy Storage Workers](/doc/workers/fuzzy_storage.html)
-- [Rspamd.com infrastructure policies](/doc/other/usage_policy.html)
+- [Fuzzy Check module](/modules/fuzzy_check)
+- [Fuzzy Storage Workers](/workers/fuzzy_storage)
+- [Rspamd.com infrastructure policies](/other/usage_policy)
 
 ----
 
@@ -88,7 +88,7 @@ Another way to create a trap is to find domains that were popular in the past bu
 
 ## Step 2: Configuring storage
 
-The Rspamd process that is responsible for fuzzy hash storage is called the [`fuzzy_storage`](/doc/workers/fuzzy_storage.html) worker. The information here should be useful whether you are using local or remote storage.
+The Rspamd process that is responsible for fuzzy hash storage is called the [`fuzzy_storage`](/workers/fuzzy_storage) worker. The information here should be useful whether you are using local or remote storage.
 
 This process performs the following functions which will be detailed below.
 
@@ -104,7 +104,7 @@ An `.include` directive there links to `/etc/rspamd/local.d/worker-fuzzy.inc`, w
 
 ### Sample configuration
 
-The following is a sample configuration for this fuzzy storage worker process, which will be explained and referred to below. Please refer to [this page](/doc/workers/fuzzy_storage.html#configuration) for any settings not profiled here.
+The following is a sample configuration for this fuzzy storage worker process, which will be explained and referred to below. Please refer to [this page](/workers/fuzzy_storage#configuration) for any settings not profiled here.
 
 ~~~hcl
 worker "fuzzy" {
@@ -134,7 +134,7 @@ By default, the fuzzy_storage process is not active, with the `count=-1` directi
 
 The `expire` and `sync` values are related to database cleanup and performance, as described below.
 
-Fuzzy storage works with hashes and not with email messages. A [worker/scanner process](/doc/workers/normal.html) or a [controller process](/doc/workers/controller.html) convert emails to hashes before connecting to this process for fuzzy processing. In this sample, we see the fuzzy storage process that operates on the sqlite database is listening on socket 11335 for UDP requests from the other processes to query or update the storage. 
+Fuzzy storage works with hashes and not with email messages. A [worker/scanner process](/workers/normal) or a [controller process](/workers/controller) convert emails to hashes before connecting to this process for fuzzy processing. In this sample, we see the fuzzy storage process that operates on the sqlite database is listening on socket 11335 for UDP requests from the other processes to query or update the storage. 
 
 <center><img class="img-fluid" src="/img/rspamd-fuzzy-2.png" width="75%"></center>
 
@@ -170,7 +170,7 @@ worker "fuzzy" {
 }
 ~~~
 
-The `allow_update` setting is a comma-delimited array of strings, or a [map](/doc/modules/multimap.html) of IP addresses, that are allowed to perform changes to fuzzy storage - You should also set `read_only` = no in your fuzzy_check plugin, see step 3 below.
+The `allow_update` setting is a comma-delimited array of strings, or a [map](/modules/multimap) of IP addresses, that are allowed to perform changes to fuzzy storage - You should also set `read_only` = no in your fuzzy_check plugin, see step 3 below.
 
 
 ### Transport protocol encryption
@@ -366,7 +366,7 @@ Initially, rspamd only supported the [siphash](https://en.wikipedia.org/wiki/Sip
 
 For the vast majority of configurations we recommend `mumhash` or `fasthash` (also called `fast`). These algorithms perform well on a wide range of platforms, and `mumhash` is currently the default for all new storage. `siphash` (also called `old`) is only supported for legacy purposes.
 
-You can evaluate the performance of different algorithms yourself by [compiling the tests set](/doc/developers/writing_tests.html) from rspamd sources:
+You can evaluate the performance of different algorithms yourself by [compiling the tests set](/developers/writing_tests) from rspamd sources:
 
 ```
 $ make rspamd-test
@@ -382,7 +382,7 @@ test/rspamd-test -p /rspamd/shingles
 
 ### Condition scripts for the learning
 
-As the `fuzzy_check` plugin is responsible for learning, we create the script within its configuration. This script determines whether an email is suitable for learning. The script should return a Lua function with a single argument of type [`rspamd_task`](/doc/lua/rspamd_task.html) type. The function should return a boolean value (`true` to learn, `false` to skip learning), or a pair consisting of a boolean value and a numeric value (to modify the hash flag value, if necessary). Parameter `learn_condition` is used to setup learn script. The most convenient way to set the script is to write it as a multiline string supported by `UCL`:
+As the `fuzzy_check` plugin is responsible for learning, we create the script within its configuration. This script determines whether an email is suitable for learning. The script should return a Lua function with a single argument of type [`rspamd_task`](/lua/rspamd_task) type. The function should return a boolean value (`true` to learn, `false` to skip learning), or a pair consisting of a boolean value and a numeric value (to modify the hash flag value, if necessary). Parameter `learn_condition` is used to setup learn script. The most convenient way to set the script is to write it as a multiline string supported by `UCL`:
 
 ~~~hcl
 # Fuzzy check plugin configuration snippet

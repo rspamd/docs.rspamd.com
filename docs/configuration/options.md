@@ -53,7 +53,7 @@ control_socket = "$DBDIR/rspamd.sock mode=0600";
 |`control_socket`| path/bind for the control socket
 |`cores_dir`| directory where Rspamd should drop core files
 |`disable_hyperscan`| disable Hyperscan optimizations (if enabled at compile time)
-|`disable_monitoring`| if this flag is set to `true` then [RBL](../modules/rbl.html) monitoring is disabled completely
+|`disable_monitoring`| if this flag is set to `true` then [RBL](/modules/rbl) monitoring is disabled completely
 |`disable_pcre_jit`| disable PCRE JIT
 |`dns_max_requests`| maximum DNS requests per task (default: 64)
 |`dns_nameserver`| legacy option for DNS servers used
@@ -66,7 +66,7 @@ control_socket = "$DBDIR/rspamd.sock mode=0600";
 |`enable_test_patterns`| enable test GTUBE like patterns (not for production!)
 |`events_backend`| events backend to use: kqueue, epoll, select, poll or auto (default: auto)
 |`explicit_modules`| always load modules from the list even if they have no configuration section in the file
-|`filters`| comma separated string that defines enabled **internal** (not Lua) Rspamd filters; for a list of the internal filters please check the [modules page](../modules/)
+|`filters`| comma separated string that defines enabled **internal** (not Lua) Rspamd filters; for a list of the internal filters please check the [modules page](/modules/)
 |`fips_mode`| enable FIPS 140-2 mode in OpenSSL
 |`full_gc_iters`| task scanned before memory gc is performed (default: 0 - disabled)
 |`heartbeat_interval`| time between workers heartbeats (default: 10.0)
@@ -95,7 +95,7 @@ control_socket = "$DBDIR/rspamd.sock mode=0600";
 |`max_urls`| maximum count of URLs to process to avoid DoS (default: 10240)
 |`max_word_len`| maximum length of the word to be considered in statistics/fuzzy
 |`min_word_len`| minimum size in letters (valid for utf-8 as well) for a sequence of characters to be treated as a word; normally Rspamd skips sequences if they are shorter or equal to three symbols
-|`monitoring_watch_interval`| monitoring watch interval for the periodic checks of [RBL](../modules/rbl.html) and some other resources, 60 seconds by default
+|`monitoring_watch_interval`| monitoring watch interval for the periodic checks of [RBL](/modules/rbl) and some other resources, 60 seconds by default
 |`neighbours`| list of servers in Rspamd cluster
 |`one_shot`| if this flag is set to `true` then multiple rule triggers do not increase the total score of messages (however, this option can also be individually configured in the `metric` section for each symbol)
 |`pid_file`| file used to store PID of the Rspamd main process (not used with syst.html)
@@ -132,7 +132,7 @@ options {
 }
 ~~~
 
-You can also specify another configuration of DNS servers selection strategy using [upstream](./upstream.html) syntax, e.g.:
+You can also specify another configuration of DNS servers selection strategy using [upstream](/configuration/upstream) syntax, e.g.:
 
 ~~~hcl
 options {
@@ -176,7 +176,7 @@ neighbours {
 
 However, if you plan to access the WebUI on this host, it is advisable to configure a more appropriate and relevant entry.
 
-If you have [a reverse proxy with TLS](/doc/tutorials/quickstart.html#setting-up-the-webui) in front of Rspamd, explicitly specify the protocol and port in the `host` directive:
+If you have [a reverse proxy with TLS](/tutorials/quickstart#setting-up-the-webui) in front of Rspamd, explicitly specify the protocol and port in the `host` directive:
 
 ~~~hcl
 neighbours {
@@ -204,7 +204,7 @@ neighbours {
 
 ## Upstreams options
 
-Upstreams logic and settings are described in the dedicated [document](/doc/configuration/upstream.html).
+Upstreams logic and settings are described in the dedicated [document](/configuration/upstream).
 Options for upstreams fall under a dedicated subsection called `upstream` and control their behaviors in Rspamd. Here is a list of available tunables:
 
 * `error_time` (defaults to `10`): timeframe to check errors in seconds

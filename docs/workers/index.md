@@ -14,11 +14,11 @@ This worker type acts as a proxy for Rspamd's Lua API.
 
 Currently Rspamd defines the following worker types:
 
-- [normal](normal.html): this worker is designed to scan mail messages
-- [controller](controller.html): this worker performs configuration actions, such as
+- [normal](/workers/normal): this worker is designed to scan mail messages
+- [controller](/workers/controller): this worker performs configuration actions, such as
 learning, adding fuzzy hashes and serving web interface requests
-- [fuzzy_storage](fuzzy_storage.html): stores fuzzy hashes
-- [rspamd_proxy](rspamd_proxy.html): handles requests forwarding and milter protocol
+- [fuzzy_storage](/workers/fuzzy_storage): stores fuzzy hashes
+- [rspamd_proxy](/workers/rspamd_proxy): handles requests forwarding and milter protocol
 
 ## Workers connections
 
@@ -30,7 +30,7 @@ It's important to note that Rspamd workers are **not** meant to operate in an un
 the Internet. Currently, there are no provisions for secrecy or integrity control in these protocols, and
 using plain HTTP might potentially leak sensitive information.
 
-[Fuzzy worker](fuzzy_storage.html) is different: it is intended to serve external requests, however, it
+[Fuzzy worker](/workers/fuzzy_storage) is different: it is intended to serve external requests, however, it
 listens on an UDP port and does not save any state information.
 
 ## Common worker options

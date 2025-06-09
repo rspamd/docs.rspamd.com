@@ -11,17 +11,17 @@ This document provides instructions on setting up a Redis cache in Rspamd.
 
 The [Redis](https://redis.io) cache server, is utilized as a highly efficient key-value storage by various Rspamd modules, including the following:
 
-* [Ratelimit plugin](/doc/modules/ratelimit.html) uses Redis to store limits buckets
-* [Greylisting module](/doc/modules/greylisting.html) stores data and meta hashes inside Redis
-* [DMARC module](/doc/modules/dmarc.html) can save DMARC reports inside Redis keys
-* [Replies plugin](/doc/modules/replies.html) requires Redis to save message ids hashes for outgoing messages
-* [IP score plugin](/doc/modules/ip_score.html) uses Redis to store data about AS, countries and networks reputation
-* [Multimap module](/doc/modules/multimap.html) can use Redis as readonly database for maps
-* [MX Check module](/doc/modules/mx_check.html) uses Redis for caching
-* [Reputation module](/doc/modules/reputation.html) uses Redis for caching
-* [Neural network module](/doc/modules/neural.html) uses Redis for data storage
+* [Ratelimit plugin](/modules/ratelimit) uses Redis to store limits buckets
+* [Greylisting module](/modules/greylisting) stores data and meta hashes inside Redis
+* [DMARC module](/modules/dmarc) can save DMARC reports inside Redis keys
+* [Replies plugin](/modules/replies) requires Redis to save message ids hashes for outgoing messages
+* [IP score plugin](/modules/ip_score) uses Redis to store data about AS, countries and networks reputation
+* [Multimap module](/modules/multimap) can use Redis as readonly database for maps
+* [MX Check module](/modules/mx_check) uses Redis for caching
+* [Reputation module](/modules/reputation) uses Redis for caching
+* [Neural network module](/modules/neural) uses Redis for data storage
 
-Furthermore, Redis is used to store Bayes tokens in the [statistics](/doc/configuration/statistic.html) module. Rspamd offers multiple configuration options for Redis storage. Moreover, Redis [replication](https://redis.io/docs/management/replication/)is supported, enabling Rspamd to **write** values to one set of Redis servers and **read** data from another set.
+Furthermore, Redis is used to store Bayes tokens in the [statistics](/configuration/statistic) module. Rspamd offers multiple configuration options for Redis storage. Moreover, Redis [replication](https://redis.io/docs/management/replication/)is supported, enabling Rspamd to **write** values to one set of Redis servers and **read** data from another set.
 
 ## Redis setup
 
@@ -52,7 +52,7 @@ By default, Rspamd uses port `6379` for Redis. Alternatively, you can define the
 ~~~
 
 You can simplify the configuration of Redis options for each individual module by using a common `redis` section. This can be done by defining the section in a separate file, such as `/etc/rspamd/local.d/redis.conf`. This approach helps streamline the configuration process and make it more organized. 
-For more detailed information, you can refer to the [upstreams documentation](/doc/configuration/upstream.html).
+For more detailed information, you can refer to the [upstreams documentation](/configuration/upstream).
 
 ~~~hcl
 # /etc/rspamd/local.d/redis.conf
@@ -89,9 +89,9 @@ This configuration snippet prevents the `ratelimit` module from using the common
 
 Rspamd supports the following Redis options (common for all modules):
 
-* `servers`: [upstreams list](/doc/configuration/upstream.html) for both read and write requests
-* `read_servers`: [upstreams list](/doc/configuration/upstream.html) for read only servers (usually replication slaves)
-* `write_servers`: [upstreams list](/doc/configuration/upstream.html) for write only servers (usually replication master)
+* `servers`: [upstreams list](/configuration/upstream) for both read and write requests
+* `read_servers`: [upstreams list](/configuration/upstream) for read only servers (usually replication slaves)
+* `write_servers`: [upstreams list](/configuration/upstream) for write only servers (usually replication master)
 * `timeout`: timeout in seconds to get reply from Redis (e.g. `0.5s` or `1min`)
 * `db`: number of database to use (by default, Rspamd will use the default Redis database with number `0`)
 * `password`: password to connect to Redis (no password by default)
@@ -106,7 +106,7 @@ Starting from version 1.7.0, if you set the `redis.expand_keys` configuration pa
 Given this setting is enabled, where-ever names of keys could be specified in configuration special values could be used, for example `map = "redis://${ip}!foo` in multimap configuration would dynamically set key name to something like `1.2.3.4!foo`. Variable names which could be used are as follows:
 
 * `ip`: sending IP of a message
-* `principal_recipient`: the address of the [principal recipient](/doc/lua/rspamd_task.html#mc5168) of a message (`Deliver-To` request header, first SMTP recipient or MIME recipient according to availability)
+* `principal_recipient`: the address of the [principal recipient](/lua/rspamd_task#mc5168) of a message (`Deliver-To` request header, first SMTP recipient or MIME recipient according to availability)
 * `principal_recipient_domain`: the domain name of the principal recipient
 * `esld_principal_recipient_domain`: the domain name of the principal recipient, normalised to eSLD
 * `smtp_from`: SMTP sender address

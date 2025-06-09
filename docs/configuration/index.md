@@ -5,7 +5,7 @@ title: Rspamd configuration
 # Rspamd configuration
 {:.no_toc}
 
-Rspamd employs the Universal Configuration Language (UCL) for its configuration. You can find an extensive description of the UCL format in this [document](ucl.html). Additionally, Rspamd introduces a range of variables and macros to enhance UCL's functionality.
+Rspamd employs the Universal Configuration Language (UCL) for its configuration. You can find an extensive description of the UCL format in this [document](/configuration/ucl). Additionally, Rspamd introduces a range of variables and macros to enhance UCL's functionality.
 
 
 
@@ -31,7 +31,7 @@ vs
 }
 ```
 
-UCL also offers support for the `.include` macro, a feature heavily utilized in Rspamd's configuration. This macro allows the inclusion of other files, enabling the definition of override or merge strategies, establishment of new element priorities, and other beneficial operations. Throughout Rspamd's configuration, nearly all sections are followed by two or three include directives. The following overview outlines how the include macro is employed in Rspamd, while further elaboration can be found in the [Macros Support](ucl.html#macros-support) section of the UCL documentation.
+UCL also offers support for the `.include` macro, a feature heavily utilized in Rspamd's configuration. This macro allows the inclusion of other files, enabling the definition of override or merge strategies, establishment of new element priorities, and other beneficial operations. Throughout Rspamd's configuration, nearly all sections are followed by two or three include directives. The following overview outlines how the include macro is employed in Rspamd, while further elaboration can be found in the [Macros Support](/configuration/ucl#macros-support) section of the UCL documentation.
 
 ```
 .include(param=value,param=value) "filename"
@@ -137,13 +137,13 @@ Rspamd introduces a range of valuable variables designed for use in configuratio
 ## Rspamd basic configuration
 
 ### Overview
-Configuration files that are installed or updated with Rspamd are not meant to be modified directly by the user. Instead, these files should be overridden in site-specific configuration files. You can find more information on this process in the [quickstart](/doc/tutorials/quickstart.html#configuring-rspamd) page.
+Configuration files that are installed or updated with Rspamd are not meant to be modified directly by the user. Instead, these files should be overridden in site-specific configuration files. You can find more information on this process in the [quickstart](/tutorials/quickstart#configuring-rspamd) page.
 
-However, it's important to note that packaging typically avoids overwriting configuration files during upgrades if they have been modified by the user. For a smooth transition when upgrading to a new version of Rspamd, be sure to carefully review the [migration notes](/doc/tutorials/migration.html) for any incompatible configuration changes.
+However, it's important to note that packaging typically avoids overwriting configuration files during upgrades if they have been modified by the user. For a smooth transition when upgrading to a new version of Rspamd, be sure to carefully review the [migration notes](/tutorials/migration) for any incompatible configuration changes.
 
 The Rspamd configuration process begins with the file `$CONFDIR/rspamd.conf`. This file contains several settings and includes references to other files, which in turn might include additional files. The complete configuration is a compilation of all processed files, following the order in which they are encountered.
 
-Each core Rspamd file incorporates an include to the `local.d` folder for local overrides, as well as another include to the `override.d` folder for final overrides. To better understand this architectural approach, you can refer to the [related FAQ](../faq.html#what-are-local-and-override-config-files) and other resources on the topic.
+Each core Rspamd file incorporates an include to the `local.d` folder for local overrides, as well as another include to the `override.d` folder for final overrides. To better understand this architectural approach, you can refer to the [related FAQ](/faq#what-are-local-and-override-config-files) and other resources on the topic.
 
 ### Detail
 The `rspamd.conf` file commences by incorporating `common.conf`:
@@ -152,7 +152,7 @@ The `rspamd.conf` file commences by incorporating `common.conf`:
 .include "$CONFDIR/common.conf"
 ~~~
 
-Within `common.conf`, a Lua script that includes rules is specified as `$RULESDIR/rspamd.lua`. This Lua configuration file is pivotal in Rspamd, as it loads and runs numerous other Lua programs as [modules](../modules/index.html).
+Within `common.conf`, a Lua script that includes rules is specified as `$RULESDIR/rspamd.lua`. This Lua configuration file is pivotal in Rspamd, as it loads and runs numerous other Lua programs as [modules](/modules/).
 
 Note: The variable `$RULESDIR` typically corresponds to a path like `/usr/share/rspamd/rules`.
 
@@ -171,13 +171,13 @@ lua = "$RULESDIR/rspamd.lua"
 
 Each of these `.conf` files defines a specific section, along with corresponding `.include` files that permit local settings to override each section.
 
-- The [metrics.conf](metrics.html) file, formerly featured in this documentation, was deprecated in version 1.7. It was succeeded by `actions.conf` and `groups.conf`.
-- `actions.conf` (without a separate document yet) delineates score thresholds for specific [action](../faq.html#what-are-rspamd-actions) types.
-- `groups.conf` (also without a separate document yet) introduces a singular "group" section housing multiple symbol groups. Each group incorporates `.include` directives pointing to files that detail symbols linked to those groups. ([For more, see](../faq.html#how-to-change-score-for-some-symbol))
-- [composites.conf](composites.html) outlines composite symbols.
-- Statistical filters are defined within [statistic.conf](statistic.html).
-- Rspamd manages module configurations (both for Lua and internal modules) through `.conf` files located in the [modules.d](../modules/index.html) folder. For instance, configurations for the [RBL module](../modules/rbl.html) are specified in "/modules.d/rbl.conf". The `modules.conf` file primarily serves to `.include` all of these module configuration files.
-- User settings receive thorough coverage in the [settings.conf](settings.html) documentation. Each setting can define a unique set of custom metric weights, symbols or action scores, as well as enable or disable specific checks.
+- The [metrics.conf](/configuration/metrics/) file, formerly featured in this documentation, was deprecated in version 1.7. It was succeeded by `actions.conf` and `groups.conf`.
+- `actions.conf` (without a separate document yet) delineates score thresholds for specific [action](/faq#what-are-rspamd-actions) types.
+- `groups.conf` (also without a separate document yet) introduces a singular "group" section housing multiple symbol groups. Each group incorporates `.include` directives pointing to files that detail symbols linked to those groups. ([For more, see](/faq#how-to-change-score-for-some-symbol))
+- [composites.conf](/configuration/composites) outlines composite symbols.
+- Statistical filters are defined within [statistic.conf](/configuration/statistic).
+- Rspamd manages module configurations (both for Lua and internal modules) through `.conf` files located in the [modules.d](/modules/) folder. For instance, configurations for the [RBL module](/modules/rbl) are specified in "/modules.d/rbl.conf". The `modules.conf` file primarily serves to `.include` all of these module configuration files.
+- User settings receive thorough coverage in the [settings.conf](/configuration/settings) documentation. Each setting can define a unique set of custom metric weights, symbols or action scores, as well as enable or disable specific checks.
   
 ~~~hcl
 .include(try=true) "$LOCAL_CONFDIR/rspamd.conf.local"
@@ -193,7 +193,7 @@ modules {
 
 The modules section establishes paths for directories or specific files. When a directory is specified, all files in that folder with a `.lua` suffix are loaded as Lua plugins. (The directory path is treated as a `*.lua` shell pattern).
 
-Returning to `rspamd.conf`, it encompasses a global [options](options.html) section, followed by the configuration for [logging](logging.html).
+Returning to `rspamd.conf`, it encompasses a global [options](/configuration/options) section, followed by the configuration for [logging](/configuration/logging).
 
 ~~~hcl
 options {
@@ -215,7 +215,7 @@ logging {
 }
 ~~~
 
-Ultimately, a [workers](../workers/index.html) section (code not provided here) is outlined, utilizing the aforementioned `section "foo" {}` syntax, to define worker types such as normal, controller, rspamd_proxy, and fuzzy.
+Ultimately, a [workers](/workers/) section (code not provided here) is outlined, utilizing the aforementioned `section "foo" {}` syntax, to define worker types such as normal, controller, rspamd_proxy, and fuzzy.
 
 
 

@@ -34,4 +34,4 @@ DKIM module has several useful configuration options:
 
 ## DKIM signatures
 
-Please use [dkim_signing module](./dkim_signing.html) for DKIM signatures.
+Please use [dkim_signing module](/modules/dkim_signing) for DKIM signatures.

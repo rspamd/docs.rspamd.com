@@ -288,7 +288,7 @@ LIMIT 10
 └──────────────────────────────────────┴─────────────────┴────────┘
 ~~~
 
-Using extra columns (see [Configuration](/doc/modules/clickhouse.html#extra-columns))
+Using extra columns (see [Configuration](/modules/clickhouse#extra-columns))
 
 ~~~sql
 SELECT
