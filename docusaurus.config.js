@@ -232,7 +232,7 @@ const config = {
       },
       mermaid: {
         theme: {
-          light: 'neutral',
+          light: 'default',
           dark: 'dark',
         },
         options: {
@@ -241,8 +241,6 @@ const config = {
           maxEdges: 300,
           maxHeight: 5000,
           wrap: true,
-          fontSize: 14,
-          theme: 'neutral',
         },
       },
     }),
