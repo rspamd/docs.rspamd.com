@@ -55,20 +55,20 @@ This guide covers setting up Rspamd with:
 
 Before installing Rspamd, ensure you have:
 
-1. **A working mail server (MTA)** - This guide uses [Postfix](https://www.postfix.org/), but Rspamd works with other MTAs too (see [integration document](tutorials/integration.html))
+1. **A working mail server (MTA)** - This guide uses [Postfix](https://www.postfix.org/), but Rspamd works with other MTAs too (see [integration document](/tutorials/integration))
 2. **Root access** to your server
 3. **A domain** configured for email 
 4. **Basic familiarity** with Linux command line
 
 **Note**: While Rspamd can work with Exim, it has limited support and is not recommended.
 
-Consider setting up your own [local DNS resolver](faq.html#resolver-setup) for better performance.
+Consider setting up your own [local DNS resolver](/faq#resolver-setup) for better performance.
 
 ## Step 1: Install Rspamd
 
 ### Installing from packages (Recommended)
 
-Instructions for downloading Rspamd can be found on the [downloads page](/downloads.html). This includes information for various Linux distributions and installation methods.
+Instructions for downloading Rspamd can be found on the [downloads page](/downloads). This includes information for various Linux distributions and installation methods.
 
 For Ubuntu/Debian:
 ```bash
@@ -197,7 +197,7 @@ sudo systemctl restart rspamd
 sudo systemctl restart postfix
 ```
 
-**Note**: For complete Postfix/Dovecot setup details, TLS configuration, and other mail server settings, see the [MTA Integration Guide](tutorials/integration.html).
+**Note**: For complete Postfix/Dovecot setup details, TLS configuration, and other mail server settings, see the [MTA Integration Guide](/tutorials/integration).
 
 ## Step 5: Test Your Setup
 
@@ -377,7 +377,7 @@ Symbols are organized into logical groups you can adjust:
 - **`headers_group.conf`** - Email header analysis
 - **`phishing_group.conf`** - URL and content analysis
 
-Learn more about [actions and scores](faq.html#what-are-rspamd-actions) in the documentation.
+Learn more about [actions and scores](/faq#what-are-rspamd-actions) in the documentation.
 
 ## Troubleshooting
 
@@ -432,24 +432,24 @@ sudo rspamadm configtest
 For experienced users who want to dive deeper:
 
 ### Multiple Mail Server Integration
-- [MTA Integration Guide](tutorials/integration.html)
-- [Milter Protocol Configuration](workers/rspamd_proxy.html)
+- [MTA Integration Guide](/tutorials/integration)
+- [Milter Protocol Configuration](/workers/rspamd_proxy)
 
 ### Large-Scale Deployments
-- [Redis Replication](tutorials/redis_replication.html) 
-- [Neural Networks Setup](modules/neural.html)
-- [Clickhouse Analytics](modules/clickhouse.html)
+- [Redis Replication](/tutorials/redis_replication.html) 
+- [Neural Networks Setup](/modules/neural.html)
+- [Clickhouse Analytics](./clickhouse_analytics)
 
 ### Security Considerations
-- [RBL Usage Policies](modules/rbl.html) - Important licensing information
+- [RBL Usage Policies](/modules/rbl) - Important licensing information
 - Network security and firewall configuration
 - TLS setup with [Let's Encrypt](https://letsencrypt.org)
 
 ## Additional Resources
 
 ### Official Documentation
-- [Complete Configuration Reference](configuration/index.html)
-- [Module Documentation](modules/)
+- [Complete Configuration Reference](/configuration/)
+- [Module Documentation](/modules/)
 - [WebUI Guide](/webui)
 
 ### Community Resources
