@@ -6,14 +6,23 @@ title: About Rspamd
 
 ## Introduction
 
-**Rspamd** is an advanced spam filtering system that allows evaluation of messages by a number of
-rules including regular expressions, statistical analysis and custom services
-such as URL black lists. Each message is analysed by Rspamd and given a `spam score`.
+**Rspamd** is an advanced mail processing framework that works as a secure addition to your Mail Transfer Agent (MTA).
+Operating independently from MTA internal mail flows, Rspamd provides enhanced security isolation while delivering
+comprehensive message analysis and processing capabilities.
 
-According to this spam score and the user's settings, Rspamd recommends an action for
-the MTA to apply to the message, for example, to pass, reject or add a header.
-Rspamd is designed to process hundreds of messages per second simultaneously, and provides a number of
-useful features.
+Built around a complete **Lua scripting framework**, Rspamd enables flexible message processing through:
+- **Spam filtering** with statistical analysis and rule-based detection
+- **Policy control** and compliance enforcement  
+- **DKIM signing** and authentication
+- **Machine learning integration** for adaptive filtering
+- **Security tools orchestration** and threat intelligence
+
+Each message is evaluated using multiple detection methods including regular expressions, statistical analysis,
+and custom services such as URL blacklists. Based on the computed spam score and configured policies,
+Rspamd recommends actions for the MTA - whether to pass, reject, quarantine, or modify messages.
+
+Designed for high-performance environments, Rspamd processes hundreds of messages per second while maintaining
+the flexibility to adapt to evolving security requirements through its extensible Lua API.
 
 ## Getting Started
 

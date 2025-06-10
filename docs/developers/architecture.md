@@ -4,107 +4,386 @@ title: Rspamd architecture
 
 # Rspamd architecture
 
-## Introduction
+## Overview
 
-Rspamd is a universal spam filtering system based on an event-driven processing model, which means that Rspamd is not intended to block anywhere in the code. To process messages Rspamd uses a set of `rules`. Each `rule` is a symbolic name associated with a message property. For example, we can define the following rules:
+Rspamd is a high-performance mail processing framework built on an event-driven, non-blocking architecture. It operates as a standalone service that integrates with Mail Transfer Agents (MTAs) through a well-defined HTTP/JSON API, maintaining strict isolation from MTA internals for enhanced security.
 
-- `SPF_ALLOW` - means that a message is validated by SPF;
-- `BAYES_SPAM` - means that a message is statistically considered as spam;
-- `FORGED_OUTLOOK_MID` - message ID seems to be forged for the Outlook MUA.
+## Core Architecture
 
-Rules are defined by [modules](/modules/). For instance, if there is a module that performs SPF checks, it may define several rules based on SPF policy:
+Rspamd's architecture consists of several key components working together to provide comprehensive mail processing capabilities:
 
-- `SPF_ALLOW` - a sender is allowed to send messages for this domain;
-- `SPF_DENY` - a sender is denied by SPF policy;
-- `SPF_SOFTFAIL` - there is no affinity defined by SPF policy.
+### Main Components
 
-Rspamd supports two main types of modules: internal modules written in C and external modules written in Lua. There is no real difference between the two types with the exception that C modules are embedded and can be enabled in a `filters` attribute in the `options` section of the config:
+- **Main Process**: Coordinates worker processes and handles configuration management
+- **Normal Workers**: Handle message processing and HTTP requests  
+- **Proxy Worker**: Provides Milter protocol support and forwarding capabilities
+- **Controller Process**: Provides web interface and management API
+- **Fuzzy Storage**: Manages fuzzy hashing for near-duplicate detection
 
-~~~hcl
-options {
- filters = "chartable,dkim,surbl,regexp,fuzzy_check";
- ...
-}
-~~~
+### Message Processing Flow
 
-## Protocol
+Every message processed by Rspamd follows a structured pipeline that ensures thorough analysis while maintaining high performance.
 
-Rspamd uses the HTTP protocol for all operations. This protocol is described in the [protocol section](/developers/protocol).
+```mermaid
+graph TB
+    subgraph "MTA Integration"
+        MTA[Mail Transfer Agent]
+        Milter[Milter Protocol]
+        HTTP[HTTP API]
+    end
+    
+    subgraph "Rspamd Core"
+        Main[Main Process]
+        Normal1[Normal Worker 1]
+        Normal2[Normal Worker 2]
+        Proxy[Proxy Worker]
+        Controller[Controller Process]
+        Fuzzy[Fuzzy Storage]
+    end
+    
+    subgraph "Storage & Cache"
+        Redis[Redis Cache]
+        DB[Statistics DB]
+        Files[Config Files]
+    end
+    
+    subgraph "External Services"
+        RBL[RBL Services]
+        Reputation[Reputation APIs]
+        LLM[LLM Services (GPT)]
+        Custom[Custom Services]
+    end
+    
+    MTA --> Milter
+    MTA --> HTTP
+    
+    Milter --> Proxy
+    HTTP --> Main
+    
+    Main --> Normal1
+    Main --> Normal2
+    Main --> Proxy
+    Main --> Controller
+    Main --> Fuzzy
+    
+    Normal1 --> Redis
+    Normal2 --> Redis
+    Proxy --> Redis
+    
+    Normal1 --> DB
+    Normal1 --> RBL
+    Normal1 --> Reputation
+    Normal1 --> LLM
+    Normal1 --> Custom
+    
+    Controller --> Redis
+    Controller --> DB
+    Controller --> Files
+```
 
-## Metrics
+## Rules and Modules System
 
-In Rspamd, rules determine the logic of checks, but it is necessary to assign weights to each rule. In Rspamd, weight represents the 'significance' of a rule. Rules with a higher absolute weight value are considered more important. Rule weights are specified within 'metrics.' Each metric is a collection of grouped rules, each with its specific weight. For instance, you can define the following weights for SPF rules:
+Rspamd uses a modular approach where functionality is implemented through **modules** that define **rules**. Each rule represents a specific message property or characteristic:
 
-- `SPF_ALLOW`: -1
-- `SPF_DENY`: 2
-- `SPF_SOFTFAIL`: 0.5
+```mermaid
+flowchart TD
+    Start([Message Received]) --> Parse[Parse Message]
+    Parse --> PreFilters[Pre-filter Modules]
+    PreFilters --> Rules[Rule Processing]
+    
+    subgraph "Rule Processing Pipeline"
+        Rules --> Auth[Authentication<br/>SPF, DKIM, DMARC]
+        Auth --> Content[Content Analysis<br/>Regexp, Phishing]
+        Content --> Stats[Statistical Analysis<br/>Bayes, Neural Networks]
+        Stats --> Reputation[Reputation Checks<br/>RBL, URL Lists]
+        Reputation --> Fuzzy[Fuzzy Matching<br/>Near-duplicates]
+        Fuzzy --> Custom[Custom Rules<br/>Lua Modules]
+    end
+    
+    Custom --> Score[Calculate Final Score]
+    Score --> Action{Determine Action}
+    
+    Action -->|Score < 0| NoAction[No Action]
+    Action -->|0 ≤ Score < 6| Greylist[Greylist]
+    Action -->|6 ≤ Score < 12| AddHeader[Add Header]
+    Action -->|12 ≤ Score < 20| Rewrite[Rewrite Subject]
+    Action -->|Score ≥ 20| Reject[Reject]
+    
+    NoAction --> Response[Return Response to MTA]
+    Greylist --> Response
+    AddHeader --> Response
+    Rewrite --> Response
+    Reject --> Response
+    
+    Response --> End([End])
+```
 
-Positive weights mean that this rule increases a messages 'spammyness', while negative weights mean the opposite.
+### Rule Examples
+- `SPF_ALLOW` - message validated by SPF
+- `BAYES_SPAM` - statistical spam classification
+- `NEURAL_SPAM` - neural network spam detection
+- `DKIM_VALID` - valid DKIM signature
+- `URL_PHISHING` - phishing URL detected
 
-### Rules scheduler
+### Module Types
 
-To prevent unnecessary checks, Rspamd employs a rule scheduler for each message. If a message is definitively classified as spam, further checks are skipped. This scheduler follows a straightforward logic:
+Rspamd supports multiple module implementations:
 
-- select negative rules *before* positive ones to prevent false positives;
-- prefer rules with the following characteristics:
-  - frequent rules;
-  - rules with more weight;
-  - faster rules
+**C Modules** (Internal)
+- Embedded in the core binary
+- High-performance critical functions
+- Examples: DKIM, SPF, regexp
 
-These optimizations enable quicker identification of definite spam compared to a generic queue.
+**Lua Modules** (External)  
+- Full access to Rspamd Lua API
+- Flexible and easily customizable
+- Examples: multimap, rbl, phishing
 
-Since Rspamd-0.9 there are further optimizations for rules and expressions that are described generally in the [following presentation](https://highsecure.ru/ast-rspamd.pdf).
+**Advanced Plugins**
+- Statistical and ML-based analysis
+- Learn from existing symbols and patterns
+- Provide adaptive classification
 
-## Actions
+```mermaid
+graph TB
+    subgraph "Module Architecture"
+        subgraph "C Modules (Internal)"
+            SPF[SPF Module]
+            DKIM[DKIM Module]
+            Regexp[Regexp Module]
+            Chartable[Chartable Module]
+            Fuzzy[Fuzzy Check Module]
+        end
+        
+        subgraph "Lua Modules (External)"
+            Multimap[Multimap Module]
+            RBL[RBL Module]
+            Phishing[Phishing Module]
+            Whitelist[Whitelist Module]
+            Custom[Custom Lua Rules]
+        end
+        
+        subgraph "Statistical & ML Plugins"
+            Bayes[Bayesian Classifier]
+            Neural[Neural Networks Plugin<br/>Perceptron clustering]
+            Reputation[IP/URL Reputation]
+            GPT[GPT Plugin<br/>LLM Integration]
+        end
+    end
+    
+    subgraph "Rspamd Core Engine"
+        Scanner[Message Scanner]
+        Symbols[Symbol Registry]
+        Config[Configuration]
+        API[Lua API]
+    end
+    
+    subgraph "External Data Sources"
+        Redis[(Redis Cache)]
+        Database[(Statistics DB)]
+        LLM[LLM Services]
+        Files[Configuration Files]
+    end
+    
+    SPF --> Symbols
+    DKIM --> Symbols
+    Regexp --> Symbols
+    Chartable --> Symbols
+    Fuzzy --> Symbols
+    
+    Multimap --> API
+    RBL --> API
+    Phishing --> API
+    Whitelist --> API
+    Custom --> API
+    
+    API --> Symbols
+    
+    Bayes --> Redis
+    Neural --> Symbols
+    Reputation --> Redis
+    GPT --> LLM
+    
+    Bayes --> Symbols
+    Neural --> Symbols
+    Reputation --> Symbols
+    GPT --> Symbols
+    
+    Scanner --> SPF
+    Scanner --> DKIM
+    Scanner --> Multimap
+    Scanner --> Bayes
+    
+    Config --> Files
+    Config --> Scanner
+```
 
-Another crucial aspect of metrics is their set of actions. This set establishes the recommended actions for a message based on the cumulative score generated by all the rules that have been triggered. Rspamd defines the following actions:
+## Scoring and Actions System
 
-- `No action`: a message is likely to be ham;
-- `Greylist`: greylist a message if it is not certainly ham;
-- `Add header`: a message is likely spam, so add a specific header;
-- `Rewrite subject`: a message is likely spam, so rewrite its subject;
-- `Reject`: a message is very likely spam, so reject it completely
+### Metrics and Weights
 
-These actions serve as recommendations for the Mail Transfer Agent (MTA) and are not intended to be followed blindly. When the score equals or exceeds `greylist`, explicit greylisting is suggested. Both the `Add header` and `Rewrite subject` actions carry similar semantic meanings and imply that a message is likely spam. On the other hand, `Reject` is a stringent rule, often indicating that the message should be outright rejected by the MTA. The specific score thresholds for triggering these actions should align with their priority logic. In cases where two actions share the same weight, the resulting action is undetermined.
+Rules are assigned **weights** that represent their significance in determining message classification. The cumulative score determines the recommended action.
 
-## Rules weight
+**Weight Guidelines:**
+- Negative weights: decrease spam probability (ham indicators)
+- Positive weights: increase spam probability (spam indicators)  
+- Higher absolute values: more significant rules
 
-The weight assigned to rules is not necessarily fixed. For instance, in the case of statistical rules, there's no absolute certainty about whether a message is spam or not; instead, there's a measure of probability. To accommodate such probabilistic rules, Rspamd introduces the concept of `dynamic weights`. In essence, this means that a rule can contribute a weight ranging from 0 to a predefined value in the metric. So, if we define the symbol `BAYES_SPAM` with a weight of 5.0, this rule can assign a resulting symbol with a weight anywhere between 0 and 5.0. To distribute these values, Rspamd employs a variation of the Sigma function, creating a fair distribution curve. It's important to note that the majority of Rspamd rules, apart from fuzzy rules, use static weights.
+### Action Thresholds
 
-## Statistics
+Based on the total score, Rspamd recommends one of several actions:
 
-Rspamd employs statistical algorithms to precisely compute the final score of a message. Presently, the sole algorithm defined is OSB-Bayes. You can find comprehensive details regarding this algorithm in the following [paper](https://web.archive.org/web/20181024182218/http://osbf-lua.luaforge.net/papers/osbf-eddc.pdf). Rspamd adopts a window size of 5 words for its classification. In the classification process, Rspamd dissects a message into a collection of tokens. These tokens are separated by punctuation or whitespace characters, with short tokens (less than 3 symbols) being disregarded. For each token, Rspamd computes two non-cryptographic hashes, which are subsequently used as indices. All these tokens are stored in various statistics backends, which can be implemented through mmapped files, SQLite3 databases, or Redis servers. Currently, the recommended backend for statistics is `Redis`.
+- **No action** (score < greylist): Message is likely legitimate
+- **Greylist** (greylist ≤ score < add_header): Temporary delay recommended
+- **Add header** (add_header ≤ score < rewrite_subject): Mark as likely spam
+- **Rewrite subject** (rewrite_subject ≤ score < reject): Modify subject line
+- **Reject** (score ≥ reject): Block message completely
 
-## Running rspamd
+```mermaid
+graph LR
+    subgraph "Rule Weights"
+        R1["`SPF_ALLOW
+        Weight: -1.0`"]
+        R2["`BAYES_SPAM
+        Weight: 0-5.0`"]
+        R3["`NEURAL_SPAM
+        Weight: 0-10.0`"]
+        R4["`URL_PHISHING
+        Weight: 7.5`"]
+        R5["`DKIM_VALID
+        Weight: -0.5`"]
+    end
+    
+    subgraph "Score Calculation"
+        Sum["`Total Score =
+        Sum of all triggered rules`"]
+    end
+    
+    subgraph "Action Thresholds"
+        Actions["`No Action: < 0
+        Greylist: 0-6
+        Add Header: 6-12
+        Rewrite Subject: 12-20
+        Reject: ≥ 20`"]
+    end
+    
+    subgraph "Examples"
+        E1["`Example 1:
+        SPF_ALLOW (-1.0) +
+        DKIM_VALID (-0.5) =
+        -1.5 → No Action`"]
+        
+        E2["`Example 2:
+        BAYES_SPAM (3.2) +
+        NEURAL_SPAM (4.8) =
+        8.0 → Add Header`"]
+        
+        E3["`Example 3:
+        URL_PHISHING (7.5) +
+        BAYES_SPAM (4.9) +
+        NEURAL_SPAM (8.2) =
+        20.6 → Reject`"]
+    end
+    
+    R1 --> Sum
+    R2 --> Sum
+    R3 --> Sum
+    R4 --> Sum
+    R5 --> Sum
+    
+    Sum --> Actions
+    Actions --> E1
+    Actions --> E2
+    Actions --> E3
+```
 
-Rspamd provides several command-line options that can be supplied when running the program. You can view a list of all these options by using the `--help` argument.
+### Dynamic Scoring
 
-All options are optional: by default, rspamd attempts to read the `etc/rspamd.conf` configuration file and operates as a daemon. Additionally, there is a test mode that can be activated using the `-t` argument. In test mode, rspamd reads the configuration file and assesses its syntax. If the configuration file is valid, the exit code is set to zero. Test mode proves valuable when you need to verify new configuration files without the necessity of restarting rspamd.
+Advanced rules can provide **dynamic weights** based on confidence levels. For example:
+- Bayesian classifier: weight varies from 0 to maximum based on probability
+- Neural networks plugin: clustering-based confidence scoring
+- Reputation plugins: score based on IP/URL history
+- GPT plugin: LLM-based analysis with confidence scores
 
-## Managing rspamd using signals
+## Statistical Classification
 
-It's crucial to remember that all user signals should be directed towards the rspamd main process, not its child processes. This is because these signals can carry different meanings for child processes. To identify the main process:
+Rspamd employs multiple statistical and machine learning algorithms:
 
-- by reading the pidfile:
+### Bayesian Classification
+- **OSB-Bayes algorithm** with 2-word windows
+- Token-based message analysis
+- Multiple backend support (Redis, SQLite, files)
 
-		$ cat pidfile
+### Neural Networks Plugin
+- **Perceptron-based clustering** using existing symbols as features
+- Adaptive learning from symbol patterns
+- Provides additional classification signals
 
-- by getting process info:
+### Fuzzy Hashing
+- **Near-duplicate detection** using fuzzy hashes
+- Distributed fuzzy storage
+- Bulk message identification
 
-		$ ps auxwww | grep rspamd
-		nobody 28378  0.0  0.2 49744  9424   rspamd: main process
-		nobody 64082  0.0  0.2 50784  9520   rspamd: worker process
-		nobody 64083  0.0  0.3 51792 11036   rspamd: worker process
-		nobody 64084  0.0  2.7 158288 114200 rspamd: controller process
-		nobody 64085  0.0  1.8 116304 75228  rspamd: fuzzy storage
+## Protocol and Integration
 
-		$ ps auxwww | grep rspamd | grep main
-		nobody 28378  0.0  0.2 49744  9424   rspamd: main process
+### HTTP API
+Rspamd communicates through HTTP/JSON protocol:
 
-Once you have obtained the PID of the main process, you can manage rspamd using signals, as outlined below:
+- **RESTful endpoints** for all operations
+- **JSON message format** for requests/responses  
+- **Authentication and SSL/TLS** support
+- **Compression support** (zstd) for efficient data transfer
 
-- `SIGHUP` - restart rspamd: reread config file, start new workers (as well as controller and other processes), stop accepting connections by old workers, reopen all log files. Note that old workers would be terminated after one minute which should allow processing of all pending requests. All new requests to rspamd will be processed by the newly started workers.
-- `SIGTERM` - terminate rspamd.
-- `SIGUSR1` - reopen log files (useful for log file rotation).
+### MTA Integration
+- **Milter protocol** support via proxy worker for Postfix/Sendmail
+- **HTTP proxy mode** for load balancing and forwarding
+- **Direct HTTP integration** for custom MTA setups
+- **After-queue processing** for existing mail flows
 
-These signals may be used in rc-style scripts. Restarting of rspamd is performed softly: no connections are dropped and if a new config is incorrect then the old config is used.
+## Performance Optimizations
+
+### Rule Scheduling
+Rspamd optimizes rule execution through intelligent scheduling:
+
+1. **Negative rules first**: Prevent false positives early
+2. **Weight-based priority**: Important rules execute first  
+3. **Frequency optimization**: Common rules get priority
+4. **Early termination**: Stop processing when definitive result reached
+
+### Caching and Memory Management
+- **Redis caching** for statistical data
+- **Memory-mapped files** for fast data access
+- **Connection pooling** for external services
+- **Asynchronous I/O** for non-blocking operations
+
+## Configuration and Management
+
+### Configuration System
+- **UCL format** (Universal Configuration Language)
+- **Hierarchical structure** with includes and overrides
+- **Runtime reloading** without service interruption
+- **Validation and testing** modes
+
+### Signal Management
+- **SIGHUP**: Graceful restart with config reload
+- **SIGTERM**: Clean shutdown
+- **SIGUSR1**: Log file rotation
+- **SIGUSR2**: Worker respawn
+
+## Extensibility
+
+### Lua Framework
+Rspamd provides a comprehensive Lua API enabling:
+
+- **Custom rule development**
+- **External service integration** 
+- **Protocol extensions**
+- **Advanced message manipulation**
+- **Machine learning model integration**
+
+### Plugin Architecture
+- **Composable functionality** through plugins
+- **Event-driven hooks** for message processing stages
+- **Shared data structures** between modules
+- **Runtime module loading/unloading**
+
