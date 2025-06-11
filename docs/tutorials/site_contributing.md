@@ -156,20 +156,20 @@ This is an info box
 
 You can include Mermaid diagrams directly in your Markdown:
 
-```markdown
+````markdown
 ```mermaid
 graph TD
     A[Client] -->|Sends Email| B[MTA]
     B --> C[Rspamd]
     C -->|Scan Result| B
 ```
-```
+````
 
 ### Code Tabs
 
 For showing code in multiple languages or configurations:
 
-```markdown
+````markdown
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
@@ -189,7 +189,7 @@ import TabItem from '@theme/TabItem';
 
   </TabItem>
 </Tabs>
-```
+````
 
 ## Testing Your Changes
 
