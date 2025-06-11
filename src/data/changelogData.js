@@ -4,7 +4,7 @@
 export const changelogData = [
   {
     "version": "3.12.0",
-    "date": "2025-01-09",
+    "date": "2025-10-06",
     "type": "major",
     "title": "Major Release with Enhanced Features and Security Improvements",
     "sections": [
