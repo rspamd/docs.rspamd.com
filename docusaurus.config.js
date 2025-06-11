@@ -167,7 +167,7 @@ const config = {
         style: 'dark',
         links: [
           {
-            title: 'Docs',
+            title: 'Documentation',
             items: [
               {
                 label: 'Getting Started',
@@ -175,11 +175,36 @@ const config = {
               },
               {
                 label: 'Configuration',
-                to: '/configuration/index',
+                to: '/configuration',
               },
               {
                 label: 'Modules',
-                to: '/modules/index',
+                to: '/modules',
+              },
+              {
+                label: 'Tutorials',
+                to: '/tutorials',
+              },
+            ],
+          },
+          {
+            title: 'Resources',
+            items: [
+              {
+                label: 'Downloads',
+                to: '/downloads',
+              },
+              {
+                label: 'FAQ',
+                to: '/faq',
+              },
+              {
+                label: 'Support',
+                to: '/support',
+              },
+              {
+                label: 'Changelog',
+                to: '/changelog',
               },
             ],
           },
@@ -193,6 +218,10 @@ const config = {
               {
                 label: 'Contributing',
                 to: '/tutorials/site_contributing',
+              },
+              {
+                label: 'Blog',
+                to: '/blog',
               },
             ],
           },
