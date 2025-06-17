@@ -3,6 +3,82 @@
 
 export const changelogData = [
   {
+    "version": "3.12.1",
+    "date": "2025-06-17",
+    "type": "minor",
+    "title": "Minor Release with Bug Fixes and Improvements",
+    "sections": [
+      {
+        "title": "Added",
+        "items": [
+          "**Bayes Classifiers Endpoint**: Add `/bayes/classifiers` HTTP endpoint for better classifier management",
+          "**Enhanced Scheduling**: Further improvements in scheduling next checks for better performance",
+          "**AEAD Testing**: Add comprehensive tests for AEAD (Authenticated Encryption with Associated Data) used in Rspamd",
+          "**Improved Maps Consistency**: Better consistency in cached flag for maps and logging when dealing with Expires"
+        ]
+      },
+      {
+        "title": "Improved",
+        "items": [
+          "**Maps Locking**: Eliminate maps locking for better performance and reduced contention",
+          "**Proxy Headers**: Fix proxy headers duplication and improve header handling",
+          "**Milter Logic**: Do not add log tag header in milter logic for cleaner output",
+          "**Connection Handling**: Do not explicitly add Connection header if it's already present",
+          "**Attachment Processing**: Treat *.library-ms and *.search-ms attachments as harmful (with proper application)",
+          "**Maps Concurrent Loading**: Fix race conditions in maps concurrent loading",
+          "**Write Operations**: Try to avoid incomplete writes for better data integrity"
+        ]
+      },
+      {
+        "title": "Fixed",
+        "items": [
+          "**Maps Locking Issues**: Eliminate maps locking to prevent deadlocks and improve performance",
+          "**Proxy Headers Duplication**: Fix proxy headers duplication issue",
+          "**Milter Header Logic**: Fix logic error in milter_headers.lua: skip_wanted() function",
+          "**Connection Header**: Prevent duplicate Connection headers in proxy",
+          "**Maps Concurrent Access**: Fix race conditions in maps concurrent loading",
+          "**Incomplete Writes**: Prevent incomplete writes that could cause data corruption",
+          "**Attachment Security**: Properly apply security rules for *.library-ms and *.search-ms attachments",
+          "**Logging Consistency**: Improve consistency in logging when dealing with Expires and cached flags"
+        ]
+      },
+      {
+        "title": "Changed",
+        "items": [
+          "**Maps Architecture**: Eliminate maps locking mechanism for better performance",
+          "**Header Processing**: Improve header processing to avoid duplicates",
+          "**Attachment Handling**: Enhanced security for Windows library and search attachments",
+          "**Scheduling Logic**: Improved scheduling algorithm for next checks",
+          "**Logging Format**: Better consistency in logging output and cached flag handling"
+        ]
+      },
+      {
+        "title": "Security",
+        "items": [
+          "**Attachment Security**: Enhanced protection against potentially harmful Windows library and search attachments",
+          "**Header Validation**: Improved header validation to prevent duplication and injection",
+          "**Write Protection**: Better protection against incomplete writes that could lead to data corruption"
+        ]
+      },
+      {
+        "title": "Performance",
+        "items": [
+          "**Maps Performance**: Eliminate maps locking for better concurrent access performance",
+          "**Scheduling**: Improved scheduling algorithm for better resource utilization",
+          "**Header Processing**: Optimized header processing to reduce overhead"
+        ]
+      },
+      {
+        "title": "Testing",
+        "items": [
+          "**AEAD Testing**: Comprehensive tests for AEAD encryption used throughout Rspamd",
+          "**Maps Testing**: Improved testing for maps concurrent loading scenarios",
+          "**Header Testing**: Better testing for header processing and duplication scenarios"
+        ]
+      }
+    ]
+  },
+  {
     "version": "3.12.0",
     "date": "2025-06-10",
     "type": "major",
