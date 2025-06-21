@@ -157,6 +157,11 @@ const config = {
             position: 'left',
           },
           {
+            type: 'html',
+            position: 'right',
+            value: '<div id="font-size-control-mount"></div>',
+          },
+          {
             href: 'https://github.com/rspamd/rspamd',
             label: 'GitHub',
             position: 'right',

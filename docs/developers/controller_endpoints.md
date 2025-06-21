@@ -834,9 +834,9 @@ local function handle_server_info(task, conn, req_params)
   local info = {
     hostname = rspamd_util.get_hostname(),
     version = rspamd_version,
-    uptime = rspamd_util.get_uptime(),
-    worker_pid = rspamd_util.get_pid(),
-    memory_usage = rspamd_util.get_memory_usage(),
+    uptime = rspamd_util.get_uptime(),           -- System uptime in seconds
+    worker_pid = rspamd_util.get_pid(),          -- Current process PID  
+    memory_usage = rspamd_util.get_memory_usage(), -- {rss: bytes, vsize: bytes}
   }
   
   rspamd_logger.infox(rspamd_config, "Server info requested from %s", 

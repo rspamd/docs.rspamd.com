@@ -1,0 +1,84 @@
+.font-size-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: 0.5rem;
+  margin-right: 0.5rem;
+}
+
+.font-size-control__label {
+  display: flex;
+  align-items: center;
+  color: var(--ifm-navbar-link-color);
+  opacity: 0.8;
+}
+
+.font-size-control__buttons {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--ifm-background-color-secondary);
+  border-radius: 4px;
+  padding: 2px;
+  border: 1px solid var(--ifm-color-emphasis-300);
+}
+
+.font-size-control__button {
+  border: none;
+  background: transparent;
+  color: var(--ifm-font-color-base);
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: bold;
+  line-height: 1;
+  transition: all 0.2s ease;
+  min-width: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.font-size-control__button:hover {
+  background: var(--ifm-color-emphasis-200);
+}
+
+.font-size-control__button--active {
+  background: var(--ifm-color-primary);
+  color: white;
+}
+
+.font-size-control__button:first-child {
+  font-size: 10px;
+}
+
+.font-size-control__button:nth-child(2) {
+  font-size: 12px;
+}
+
+.font-size-control__button:last-child {
+  font-size: 14px;
+}
+
+/* Dark theme adjustments */
+[data-theme='dark'] .font-size-control__buttons {
+  background: var(--ifm-background-color-secondary);
+  border-color: var(--ifm-color-emphasis-300);
+}
+
+[data-theme='dark'] .font-size-control__button:hover {
+  background: var(--ifm-color-emphasis-300);
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .font-size-control {
+    margin-left: 0.25rem;
+    margin-right: 0.25rem;
+  }
+  
+  .font-size-control__label {
+    display: none;
+  }
+} 

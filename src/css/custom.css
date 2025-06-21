@@ -10,6 +10,64 @@
   --ifm-color-primary-light: rgb(244, 78, 0);
   --ifm-color-primary-lighter: rgb(255, 85, 0);
   --ifm-color-primary-lightest: rgb(255, 119, 51);
+  
+  /* Font size control variables - Medium (default) */
+  --ifm-font-size-base: 16px;
+  --ifm-line-height-base: 1.6;
+  --ifm-h1-font-size: 2rem;
+  --ifm-h2-font-size: 1.5rem;
+  --ifm-h3-font-size: 1.25rem;
+  --ifm-h4-font-size: 1rem;
+  --ifm-h5-font-size: 0.875rem;
+  --ifm-h6-font-size: 0.85rem;
+  --ifm-code-font-size: 0.875rem;
+}
+
+/* Small font size */
+[data-font-size="small"] {
+  --ifm-font-size-base: 14px;
+  --ifm-line-height-base: 1.5;
+  --ifm-h1-font-size: 1.75rem;
+  --ifm-h2-font-size: 1.375rem;
+  --ifm-h3-font-size: 1.125rem;
+  --ifm-h4-font-size: 0.875rem;
+  --ifm-h5-font-size: 0.8125rem;
+  --ifm-h6-font-size: 0.75rem;
+  --ifm-code-font-size: 0.8125rem;
+}
+
+/* Large font size */
+[data-font-size="large"] {
+  --ifm-font-size-base: 18px;
+  --ifm-line-height-base: 1.7;
+  --ifm-h1-font-size: 2.25rem;
+  --ifm-h2-font-size: 1.625rem;
+  --ifm-h3-font-size: 1.375rem;
+  --ifm-h4-font-size: 1.125rem;
+  --ifm-h5-font-size: 0.9375rem;
+  --ifm-h6-font-size: 0.9rem;
+  --ifm-code-font-size: 0.9375rem;
+}
+
+/* Apply font size to content areas */
+.main-wrapper,
+.markdown,
+article {
+  font-size: var(--ifm-font-size-base);
+  line-height: var(--ifm-line-height-base);
+}
+
+/* Apply to headings */
+h1, .h1 { font-size: var(--ifm-h1-font-size); }
+h2, .h2 { font-size: var(--ifm-h2-font-size); }
+h3, .h3 { font-size: var(--ifm-h3-font-size); }
+h4, .h4 { font-size: var(--ifm-h4-font-size); }
+h5, .h5 { font-size: var(--ifm-h5-font-size); }
+h6, .h6 { font-size: var(--ifm-h6-font-size); }
+
+/* Apply to code elements */
+code, pre, .prism-code {
+  font-size: var(--ifm-code-font-size);
 }
 
 /* Navbar styling */
