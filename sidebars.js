@@ -175,6 +175,7 @@ const sidebars = {
         "developers/sync_async",
         "developers/writing_rules",
         "developers/writing_tests",
+        "developers/controller_endpoints",
         "developers/examples"
       ]
     },
