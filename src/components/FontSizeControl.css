@@ -71,8 +71,8 @@
   background: var(--ifm-color-emphasis-300);
 }
 
-/* Mobile responsiveness */
-@media (max-width: 768px) {
+/* Mobile responsiveness - start mobile view earlier */
+@media (max-width: 1024px) {
   .font-size-control {
     margin-left: 0.25rem;
     margin-right: 0.25rem;
@@ -80,5 +80,24 @@
   
   .font-size-control__label {
     display: none;
+  }
+}
+
+/* Very small screens */
+@media (max-width: 480px) {
+  .font-size-control {
+    margin-left: 0.1rem;
+    margin-right: 0.1rem;
+  }
+  
+  .font-size-control__buttons {
+    padding: 1px;
+    gap: 1px;
+  }
+  
+  .font-size-control__button {
+    padding: 3px 4px;
+    min-width: 18px;
+    font-size: 10px;
   }
 } 
