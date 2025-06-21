@@ -503,20 +503,35 @@ local function async_handler(task, conn, req_params)
       query = req_params.query
     }, "json"),
     callback = http_callback,
-    task = task,
-    ev_base = task:get_ev_base(),
+    task = task,           -- Only task needed, not both task and ev_base
+    timeout = 10.0,
   })
 end
 ```
 
 ### Redis Operations
 
-For Redis operations, use async patterns:
+For Redis operations, use the modern lua_redis module:
 
 ```lua
-local rspamd_redis = require "lua_redis"
+local lua_redis = require "lua_redis"
+
+-- Module-level Redis configuration (usually done at module init)
+local redis_params = nil
+
+local function init_redis_config()
+  local opts = rspamd_config:get_all_opt('mymodule')
+  if opts and opts.redis then
+    redis_params = lua_redis.parse_redis_server('mymodule')
+  end
+end
 
 local function redis_handler(task, conn, req_params)
+  if not redis_params then
+    conn:send_error(500, "Redis not configured")
+    return
+  end
+  
   local function redis_callback(err, data)
     if err then
       conn:send_error(500, "Redis error: " .. err)
@@ -529,20 +544,109 @@ local function redis_handler(task, conn, req_params)
     })
   end
   
-  local redis_params = {
-    config = rspamd_config,
-    ev_base = task:get_ev_base(),
-    session = task:get_session(),
+  -- Modern Redis API
+  local attrs = {
+    task = task,
+    callback = redis_callback,
+    is_write = false,  -- false for read operations
+    key = req_params.key or "default_key"
   }
   
-  lua_redis.redis_make_request(task,
-    redis_params,
-    "mykey",        -- key
-    false,          -- is write
-    redis_callback, -- callback
-    "HGET",         -- command
-    {"mykey", "field"}  -- arguments
-  )
+  lua_redis.request(redis_params, attrs, {
+    'HGET', 
+    req_params.key or "mykey", 
+    req_params.field or "myfield"
+  })
+end
+
+-- Alternative: Using Redis with coroutines (no callback)
+local function redis_sync_handler(task, conn, req_params)
+  if not redis_params then
+    conn:send_error(500, "Redis not configured")
+    return
+  end
+  
+  local attrs = {
+    task = task,
+    is_write = false,
+    key = req_params.key or "default_key"
+  }
+  
+  -- This will work with coroutines
+  local ok, data = lua_redis.request(redis_params, attrs, {
+    'HGET', 
+    req_params.key or "mykey", 
+    req_params.field or "myfield"
+  })
+  
+  if not ok then
+    conn:send_error(500, "Redis request failed")
+    return
+  end
+  
+  conn:send_ucl({ 
+    success = true, 
+    redis_data = data 
+  })
+end
+```
+
+#### AWS S3 Integration Example
+
+Based on the AWS S3 plugin, here's how to integrate with external services:
+
+```lua
+local rspamd_http = require "rspamd_http" 
+local lua_aws = require "lua_aws"
+
+local function s3_upload_handler(task, conn, req_params)
+  if not req_params.bucket or not req_params.content then
+    conn:send_error(400, "bucket and content parameters required")
+    return
+  end
+  
+  local function s3_callback(http_err, code, body, headers)
+    if http_err then
+      conn:send_error(500, "S3 upload failed: " .. http_err)
+      return
+    end
+    
+    if code == 200 then
+      conn:send_ucl({ 
+        success = true, 
+        s3_key = req_params.key,
+        status_code = code 
+      })
+    else
+      conn:send_error(code, "S3 error: " .. (body or "unknown"))
+    end
+  end
+  
+  local s3_key = string.format("/%s/%s", req_params.path or "uploads", 
+                               req_params.filename or "data.txt")
+  local aws_host = string.format('%s.s3.amazonaws.com', req_params.bucket)
+  
+  local headers = lua_aws.aws_request_enrich({
+    region = req_params.region or "us-east-1",
+    headers = {
+      ['Content-Type'] = req_params.content_type or "text/plain",
+      ['Host'] = aws_host
+    },
+    uri = s3_key,
+    key_id = req_params.aws_key_id,
+    secret_key = req_params.aws_secret_key,
+    method = 'PUT',
+  }, req_params.content)
+  
+  rspamd_http.request({
+    url = string.format("https://%s%s", aws_host, s3_key),
+    method = 'PUT',
+    body = req_params.content,
+    headers = headers,
+    callback = s3_callback,
+    task = task,
+    timeout = 30.0,
+  })
 end
 ```
 
@@ -651,6 +755,60 @@ return {
   
   -- Load plugin from external file
   monitoring = dofile("/opt/company/rspamd/monitoring_endpoints.lua"),
+}
+```
+
+#### Redis Configuration in Controllers
+
+When using Redis in controller endpoints, initialize the configuration at module level:
+
+```lua
+-- local.d/controller.lua
+local lua_redis = require "lua_redis"
+
+-- Redis configuration initialization
+local redis_params = nil
+
+local function init_redis()
+  local opts = rspamd_config:get_all_opt('controller_redis')
+  if opts then
+    redis_params = lua_redis.parse_redis_server('controller_redis')
+  end
+end
+
+-- Initialize Redis when module loads
+init_redis()
+
+local function handle_redis_data(task, conn, req_params)
+  if not redis_params then
+    conn:send_error(503, "Redis not available")
+    return
+  end
+  
+  local attrs = {
+    task = task,
+    callback = function(err, data)
+      if err then
+        conn:send_error(500, "Redis error: " .. err)
+      else
+        conn:send_ucl({ success = true, data = data })
+      end
+    end,
+    is_write = false,
+    key = req_params.cache_key
+  }
+  
+  lua_redis.request(redis_params, attrs, {'GET', req_params.cache_key})
+end
+
+return {
+  cache = {
+    get = {
+      handler = handle_redis_data,
+      enable = false,
+      need_task = false,
+    }
+  }
 }
 ```
 
@@ -922,10 +1080,45 @@ local function test_custom_endpoint()
     url = "http://127.0.0.1:11334/plugins/example/hello",
     method = "GET",
     headers = {
-      ["Content-Type"] = "application/json"
+      ["Content-Type"] = "application/json",
+      ["Password"] = "test_password"  -- Add authentication if needed
     },
     callback = http_callback,
-    task = task, -- if available
+    task = task,    -- Pass task if available
+    timeout = 5.0,
+  })
+end
+
+-- Example with POST data
+local function test_custom_post_endpoint()
+  local function http_callback(err, response)
+    if err then
+      error("HTTP POST failed: " .. err)
+    end
+    
+    local ucl = require "ucl"
+    local parser = ucl.parser()
+    parser:parse_string(response.content)
+    local data = parser:get_object()
+    
+    assert(data.success == true)
+    assert(data.processed_count > 0)
+  end
+  
+  rspamd_http.request({
+    url = "http://127.0.0.1:11334/plugins/example/process",
+    method = "POST",
+    headers = {
+      ["Content-Type"] = "application/json",
+      ["Password"] = "enable_password"  -- Privileged endpoint
+    },
+    body = require("ucl").to_format({
+      items = {"item1", "item2", "item3"},
+      operation = "batch_process"
+    }, "json"),
+    callback = http_callback,
+    task = task,
+    timeout = 10.0,
   })
 end
 ```
