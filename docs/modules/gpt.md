@@ -33,23 +33,20 @@ gpt {
   # Enable the plugin
   enabled = true;
 
-  # Supported type: openai
+  # LLM provider type: openai (remote) or ollama (local)
   type = "openai";
   
-  # Your OpenAI API key
+  # Your OpenAI API key (not required for ollama)
   api_key = "xxx";
   
-  # Model name
-  model = "gpt-3.5-turbo";
+  # Model name (string or a list for ensemble requests)
+  model = "gpt-4o-mini";
   
-  # Maximum tokens to generate
+  # Maximum number of tokens to request
   max_tokens = 1000;
   
   # Temperature for sampling
-  temperature = 0.7;
-  
-  # Top p for sampling
-  top_p = 0.9;
+  temperature = 0.0;
   
   # Timeout for requests
   timeout = 10s;
@@ -62,59 +59,127 @@ gpt {
   
   # Autolearn if GPT classified
   autolearn = true;
-  
-  # Reply conversion (Lua code)
+
+  # Custom Lua function to convert the model's reply. Leave unset to use the
+  # built-in parsers for OpenAI / Ollama replies.
   reply_conversion = "xxx";
-  
-  # URL for the OpenAI API
+
+  # Header to add with the reason produced by GPT (set to null to disable)
+  reason_header = "X-GPT-Reason";
+
+  # Skip GPT scan if **any** of these symbols are present (and their absolute
+  # weight is equal or above the specified value)
+  symbols_to_except = {
+    BAYES_SPAM = 0.9;
+    WHITELIST_SPF = -1;
+  };
+
+  # Trigger GPT scan only when **all** of these symbols are present (and their
+  # absolute weight is equal or above the specified value)
+  # symbols_to_trigger = {
+  #   URIBL_BLOCKED = 1.0;
+  # };
+
+  # Check messages that resulted in a `passthrough` action
+  allow_passthrough = false;
+
+  # Check messages that already look like ham (negative score)
+  allow_ham = false;
+
+  # Request / expect JSON reply from GPT
+  json = false;
+
+  # Map of extra virtual symbols that could be set from GPT response categories
+  # extra_symbols = {
+  #   GPT_MARKETING = {
+  #     score = 0.0;
+  #     description = "GPT model detected marketing content";
+  #     category = "marketing";
+  #   };
+  # };
+
+  # Prefix for Redis cache keys
+  cache_prefix = "rsllm";
+
+  # Add `response_format = {type = "json_object"}` to requests (OpenAI only)
+  include_response_format = false;
+
+  # API endpoint
   url = "https://api.openai.com/v1/chat/completions";
 }
 ```
 
 ### Description of Configuration Options
 
-- **enabled**: A boolean value that specifies whether the GPT Plugin is enabled. Set to `true` to activate the plugin.
-
-- **type**: Specifies the GPT model type. Currently, only "openai" is supported.
-  
-- **api_key**: Your API key for accessing OpenAI services. Replace "xxx" with your actual API key.
-
-- **model**: Specifies the GPT model to use, such as "gpt-3.5-turbo".
-
-- **max_tokens**: Sets the maximum number of tokens to generate in the GPT response, controlling the length of the generated text.
-
-- **temperature**: Controls the creativity of the generated text during sampling. Values range from 0 to 1, with higher values resulting in more creative outputs (default: 0.7).
-
-- **top_p**: Sets the cumulative probability threshold for token selection using nucleus sampling (default: 0.9).
-
-- **timeout**: Specifies the maximum wait time for API responses in seconds (e.g., 10s).
-
-- **prompt**: Optional initial text prompt guiding model generation. If not set, a default prompt is used.
-
-- **condition**: Custom Lua function defining conditions for plugin usage.
-
-- **autolearn**: Enables automatic learning based on GPT classifications when set to true.
-
-- **reply_conversion**: Custom Lua code converting the model's reply into a specific format or handling it in a certain way (default: JSON output of the GPT model).
-
-- **url**: Endpoint for the OpenAI API (default: "https://api.openai.com/v1/chat/completions").
+- **enabled**: Enables the GPT plugin.
+- **type**: LLM provider. Accepts `openai` (default) or `ollama`.
+- **api_key**: OpenAI API key. Not required for `ollama`.
+- **model**: Model name (string) or a list of names to query in parallel.
+- **max_tokens**: Maximum number of tokens returned by the model.
+- **temperature**: Sampling temperature.
+- **timeout**: Network timeout for LLM requests.
+- **prompt**: Custom system prompt. If omitted, a sensible default is used.
+- **condition**: A Lua function that decides whether a message should be sent to GPT.
+- **autolearn**: When `true`, messages classified by GPT are added to Bayes learning (`learn_spam` / `learn_ham`).
+- **reply_conversion**: Custom Lua function to convert the model's reply. Leave unset to use the built-in parsers for OpenAI / Ollama replies.
+- **reason_header**: Name of the header added with GPT explanation. Set to `null` to disable entirely.
+- **symbols_to_except**: Table of symbols that *exclude* a message from GPT processing.
+- **symbols_to_trigger**: Table of symbols that must all be present to *trigger* GPT processing.
+- **allow_passthrough**: When `true`, messages with `passthrough` action are still evaluated by GPT.
+- **allow_ham**: When `true`, messages that already look like ham (negative score) are still evaluated.
+- **json**: When `true`, the plugin forces the LLM to return a JSON object and parses it. This can noticeably *reduce answer quality* and is generally **not recommended** unless you have a very deterministic prompt that the model might otherwise ignore.
+- **extra_symbols**: Map that allows GPT to set additional virtual symbols based on returned categories.
+- **cache_prefix**: Prefix used for Redis cache keys.
+- **include_response_format**: Adds OpenAI `response_format = json_object` hint. Useful only together with `json = true`, otherwise unnecessary.
+- **url**: API endpoint for the selected provider.
 
 ## Example Configuration
 
-Here is an example configuration with the fields filled in:
+Here is a minimal example configuration:
 
 ```hcl
 gpt {
-  enabled = true; # Enable the plugin
+  enabled = true;
   type = "openai";
   api_key = "your_api_key_here";
-  model = "gpt-3.5-turbo";
-  max_tokens = 500;
-  temperature = 0.6;
-  top_p = 0.8;
-  timeout = 15s;
+  model = "gpt-4o-mini";
+  max_tokens = 1000;
+  temperature = 0.0;
+  timeout = 10s;
+  reason_header = "X-GPT-Reason";
 }
 ```
+
+## Additional Notes
+
+### JSON vs. Plain-Text Responses
+The plugin works best when the model can answer in plain text because it gives the language model more freedom and generally yields better reasoning. Enabling `json = true` (and optionally `include_response_format`) constrains the model to produce a strict JSON object. This often degrades the probability estimate or makes the reply longer than required, so turn it on only if your prompts really need JSON.
+
+### `reason_header`
+If `reason_header` is set to a non-empty string, the plugin injects a mail header with the explanation sentence produced by GPT (`X-GPT-Reason` in the examples). This is convenient for debugging or for downstream systems, but remember that the text is untrusted user input and might reveal information to message recipients. Set the option to `null` to disable the header entirely.
+
+### Multiple-Model Ensemble
+The `model` option can be a list:
+
+```hcl
+model = ["gpt-4o-mini", "gpt-3.5-turbo"];
+```
+
+In this case Rspamd queries all listed models in parallel and applies a *consensus* algorithm:
+* Each model returns a spam probability.
+* If the majority classifies the message as spam with probability > 0.75, the highest spam probability is used.
+* If the majority classifies it as ham with probability < 0.25, the lowest ham probability is used.
+* Otherwise no GPT symbol is added (no consensus).
+
+This improves robustness and lets you mix cheap fast models with a slower high-quality one.
+
+### Caching Policies
+To avoid repeated LLM calls, responses are cached in Redis (if configured). Key facts:
+* Key: `<cache_prefix>_<env>_<digest>` where `env` depends on `prompt`, `model`, and `url`, and `digest` is the SHA256 of the examined text part (truncated).
+* Default TTL is one hour (`cache_ttl` option accepts seconds).
+* Workers coordinate using *pending* markers so that only one request per message is sent even in large clusters.
+* Changing the prompt, model list, or endpoint automatically invalidates the cache because they are part of the key.
+* You can tune `cache_prefix`, `cache_ttl`, and other cache options directly inside the `gpt {}` block.
 
 ## Conclusion
 
