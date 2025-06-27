@@ -64,7 +64,7 @@ It's essential to note that Rspamd can encounter issues when your provider's DNS
 Therefore, it is strongly advised to employ your own recursive resolver when using Rspamd or any other email-related technology. Our recommended choice is to set up Unbound or, for more advanced setups, the Knot Resolver. You can find basic setup information for Unbound [here](https://wiki.archlinux.org/index.php/unbound).
 
 Following that, you can configure your local resolver globally via `/etc/resolv.conf` or explicitly for Rspamd in the `local.d/options.inc` file:
-f
+
 ~~~hcl
 # local.d/options.inc
 dns {
