@@ -1202,7 +1202,7 @@ Then transfer it to the new server and restore it to a binary RRD:
 
 You have several options available. Firstly, if you require establishing a whitelist based on `SPF`, `DKIM`, or `DMARC` policies, consider consulting the [whitelist module](/modules/whitelist). Alternatively, the [multimap module](/modules/multimap) provides various checks to add symbols based on list matches or to set pre-actions, allowing you to either reject or permit specific messages.
 
-An alternative is to deactivate spam filtering for certain senders or recipients through [user settings](/configuration/settings). By specifying `symbols_enabled = [];`, Rspamd will bypass all filtering rules that meet specific conditions set in the user settings. It's worth noting that the use of the more potent `want_spam = yes` can be potentially [confusing](https://github.com/rspamd/rspamd/issues/3552).
+An alternative is to deactivate spam filtering for certain senders or recipients through [user settings](/configuration/settings). By specifying `symbols_enabled = [];`, Rspamd will bypass all filtering rules that meet specific conditions set in the user settings. Usually you still want at least some filtration or logging to be applied, so instead of setting `symbols_enabled` to fully empty list it's better set it to something like `symbols_enabled = ["ARC_SIGNED", "DKIM_SIGNED", "MILTER_HEADERS", "R_RATELIMIT_INFO", "RATELIMIT_CHECK", "RATELIMIT_UPDATE", "HISTORY_SAVE", "CLICKHOUSE_COLLECT", "ELASTIC_COLLECT"];` depending on your needs. It's worth noting that the use of the more potent `want_spam = yes` can be potentially [confusing](https://github.com/rspamd/rspamd/issues/3552).
 
 ### How to blacklist messages based on extension
 
