@@ -10,7 +10,10 @@
   --ifm-color-primary-light: rgb(244, 78, 0);
   --ifm-color-primary-lighter: rgb(255, 85, 0);
   --ifm-color-primary-lightest: rgb(255, 119, 51);
-  
+  --ifm-code-background: rgba(0, 0, 0, 0.08);
+
+  --ifm-table-cell-padding: 0.43rem;
+
   /* Font size control variables - Medium (default) */
   --ifm-font-size-base: 16px;
   --ifm-line-height-base: 1.45;
@@ -341,3 +344,7 @@ pre, .prism-code {
   color: #f0f0f0;
 }
 
+.menu__caret::before,
+.menu__link--sublist-caret::after {
+  image-rendering: crisp-edges;
+}
