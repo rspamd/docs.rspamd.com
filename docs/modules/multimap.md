@@ -752,3 +752,171 @@ local_wl_ip { type = "ip"; map = "$LOCAL_CONFDIR/local.d/local_wl_ip.map.inc"; s
 local_wl_from { type = "from"; map = "$LOCAL_CONFDIR/local.d/local_wl_from.map.inc"; symbol = "LOCAL_WL_FROM"; description = "Local from whitelist";score = -5;}
 local_wl_rcpt { type = "rcpt"; map = "$LOCAL_CONFDIR/local.d/local_wl_rcpt.map.inc"; symbol = "LOCAL_WL_RCPT"; description = "Local rcpt whitelist";score = -5;}
 ~~~
+
+## SpamAssassin-like Rules
+
+Starting from Rspamd 3.13, the multimap module supports SpamAssassin-like rule definitions with regular expressions and meta rules. This allows you to use familiar SpamAssassin syntax for creating complex rules with logical combinations.
+
+### Configuration
+
+To use SpamAssassin-like rules, set the map type to `regexp_rules`:
+
+~~~ucl
+multimap {
+  # SpamAssassin-like rules
+  CUSTOM_SA_RULES {
+    type = "regexp_rules";
+    map = "/path/to/sa_rules.cf";
+    description = "Custom SpamAssassin-like rules";
+  }
+}
+~~~
+
+### Rule Format
+
+The SpamAssassin-like map supports the following rule types:
+
+#### Regular Expression Rules
+
+~~~
+# Header rules
+header CUSTOM_HEADER_RULE Subject =~ /spam|phishing/i
+header FROM_FREEMAIL From =~ /\@(gmail|yahoo|hotmail)\.com$/i
+
+# Body rules  
+body CUSTOM_BODY_RULE /viagra|cialis/i
+rawbody CUSTOM_RAW_BODY /\bhidden\s+text\b/i
+
+# URI rules
+uri CUSTOM_URI_RULE /bit\.ly|tinyurl/i
+
+# Full message rules
+full CUSTOM_FULL_RULE /malicious\s+content/i
+~~~
+
+#### Meta Rules
+
+Meta rules combine multiple atoms using logical expressions:
+
+~~~
+# Define meta rules using logical combinations
+meta SPAM_COMBO CUSTOM_HEADER_RULE & CUSTOM_BODY_RULE
+meta PHISHING_RULE FROM_FREEMAIL & CUSTOM_URI_RULE
+meta COMPLEX_RULE (CUSTOM_HEADER_RULE | CUSTOM_BODY_RULE) & !WHITELIST_RULE
+~~~
+
+#### Score Rules
+
+Set custom scores for rules:
+
+~~~
+# Set scores for individual rules
+score CUSTOM_HEADER_RULE 2.5
+score SPAM_COMBO 5.0
+score PHISHING_RULE 8.0
+~~~
+
+#### Description Rules
+
+Set custom descriptions for rules:
+
+~~~
+# Set descriptions for individual rules
+describe CUSTOM_HEADER_RULE Detects suspicious header patterns
+describe SPAM_COMBO Combination rule for spam detection
+describe PHISHING_RULE Detects phishing attempts
+~~~
+
+### Supported Operators
+
+- `&` - AND operation
+- `|` - OR operation  
+- `!` - NOT operation
+- `()` - Grouping
+
+### Regular Expression Formats
+
+Regular expressions can be specified in several formats:
+
+~~~
+# Standard format with flags
+/pattern/flags
+
+# Alternative format
+m{pattern}flags
+
+# Without delimiters (flags not supported)
+pattern
+~~~
+
+Supported flags: `g`, `i`, `m`, `x`, `s`, `u`
+
+### Example Configuration
+
+~~~ucl
+multimap {
+  # Main SA rules
+  CUSTOM_SA_CHECKS {
+    type = "regexp_rules";
+    map = "file:///etc/rspamd/custom_sa.cf";
+    description = "Custom SpamAssassin rules";
+  }
+}
+~~~
+
+Content of `/etc/rspamd/custom_sa.cf`:
+
+~~~
+# Header checks
+header SUSPICIOUS_SUBJECT Subject =~ /urgent|winner|lottery/i
+header FROM_SUSPICIOUS From =~ /noreply@.+\.tk$/i
+
+# Body checks
+body BODY_SUSPICIOUS /click.*here.*now/i
+body BODY_MONEY /\$\d+,?\d*\s*(million|thousand)/i
+
+# URI checks  
+uri URI_SUSPICIOUS /bit\.ly|tinyurl|goo\.gl/i
+
+# Meta combinations
+meta SPAM_LIKELY SUSPICIOUS_SUBJECT & BODY_SUSPICIOUS
+meta PHISH_LIKELY FROM_SUSPICIOUS & URI_SUSPICIOUS
+meta MONEY_SCAM BODY_MONEY & URI_SUSPICIOUS
+
+# Descriptions
+describe SUSPICIOUS_SUBJECT Detects urgent/lottery type subjects
+describe BODY_SUSPICIOUS Detects click-here type body content
+describe SPAM_LIKELY Combination of suspicious subject and body
+describe PHISH_LIKELY Suspicious sender with URL shorteners
+describe MONEY_SCAM Money-related content with suspicious URLs
+
+# Scores
+score SUSPICIOUS_SUBJECT 1.5
+score BODY_SUSPICIOUS 2.0
+score SPAM_LIKELY 5.0
+score PHISH_LIKELY 7.0
+score MONEY_SCAM 8.5
+~~~
+
+### Features
+
+- **Regular Expression Caching**: All regular expressions are cached for optimal performance
+- **Meta Rule Support**: Complex logical combinations of rules
+- **Dynamic Symbol Creation**: Meta rules automatically create new symbols  
+- **Score Management**: Flexible scoring system
+- **Named Results**: Full support for Rspamd's named results system
+- **Negation Support**: Header rules support `!~` for negation
+
+### Performance Considerations
+
+- Regular expressions are compiled once and cached
+- Meta rules are evaluated lazily  
+- Rules are processed line-by-line during map loading
+- All rules use Rspamd's optimized regexp engine
+
+### Limitations
+
+- Function-based SpamAssassin rules (eval:) are not supported
+- Some advanced SpamAssassin features may not be available
+- Rules are processed in the order they appear in the file
+- **Symbol Removal**: When symbols are removed between map updates, they remain in the symbol table until restart. Automatic cleanup of removed symbols will be implemented in a future version.

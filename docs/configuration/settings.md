@@ -215,50 +215,380 @@ EOD;
 
 Redis servers are configured as per usual - see [here](/configuration/redis) for details.
 
-Below is an example documentation section for the external_map feature in settings.lua. It combines details from the current code and the existing settings documentation, and it incorporates references from several sources such as [rspamd.com](/developers/writing_rules) and the [Lua 5.4 Reference Manual](https://www.lua.org/manual/5.4/manual.html).
-
----
-
 ## External Map for Dynamic Settings
 
-Rspamd’s settings system can retrieve dynamic configuration from external sources—what is known as the external map feature. Instead of—or in addition to—using locally defined actions (via the "apply" block) within a settings rule, you can define an **external_map** block. When a rule matches, this block instructs Rspamd to query an external data source (for example, an HTTP endpoint, file, or Redis map) for settings that will then be applied to the task.
+Rspamd's settings system can retrieve dynamic configuration from external sources using the external map feature. When a settings rule includes an `external_map` block, Rspamd will query an external data source for settings that will be applied to the task.
 
 ### How It Works
 
-When a settings rule includes an external_map definition, the following steps occur:
+The external_map feature works as follows:
 
-1. **Definition of the External Map and Selector**  
-   The external_map block must contain two key components:
-   - **map:** A map definition that describes where and how to fetch the external settings. Internally, the code calls `lua_maps.map_add_from_ucl()` to create a map fetcher for the specified external resource.
-   - **selector:** An expression or function that returns a key based on the task attributes. This selector is compiled into a closure (via `lua_selectors.create_selector_closure_fn()`) and is used to query the external map. If the selector returns a non-nil value, that key is used to perform the lookup.
+1. **Selector Evaluation**: When a settings rule matches, the selector is evaluated with the current task to produce a lookup key.
+2. **Map Query**: The external map is queried using this key.
+3. **Response Processing**: If the map returns data, it is parsed as UCL and applied as settings to the task.
 
-2. **Invocation and Response Handling**  
-   Once a task matches the other conditions (such as `from`, `rcpt`, or `ip`), the external_map block is triggered. The selector function is called with the task as an argument to produce the lookup key. Then Rspamd asynchronously queries the external map using that key.  
-   - The asynchronous callback (created with `gen_settings_external_cb(name)`) attempts to parse the response using a UCL parser.  
-   - If the response is valid and properly formatted, dynamic settings are applied to the task via `apply_settings()`.
+### Configuration Structure
 
-3. **Fallback and Logging**  
-   If the selector fails to produce a key or if the external map returns an error (or returns no settings), a message is logged (e.g., “cannot query selector to make external map request”) and the external_map branch is bypassed. In this case, any other query parameters or local settings might be applied instead.
+The `external_map` block requires two components:
 
-### Example Configuration
+- **map**: Map definition specifying the external data source
+- **selector**: A [selector expression](/configuration/selectors) that generates the lookup key
 
-Below is an example of how you might define a settings rule using the external_map feature in your configuration (such as in `local.d/settings.conf`):
+### Map Types
+
+External maps support several backends:
+
+#### HTTP Backend
 
 ~~~hcl
-some_settings {
-  id = "dynamic_settings";
-  priority = medium;
-  from = "@example.com"; # Can be removed if that query is unconditional
-  # Other matching conditions can be specified as needed
+external_map = {
+  map = {
+    external = true;
+    backend = "http://settings.example.com/api";
+    method = "body";        # "body", "header", or "query" 
+    encode = "json";        # "json" or "messagepack"
+    timeout = 5.0;          # optional timeout in seconds
+  }
+  selector = "from('smtp'):addr";
+}
+~~~
 
+For HTTP maps:
+- `method = "body"`: Key is sent in request body in POST request (encoded as specified)
+- `method = "header"`: Key is sent in `X-Key` header
+- `method = "query"`: Key is sent as `key` query parameter
+
+#### CDB Backend
+
+CDB is a constant key-value database that can be used to store settings locally
+
+~~~hcl
+external_map = {
+  map = {
+    external = true;
+    cdb = "/path/to/settings.cdb";
+  }
+  selector = "from('smtp'):addr";
+}
+~~~
+
+### Response Format
+
+The external map must return valid UCL data representing settings to apply:
+
+~~~json
+{
+  "symbols": {
+    "CUSTOM_SYMBOL": 10.0
+  },
+  "actions": {
+    "reject": 15.0
+  },
+  "subject": "SPAM: %s"
+}
+~~~
+
+### Complete Example
+
+~~~hcl
+# local.d/settings.conf
+dynamic_user_settings {
+  id = "dynamic_user_settings";
+  priority = medium;
+  authenticated = yes;
+  
   external_map = {
-    # Define where to retrieve external settings:
-    map = "http://settings.example.com/dynamic?key=%s";
-    # Define a selector function that computes the map key based on task attributes,
-    # for instance returning the sender’s email address:
-    selector = "function(task) local from = task:get_from(1); if from then return from['addr'] end end";
+    map = {
+      external = true;
+      backend = "http://settings-api.example.com/user-settings";
+      method = "body";
+      encode = "json";
+      timeout = 2.0;
+    }
+    # Use authenticated username as lookup key
+    selector = "user";
+  }
+}
+
+# Settings based on sender domain
+domain_specific_settings {
+  priority = low;
+  
+  external_map = {
+    map = {
+      external = true;
+      cdb = "/etc/rspamd/domain_settings.cdb";
+    }
+    # Use sender domain as lookup key
+    selector = "from('smtp'):domain";
   }
 }
 ~~~
 
-In this example, when a task originates from a sender at example.com—and after all other conditions are met—the selector extracts the sender’s address (using `task:get_from(1)`), formats it into the URL, and queries the external settings server. If the response is valid JSON/UCL data, it will be parsed and applied to adjust symbol scores, actions, header modifications, or any other settings as specified in the external response.
+### Error Handling
+
+- If the selector returns nil, the external map query is skipped
+- If the external map returns an error or no data, the request is logged and processing continues
+- If the response cannot be parsed as UCL, an error is logged and no settings are applied
+
+### Performance Considerations
+
+- External map queries are asynchronous and won't block message processing
+- Use appropriate timeouts to prevent slow external services from affecting performance
+- Consider caching on the external service side for frequently queried keys
+- CDB maps offer better performance than HTTP for static datasets
+
+## Example HTTP Server
+
+Here's a complete example of a Python HTTP server that can handle external map requests from Rspamd:
+
+### Server Implementation
+
+```python
+#!/usr/bin/env python3
+"""
+Example HTTP server for Rspamd external settings maps
+Supports different HTTP methods and database backend
+"""
+
+from flask import Flask, request, jsonify
+import sqlite3
+import json
+import msgpack
+import logging
+
+app = Flask(__name__)
+logging.basicConfig(level=logging.INFO)
+
+# Database setup
+def init_db():
+    conn = sqlite3.connect('settings.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS user_settings (
+            key TEXT PRIMARY KEY,
+            settings TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    
+    # Insert some example data
+    examples = [
+        ('user@example.com', {
+            'symbols': {'CUSTOM_USER_SYMBOL': 5.0},
+            'actions': {'reject': 20.0}
+        }),
+        ('admin@example.com', {
+            'symbols': {'ADMIN_SYMBOL': -10.0},
+            'actions': {'reject': 50.0}
+        }),
+        ('spam.domain.com', {
+            'symbols': {'SPAM_DOMAIN': 15.0},
+            'actions': {'reject': 5.0}
+        })
+    ]
+    
+    for key, settings in examples:
+        cursor.execute(
+            'INSERT OR REPLACE INTO user_settings (key, settings) VALUES (?, ?)',
+            (key, json.dumps(settings))
+        )
+    
+    conn.commit()
+    conn.close()
+
+def get_settings(key):
+    """Retrieve settings from database"""
+    conn = sqlite3.connect('settings.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT settings FROM user_settings WHERE key = ?', (key,))
+    result = cursor.fetchone()
+    conn.close()
+    
+    if result:
+        return json.loads(result[0])
+    return None
+
+@app.route('/settings', methods=['POST'])
+def handle_settings():
+    """Handle settings requests from Rspamd"""
+    key = None
+    
+    # Determine how to extract the key based on method
+    method = request.args.get('method', 'body')  # Allow override via query param
+    
+    if method == 'query' or request.method == 'GET':
+        # Key sent as query parameter
+        key = request.args.get('key')
+    elif method == 'header':
+        # Key sent in X-Key header
+        key = request.headers.get('X-Key')
+    elif method == 'body':
+        # Key sent in request body
+        content_type = request.headers.get('Content-Type', '')
+        if 'application/json' in content_type:
+            data = request.get_json()
+            if isinstance(data, dict):
+                key = data.get('key')
+            else:
+                key = data  # If it's just a string
+        elif 'application/x-msgpack' in content_type:
+            try:
+                data = msgpack.unpackb(request.data)
+                if isinstance(data, dict):
+                    key = data.get('key')
+                else:
+                    key = data
+            except:
+                app.logger.error("Failed to decode msgpack data")
+                return jsonify({'error': 'Invalid msgpack data'}), 400
+        else:
+            # Try to get key from raw body
+            key = request.data.decode('utf-8')
+    
+    if not key:
+        app.logger.warning("No key provided in request")
+        return jsonify({'error': 'No key provided'}), 400
+    
+    app.logger.info(f"Looking up settings for key: {key}")
+    
+    # Get settings from database
+    settings = get_settings(key)
+    
+    if settings:
+        app.logger.info(f"Found settings for key: {key}")
+        return jsonify(settings)
+    else:
+        app.logger.info(f"No settings found for key: {key}")
+        return jsonify({'error': 'Settings not found'}), 404
+
+@app.route('/settings/<key>', methods=['GET'])
+def get_settings_by_path(key):
+    """Alternative endpoint with key in URL path"""
+    app.logger.info(f"Looking up settings for key: {key}")
+    settings = get_settings(key)
+    
+    if settings:
+        return jsonify(settings)
+    else:
+        return jsonify({'error': 'Settings not found'}), 404
+
+@app.route('/health', methods=['GET'])
+def health_check():
+    """Health check endpoint"""
+    return jsonify({'status': 'healthy'})
+
+if __name__ == '__main__':
+    init_db()
+    app.run(host='0.0.0.0', port=8080, debug=True)
+```
+
+### Database Schema
+
+```sql
+-- settings.db schema
+CREATE TABLE user_settings (
+    key TEXT PRIMARY KEY,
+    settings TEXT NOT NULL,  -- JSON string of settings
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Example data
+INSERT INTO user_settings (key, settings) VALUES 
+('user@example.com', '{"symbols": {"CUSTOM_USER": 5.0}, "actions": {"reject": 20.0}}'),
+('admin@example.com', '{"symbols": {"ADMIN_SYMBOL": -10.0}, "actions": {"reject": 50.0}}'),
+('spam.domain.com', '{"symbols": {"SPAM_DOMAIN": 15.0}, "actions": {"reject": 5.0}}');
+```
+
+### Rspamd Configuration
+
+```hcl
+# local.d/settings.conf
+user_based_settings {
+  priority = high;
+  authenticated = yes;
+  
+  external_map = {
+    map = {
+      external = true;
+      backend = "http://localhost:8080/settings";
+      method = "body";
+      encode = "json";
+      timeout = 2.0;
+    }
+    selector = "user:lower";
+  }
+}
+
+domain_based_settings {
+  priority = medium;
+  
+  external_map = {
+    map = {
+      external = true;
+      backend = "http://localhost:8080/settings";
+      method = "body";
+      encode = "json";
+      timeout = 2.0;
+    }
+    selector = "from('smtp'):domain:lower";
+  }
+}
+```
+
+### Testing the Server
+
+```bash
+# Install dependencies
+pip install flask msgpack
+
+# Run the server
+python3 settings_server.py
+
+# Test with curl
+curl -X POST http://localhost:8080/settings \
+  -H "Content-Type: application/json" \
+  -d '"user@example.com"'
+
+# Test with query parameter
+curl "http://localhost:8080/settings?key=user@example.com"
+
+# Test with header
+curl -X POST http://localhost:8080/settings \
+  -H "X-Key: user@example.com"
+```
+
+### Production Considerations
+
+For production use, consider:
+
+1. **Authentication**: Add API key authentication
+2. **Rate limiting**: Implement request rate limiting
+3. **Caching**: Add Redis or memory caching for frequently accessed settings
+4. **Database**: Use PostgreSQL or MySQL for better performance
+5. **Monitoring**: Add metrics and logging
+6. **SSL/TLS**: Use HTTPS for secure communication
+
+```python
+# Example with Redis caching
+import redis
+import json
+
+redis_client = redis.Redis(host='localhost', port=6379, db=0)
+
+def get_settings_cached(key):
+    # Try cache first
+    cached = redis_client.get(f"settings:{key}")
+    if cached:
+        return json.loads(cached)
+    
+    # Get from database
+    settings = get_settings(key)
+    if settings:
+        # Cache for 5 minutes
+        redis_client.setex(f"settings:{key}", 300, json.dumps(settings))
+    
+    return settings
+```
+
+This example provides a complete working HTTP server that can handle all the different methods Rspamd uses for external map queries and can be easily extended for production use.
