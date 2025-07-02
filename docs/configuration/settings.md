@@ -223,8 +223,8 @@ Rspamd's settings system can retrieve dynamic configuration from external source
 
 The external_map feature works as follows:
 
-1. **Selector Evaluation**: When a settings rule matches, the selector is evaluated with the current task to produce a lookup key.
-2. **Map Query**: The external map is queried using this key.
+1. **Selector Evaluation**: When a settings rule matches, the selector is evaluated with the current task to produce key-value pairs.
+2. **Map Query**: The external map is queried using these key-value pairs as the request data.
 3. **Response Processing**: If the map returns data, it is parsed as UCL and applied as settings to the task.
 
 ### Configuration Structure
@@ -232,7 +232,9 @@ The external_map feature works as follows:
 The `external_map` block requires two components:
 
 - **map**: Map definition specifying the external data source
-- **selector**: A [selector expression](/configuration/selectors) that generates the lookup key
+- **selector**: A [selector expression](/configuration/selectors) that generates key-value pairs for the request
+
+**Important**: The selector must return an even number of elements that form key-value pairs. Odd elements become keys, even elements become values. Use the `id('key')` selector to specify constant keys.
 
 ### Map Types
 
@@ -249,14 +251,14 @@ external_map = {
     encode = "json";        # "json" or "messagepack"
     timeout = 5.0;          # optional timeout in seconds
   }
-  selector = "from('smtp'):addr";
+  selector = "id('user');user;id('from');from('smtp'):addr";
 }
 ~~~
 
 For HTTP maps:
-- `method = "body"`: Key is sent in request body in POST request (encoded as specified)
-- `method = "header"`: Key is sent in `X-Key` header
-- `method = "query"`: Key is sent as `key` query parameter
+- `method = "body"`: Key-value pairs are sent in request body as POST request (encoded as specified)
+- `method = "header"`: Key-value pairs are sent as HTTP headers
+- `method = "query"`: Key-value pairs are sent as query parameters
 
 #### CDB Backend
 
@@ -268,9 +270,24 @@ external_map = {
     external = true;
     cdb = "/path/to/settings.cdb";
   }
-  selector = "from('smtp'):addr";
+  selector = "id('user');user;id('domain');from('smtp'):domain";
 }
 ~~~
+
+### Selector Format
+
+The selector must return key-value pairs using the following format:
+- Use `id('key_name')` to specify literal keys
+- Separate key-value pairs with semicolons (`;`)
+- Example: `id('user');user;id('from');from('smtp'):addr`
+
+This selector would create the following data structure:
+```json
+{
+  "user": "authenticated_username",
+  "from": "sender@example.com"
+}
+```
 
 ### Response Format
 
@@ -305,12 +322,12 @@ dynamic_user_settings {
       encode = "json";
       timeout = 2.0;
     }
-    # Use authenticated username as lookup key
-    selector = "user";
+    # Creates key-value pairs: {user: "username", ip: "client_ip"}
+    selector = "id('user');user;id('ip');ip";
   }
 }
 
-# Settings based on sender domain
+# Settings based on sender domain and recipient count
 domain_specific_settings {
   priority = low;
   
@@ -319,15 +336,15 @@ domain_specific_settings {
       external = true;
       cdb = "/etc/rspamd/domain_settings.cdb";
     }
-    # Use sender domain as lookup key
-    selector = "from('smtp'):domain";
+    # Creates key-value pairs: {domain: "example.com", rcpt_count: "2"}
+    selector = "id('domain');from('smtp'):domain;id('rcpt_count');rcpts:addr.len";
   }
 }
 ~~~
 
 ### Error Handling
 
-- If the selector returns nil, the external map query is skipped
+- If the selector returns nil or an odd number of elements, the external map query is skipped
 - If the external map returns an error or no data, the request is logged and processing continues
 - If the response cannot be parsed as UCL, an error is logged and no settings are applied
 
@@ -366,42 +383,61 @@ def init_db():
     cursor = conn.cursor()
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS user_settings (
-            key TEXT PRIMARY KEY,
+            user TEXT,
+            domain TEXT,
             settings TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (user, domain)
         )
     ''')
     
     # Insert some example data
     examples = [
-        ('user@example.com', {
+        ('user@example.com', 'example.com', {
             'symbols': {'CUSTOM_USER_SYMBOL': 5.0},
             'actions': {'reject': 20.0}
         }),
-        ('admin@example.com', {
+        ('admin@example.com', 'example.com', {
             'symbols': {'ADMIN_SYMBOL': -10.0},
             'actions': {'reject': 50.0}
         }),
-        ('spam.domain.com', {
+        (None, 'spam.domain.com', {
             'symbols': {'SPAM_DOMAIN': 15.0},
             'actions': {'reject': 5.0}
         })
     ]
     
-    for key, settings in examples:
+    for user, domain, settings in examples:
         cursor.execute(
-            'INSERT OR REPLACE INTO user_settings (key, settings) VALUES (?, ?)',
-            (key, json.dumps(settings))
+            'INSERT OR REPLACE INTO user_settings (user, domain, settings) VALUES (?, ?, ?)',
+            (user, domain, json.dumps(settings))
         )
     
     conn.commit()
     conn.close()
 
-def get_settings(key):
-    """Retrieve settings from database"""
+def get_settings(data):
+    """Retrieve settings from database based on key-value data"""
     conn = sqlite3.connect('settings.db')
     cursor = conn.cursor()
-    cursor.execute('SELECT settings FROM user_settings WHERE key = ?', (key,))
+    
+    # Build query based on available data
+    conditions = []
+    params = []
+    
+    if 'user' in data:
+        conditions.append('user = ?')
+        params.append(data['user'])
+    
+    if 'domain' in data:
+        conditions.append('domain = ?')
+        params.append(data['domain'])
+    
+    if not conditions:
+        return None
+    
+    query = 'SELECT settings FROM user_settings WHERE ' + ' AND '.join(conditions)
+    cursor.execute(query, params)
     result = cursor.fetchone()
     conn.close()
     
@@ -412,65 +448,37 @@ def get_settings(key):
 @app.route('/settings', methods=['POST'])
 def handle_settings():
     """Handle settings requests from Rspamd"""
-    key = None
+    data = None
     
-    # Determine how to extract the key based on method
-    method = request.args.get('method', 'body')  # Allow override via query param
+    # Parse request data based on content type
+    content_type = request.headers.get('Content-Type', '')
     
-    if method == 'query' or request.method == 'GET':
-        # Key sent as query parameter
-        key = request.args.get('key')
-    elif method == 'header':
-        # Key sent in X-Key header
-        key = request.headers.get('X-Key')
-    elif method == 'body':
-        # Key sent in request body
-        content_type = request.headers.get('Content-Type', '')
-        if 'application/json' in content_type:
-            data = request.get_json()
-            if isinstance(data, dict):
-                key = data.get('key')
-            else:
-                key = data  # If it's just a string
-        elif 'application/x-msgpack' in content_type:
-            try:
-                data = msgpack.unpackb(request.data)
-                if isinstance(data, dict):
-                    key = data.get('key')
-                else:
-                    key = data
-            except:
-                app.logger.error("Failed to decode msgpack data")
-                return jsonify({'error': 'Invalid msgpack data'}), 400
-        else:
-            # Try to get key from raw body
-            key = request.data.decode('utf-8')
+    if 'application/json' in content_type:
+        data = request.get_json()
+    elif 'application/x-msgpack' in content_type:
+        try:
+            data = msgpack.unpackb(request.data)
+        except:
+            app.logger.error("Failed to decode msgpack data")
+            return jsonify({'error': 'Invalid msgpack data'}), 400
+    else:
+        # Try to parse as form data for query method
+        data = dict(request.form) or dict(request.args)
     
-    if not key:
-        app.logger.warning("No key provided in request")
-        return jsonify({'error': 'No key provided'}), 400
+    if not data:
+        app.logger.warning("No data provided in request")
+        return jsonify({'error': 'No data provided'}), 400
     
-    app.logger.info(f"Looking up settings for key: {key}")
+    app.logger.info(f"Looking up settings for data: {data}")
     
     # Get settings from database
-    settings = get_settings(key)
+    settings = get_settings(data)
     
     if settings:
-        app.logger.info(f"Found settings for key: {key}")
+        app.logger.info(f"Found settings for data: {data}")
         return jsonify(settings)
     else:
-        app.logger.info(f"No settings found for key: {key}")
-        return jsonify({'error': 'Settings not found'}), 404
-
-@app.route('/settings/<key>', methods=['GET'])
-def get_settings_by_path(key):
-    """Alternative endpoint with key in URL path"""
-    app.logger.info(f"Looking up settings for key: {key}")
-    settings = get_settings(key)
-    
-    if settings:
-        return jsonify(settings)
-    else:
+        app.logger.info(f"No settings found for data: {data}")
         return jsonify({'error': 'Settings not found'}), 404
 
 @app.route('/health', methods=['GET'])
@@ -488,16 +496,18 @@ if __name__ == '__main__':
 ```sql
 -- settings.db schema
 CREATE TABLE user_settings (
-    key TEXT PRIMARY KEY,
+    user TEXT,
+    domain TEXT,
     settings TEXT NOT NULL,  -- JSON string of settings
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user, domain)
 );
 
 -- Example data
-INSERT INTO user_settings (key, settings) VALUES 
-('user@example.com', '{"symbols": {"CUSTOM_USER": 5.0}, "actions": {"reject": 20.0}}'),
-('admin@example.com', '{"symbols": {"ADMIN_SYMBOL": -10.0}, "actions": {"reject": 50.0}}'),
-('spam.domain.com', '{"symbols": {"SPAM_DOMAIN": 15.0}, "actions": {"reject": 5.0}}');
+INSERT INTO user_settings (user, domain, settings) VALUES 
+('user@example.com', 'example.com', '{"symbols": {"CUSTOM_USER": 5.0}, "actions": {"reject": 20.0}}'),
+('admin@example.com', 'example.com', '{"symbols": {"ADMIN_SYMBOL": -10.0}, "actions": {"reject": 50.0}}'),
+(NULL, 'spam.domain.com', '{"symbols": {"SPAM_DOMAIN": 15.0}, "actions": {"reject": 5.0}}');
 ```
 
 ### Rspamd Configuration
@@ -516,7 +526,7 @@ user_based_settings {
       encode = "json";
       timeout = 2.0;
     }
-    selector = "user:lower";
+    selector = "id('user');user;id('domain');from('smtp'):domain";
   }
 }
 
@@ -531,7 +541,7 @@ domain_based_settings {
       encode = "json";
       timeout = 2.0;
     }
-    selector = "from('smtp'):domain:lower";
+    selector = "id('domain');from('smtp'):domain";
   }
 }
 ```
@@ -548,14 +558,12 @@ python3 settings_server.py
 # Test with curl
 curl -X POST http://localhost:8080/settings \
   -H "Content-Type: application/json" \
-  -d '"user@example.com"'
+  -d '{"user": "user@example.com", "domain": "example.com"}'
 
-# Test with query parameter
-curl "http://localhost:8080/settings?key=user@example.com"
-
-# Test with header
+# Test domain-only lookup
 curl -X POST http://localhost:8080/settings \
-  -H "X-Key: user@example.com"
+  -H "Content-Type: application/json" \
+  -d '{"domain": "spam.domain.com"}'
 ```
 
 ### Production Considerations
@@ -576,19 +584,21 @@ import json
 
 redis_client = redis.Redis(host='localhost', port=6379, db=0)
 
-def get_settings_cached(key):
+def get_settings_cached(data):
+    cache_key = f"settings:{json.dumps(data, sort_keys=True)}"
+    
     # Try cache first
-    cached = redis_client.get(f"settings:{key}")
+    cached = redis_client.get(cache_key)
     if cached:
         return json.loads(cached)
     
     # Get from database
-    settings = get_settings(key)
+    settings = get_settings(data)
     if settings:
         # Cache for 5 minutes
-        redis_client.setex(f"settings:{key}", 300, json.dumps(settings))
+        redis_client.setex(cache_key, 300, json.dumps(settings))
     
     return settings
 ```
 
-This example provides a complete working HTTP server that can handle all the different methods Rspamd uses for external map queries and can be easily extended for production use.
+This example provides a complete working HTTP server that can handle the key-value pairs sent by Rspamd's external map feature and can be easily extended for production use.
