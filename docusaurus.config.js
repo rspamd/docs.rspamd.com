@@ -1,12 +1,19 @@
 // @ts-check
 // Note: type annotations allow type checking and IDEs autocompletion
 
+const repoName = process.env.GITHUB_REPOSITORY?.split('/')[1];
+const branch = process.env.GITHUB_REF_NAME?.replace('refs/heads/', '');
+// true for any branch‐build in GHA, false locally (no env var)
+const isPreview = Boolean(branch);
+
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: 'Rspamd Documentation',
   tagline: 'Fast, free and open-source spam filtering system',
   url: 'https://rspamd.com',
-  baseUrl: '/',
+  baseUrl: isPreview && repoName
+    ? `/${repoName}/branches/${branch}/`
+    : '/',
   onBrokenLinks: 'ignore',
   onBrokenMarkdownLinks: 'ignore',
   favicon: 'img/favicon.png',
