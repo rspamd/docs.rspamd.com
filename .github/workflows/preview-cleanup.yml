@@ -1,0 +1,55 @@
+# Note: The 'delete' event only triggers if the workflow file
+# is in the repository's default branch (usually 'main' or 'master').
+# If this workflow is in a non-default branch, branch deletions won't trigger it.
+
+name: Cleanup branch previews
+
+on:
+  push:
+    branches-ignore:
+      - gh-pages
+  delete:
+    branches:
+      - '**'
+
+concurrency:
+  group: cleanup-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  cleanup:
+    if: github.repository_owner == github.actor
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout gh-pages
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+
+      - name: Get list of existing branches
+        run: |
+          git ls-remote --heads origin | awk '{print $2}' | sed 's|refs/heads/||' > /tmp/branches.txt
+          echo "Existing branches:"
+          cat /tmp/branches.txt
+
+      - name: Remove preview folders for deleted branches
+        run: |
+          removed=0
+          for dir in branches/*; do
+            branch=$(basename "$dir")
+            if ! grep -qx "$branch" /tmp/branches.txt; then
+              echo "Removing stale preview: $dir"
+              rm -rf "$dir"
+              removed=1
+            fi
+          done
+          echo "removed=$removed" >> "$GITHUB_ENV"
+
+      - name: Commit and push changes
+        if: env.removed == '1'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Cleanup previews for deleted branches" || echo "Nothing to commit"
+          git push origin gh-pages

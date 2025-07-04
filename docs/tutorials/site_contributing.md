@@ -212,6 +212,38 @@ npm run serve
 
 This will build the static site and serve it locally, allowing you to test the final output.
 
+### Running tests and publishing preview with GitHub Actions
+
+Alternatively, you can configure GitHub Actions to publish a GitHub Pages preview for each branch in your fork.
+
+To enable GitHub Actions workflows:
+
+1. On GitHub, navigate to your fork repository.
+1. Under your repository name, click **Actions**, then click **I understand my workflows, go ahead and enable them**.
+
+To configure your site for publishing from GitHub Actions:
+
+1. On GitHub, navigate to your fork repository.
+1. Under your repository name, click **Settings**.
+1. In the "Code and automation" section of the left sidebar, click **Pages**.
+1. Under "Build and deployment", set "Source" to **Deploy from a branch**, then choose the **gh-pages** branch and the **/ (root)** folder.
+
+Your website will be accessible for each branch at:
+
+```
+https://<user>.github.io/<repository>/branches/<branch>/
+```
+
+### Cleaning up preview deployments
+
+Previews deployed to `gh-pages/branches/<branch>` are automatically removed when the corresponding branch is deleted or renamed in your fork.
+
+This is handled by a GitHub Actions workflow included in the repository. It is triggered by both `push` and `delete` events and ensures that only previews for existing branches remain published.
+
+**Note:** The `delete` event only triggers this workflow if the workflow file is present in the repository’s default branch (usually `main` or `master`). If the workflow is in a non-default branch, branch deletions won’t trigger it.
+
+No additional action is required — just make sure GitHub Actions are enabled in your fork and that the cleanup workflow file is present.
+
 ## Submitting Your Contribution
 
 ### 1. Commit Your Changes
