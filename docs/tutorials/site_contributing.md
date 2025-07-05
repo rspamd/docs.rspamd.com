@@ -234,6 +234,15 @@ Your website will be accessible for each branch at:
 https://<user>.github.io/<repository>/branches/<branch>/
 ```
 
+GitHub Actions also creates a separate preview for each pull request:
+
+```
+https://<user>.github.io/<repository>/pr/<number>/
+```
+
+A comment with the preview link is automatically added to the pull request after the GitHub Pages deployment is complete — both for the initial PR and for subsequent updates.
+If the site content hasn’t changed, the workflow exits early without posting a comment.
+
 ### Cleaning up preview deployments
 
 Previews deployed to `gh-pages/branches/<branch>` are automatically removed when the corresponding branch is deleted or renamed in your fork.

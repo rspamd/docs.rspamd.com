@@ -1,4 +1,4 @@
-name: Deploy branch
+name: Branch preview
 
 on:
   push:
@@ -10,9 +10,37 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  preview:
-    name: "Preview: /branches/${{ github.ref_name }}/"
+  pr-check:
     runs-on: ubuntu-latest
+    outputs:
+      has-pr: ${{ steps.check.outputs.result }}
+    steps:
+      - name: Check if branch is part of an open PR
+        uses: actions/github-script@v6
+        id: check
+        with:
+          result-encoding: string
+          script: |
+            const branch = context.ref.replace('refs/heads/', '');
+            const { owner, repo } = context.repo;
+            const { data: prs } = await github.rest.pulls.list({
+              owner, repo, head: `${owner}:${branch}`, state: 'open',
+            });
+            return prs.length > 0;
+
+      - name: Show pr‑check result
+        run: echo "pr-check.has-pr = ${{ steps.check.outputs.result }}"
+
+      - name: Skipping branch preview
+        if: steps.check.outputs.result == 'true'
+        run: |
+          echo "Branch is part of an open PR — skipping branch preview." >> $GITHUB_STEP_SUMMARY
+
+  preview:
+    name: "${{ format('path: /branches/{0}/', github.ref_name) }}"
+    runs-on: ubuntu-latest
+    needs: pr-check
+    if: needs.pr-check.outputs.has-pr == 'false'
     steps:
       - uses: actions/checkout@v4
 
@@ -21,7 +49,7 @@ jobs:
           npm install
           npm run build
 
-      - name: Deploy preview to gh‑pages
+      - name: Deploy branch preview
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           branch: gh-pages
@@ -31,4 +59,4 @@ jobs:
 
       - name: Add summary with preview link
         run: |
-          echo "🔍 [Site preview](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/branches/${{ github.ref_name }}/)" >> $GITHUB_STEP_SUMMARY
+          echo "🔍 [Branch preview](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/branches/${{ github.ref_name }}/)" >> $GITHUB_STEP_SUMMARY
