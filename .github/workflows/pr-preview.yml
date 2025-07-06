@@ -27,6 +27,7 @@ jobs:
           branch: gh-pages
           folder: build
           clean: false
+          single-commit: true
           target-folder: pr/${{ github.event.pull_request.number }}
           token: ${{ secrets.GITHUB_TOKEN }}
 

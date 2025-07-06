@@ -55,6 +55,7 @@ jobs:
           branch: gh-pages
           folder: build
           clean: false
+          single-commit: true
           target-folder: branches/${{ github.ref_name }}
 
       - name: Add summary with preview link
