@@ -243,15 +243,16 @@ https://<user>.github.io/<repository>/pr/<number>/
 A comment with the preview link is automatically added to the pull request after the GitHub Pages deployment is complete — both for the initial PR and for subsequent updates.
 If the site content hasn’t changed, the workflow exits early without posting a comment.
 
-### Cleaning up preview deployments
+#### Cleaning up stale previews
 
-Previews deployed to `gh-pages/branches/<branch>` are automatically removed when the corresponding branch is deleted or renamed in your fork.
+To avoid accumulating outdated previews, a GitHub Actions workflow included in the repository:
 
-This is handled by a GitHub Actions workflow included in the repository. It is triggered by both `push` and `delete` events and ensures that only previews for existing branches remain published.
+- **On branch deletion** (same repo only) removes `branches/<branch>/` folders for branches that no longer exist.
+- **On PR events** (`opened`, `reopened`, `synchronize`, or `closed`) removes any `pr/<number>/` folders whose PRs are no longer open.
 
-**Note:** The `delete` event only triggers this workflow if the workflow file is present in the repository’s default branch (usually `main` or `master`). If the workflow is in a non-default branch, branch deletions won’t trigger it.
+> **Note:** The `delete` event only triggers this workflow if the workflow file is present in the repository’s default branch (usually `main` or `master`). If the workflow is in a non-default branch, branch deletions won’t trigger it.
 
-No additional action is required — just make sure GitHub Actions are enabled in your fork and that the cleanup workflow file is present.
+No manual intervention is needed — stale previews are cleaned up automatically.
 
 ## Submitting Your Contribution
 

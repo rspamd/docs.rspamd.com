@@ -2,7 +2,7 @@
 # is in the repository's default branch (usually 'main' or 'master').
 # If this workflow is in a non-default branch, branch deletions won't trigger it.
 
-name: Cleanup branch previews
+name: Cleanup previews
 
 on:
   push:
@@ -11,14 +11,16 @@ on:
   delete:
     branches:
       - '**'
+  pull_request:
+    types: [opened, reopened, synchronize, closed]
 
 concurrency:
-  group: cleanup-${{ github.ref }}
+  group: cleanup-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  cleanup:
-    if: github.repository_owner == github.actor
+  cleanup-branches:
+    if: github.event_name == 'delete' && github.repository_owner == github.actor
     runs-on: ubuntu-latest
     steps:
       - name: Checkout gh-pages
@@ -26,30 +28,79 @@ jobs:
         with:
           ref: gh-pages
 
-      - name: Get list of existing branches
+      - name: Get list of live branches
         run: |
           git ls-remote --heads origin | awk '{print $2}' | sed 's|refs/heads/||' > /tmp/branches.txt
-          echo "Existing branches:"
+          echo "Live branches:"
           cat /tmp/branches.txt
 
-      - name: Remove preview folders for deleted branches
+      - name: Remove stale branch previews
         run: |
           removed=0
           for dir in branches/*; do
             branch=$(basename "$dir")
             if ! grep -qx "$branch" /tmp/branches.txt; then
-              echo "Removing stale preview: $dir"
+              echo "🗑️ Removing stale branch preview: $dir"
               rm -rf "$dir"
               removed=1
             fi
           done
           echo "removed=$removed" >> "$GITHUB_ENV"
 
-      - name: Commit and push changes
+      - name: Commit and push branch-cleanup
         if: env.removed == '1'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "Cleanup previews for deleted branches" || echo "Nothing to commit"
+          git add branches
+          git commit -m "Cleanup previews for deleted branches"
+          git push origin gh-pages
+
+  cleanup-pr:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout gh-pages
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+
+      - name: Fetch open PR numbers
+        id: get-open-prs
+        uses: actions/github-script@v6
+        with:
+          result-encoding: string
+          script: |
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100
+            });
+            // Return space separated PRs as a string like "1 5 42"
+            return prs.map(pr => pr.number).join(' ');
+
+      - name: Remove stale PR previews
+        run: |
+          open_prs="${{ steps.get-open-prs.outputs.result }}"
+          echo "Open PRs: $open_prs"
+
+          removed=0
+          for dir in pr/*; do
+            pr_num=$(basename "$dir")
+            if ! grep -qw "$pr_num" <<< "$open_prs"; then
+              echo "🗑️ Removing stale PR preview: $dir"
+              rm -rf "$dir"
+              removed=1
+            fi
+          done
+          echo "removed_pr=$removed" >> "$GITHUB_ENV"
+
+      - name: Commit and push PR-cleanup
+        if: env.removed_pr == '1'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pr
+          git commit -m "Cleanup stale PR previews"
           git push origin gh-pages
