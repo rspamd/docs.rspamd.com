@@ -36,6 +36,11 @@ jobs:
 
       - name: Remove stale branch previews
         run: |
+          if [ ! -d branches ]; then
+            echo "No branches/ directory: skipping stale‑branch cleanup"
+            exit 0
+          fi
+
           removed=0
           for dir in branches/*; do
             branch=$(basename "$dir")
@@ -82,6 +87,11 @@ jobs:
 
       - name: Remove stale PR previews
         run: |
+          if [ ! -d pr ]; then
+            echo "No pr/ directory: skipping stale‑PR cleanup"
+            exit 0
+          fi
+
           open_prs="${{ steps.get-open-prs.outputs.result }}"
           echo "Open PRs: $open_prs"
 
