@@ -1,9 +1,8 @@
 // @ts-check
 // Note: type annotations allow type checking and IDEs autocompletion
 
-const isPr = process.env.GITHUB_EVENT_NAME === 'pull_request';
-// Extract PR number from GITHUB_REF, which looks like "refs/pull/123/merge"
-const prNumber = isPr ? process.env.GITHUB_REF.match(/^refs\/pull\/(\d+)\/merge$/)?.[1] : null;
+const prNumber = process.env.PR_NUMBER;
+const isPr = Boolean(prNumber);
 const repoName = process.env.GITHUB_REPOSITORY?.split('/')[1];
 const branch = process.env.GITHUB_REF_NAME?.replace('refs/heads/', '');
 // true for any branch‐build in GHA, false locally (no env var)

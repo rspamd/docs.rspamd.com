@@ -3,15 +3,24 @@ name: PR preview
 on:
   pull_request:
     types: [opened, reopened, synchronize]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'Pull request number'
+        required: true
+
+env:
+  PR_NUMBER: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.pr_number || github.event.pull_request.number }}
 
 concurrency:
-  group: pr-preview-${{ github.event.pull_request.number }}
+  group: pr-preview-${{ github.event_name == 'workflow_dispatch' && github.event.inputs.pr_number || github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
   pr-preview:
-    name: "path: /pr/${{ github.event.pull_request.number }}"
+    name: "path: /pr/${{ github.event_name == 'workflow_dispatch' && github.event.inputs.pr_number || github.event.pull_request.number }}"
     runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.event.pull_request.base.repo.full_name
     steps:
       - uses: actions/checkout@v4
 
@@ -28,7 +37,7 @@ jobs:
           folder: build
           clean: false
           single-commit: true
-          target-folder: pr/${{ github.event.pull_request.number }}
+          target-folder: pr/${{ env.PR_NUMBER }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Get latest gh-pages commit SHA
@@ -108,7 +117,7 @@ jobs:
         with:
           script: |
             const { owner, repo } = context.repo;
-            const issueNumber = context.issue.number;
+            const issueNumber = context.issue?.number || parseInt(process.env.PR_NUMBER, 10);
 
             const comments = await github.paginate(
               github.rest.issues.listComments,
@@ -132,6 +141,6 @@ jobs:
         if: steps.deploy.outputs.deployment-status == 'success'
         uses: peter-evans/create-or-update-comment@v3
         with:
-          issue-number: ${{ github.event.pull_request.number }}
+          issue-number: ${{ env.PR_NUMBER }}
           body: |
-            🔍 [PR preview](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/pr/${{ github.event.pull_request.number }}/)
+            🔍 [PR preview](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/pr/${{ env.PR_NUMBER }}/)
