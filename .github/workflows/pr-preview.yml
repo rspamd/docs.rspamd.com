@@ -1,0 +1,137 @@
+name: PR preview
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+concurrency:
+  group: pr-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  pr-preview:
+    name: "path: /pr/${{ github.event.pull_request.number }}"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies & build
+        run: |
+          npm install
+          npm run build
+
+      - name: Deploy PR preview
+        id: deploy
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: build
+          clean: false
+          single-commit: true
+          target-folder: pr/${{ github.event.pull_request.number }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get latest gh-pages commit SHA
+        id: get_sha
+        if: steps.deploy.outputs.deployment-status == 'success'
+        uses: actions/github-script@v7
+        with:
+          result-encoding: string
+          script: |
+            const result = await github.rest.repos.getBranch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              branch: 'gh-pages',
+            });
+            return result.data.commit.sha;
+
+      - name: Wait for GitHub Pages deployment
+        id: wait_for_deploy
+        if: steps.deploy.outputs.deployment-status == 'success'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const sha = '${{ steps.get_sha.outputs.result }}';
+            const maxRetries = 30;
+            const delay = ms => new Promise(res => setTimeout(res, ms));
+
+            let deploymentId;
+
+            for (let i = 0; i < maxRetries; i++) {
+              await delay(10000)
+
+              const deployments = await github.rest.repos.listDeployments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                sha,
+                environment: 'github-pages',
+                per_page: 1,
+              });
+
+              if (deployments.data.length > 0) {
+                deploymentId = deployments.data[0].id;
+                break;
+              }
+
+              core.info('Waiting for deployment to appear...');
+            }
+
+            if (!deploymentId) {
+              core.setFailed('Timed out waiting for deployment to be created.');
+              return;
+            }
+
+            for (let i = 0; i < maxRetries; i++) {
+              const statuses = await github.rest.repos.listDeploymentStatuses({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                deployment_id: deploymentId,
+              });
+
+              const state = statuses.data[0]?.state;
+              core.info(`Deployment status: ${state}`);
+
+              if (state === 'success') return;
+              if (state === 'error' || state === 'failure') {
+                core.setFailed(`Deployment failed with status: ${state}`);
+                return;
+              }
+
+              await delay(10000);
+            }
+
+            core.setFailed('Timed out waiting for deployment to complete.');
+
+      - name: Delete previous PR preview link comments
+        if: steps.deploy.outputs.deployment-status == 'success'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const issueNumber = context.issue.number;
+
+            const comments = await github.paginate(
+              github.rest.issues.listComments,
+              { owner, repo, issue_number: issueNumber }
+            );
+
+            for (const comment of comments) {
+              const isBot = comment.user.type === 'Bot' && comment.user.login === 'github-actions[bot]';
+              const isPreview = comment.body.includes('[PR preview]');
+              if (isBot && isPreview) {
+                await github.rest.issues.deleteComment({
+                  owner,
+                  repo,
+                  comment_id: comment.id
+                });
+                core.info(`Deleted comment ${comment.id}`);
+              }
+            }
+
+      - name: Comment PR with preview link
+        if: steps.deploy.outputs.deployment-status == 'success'
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            🔍 [PR preview](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/pr/${{ github.event.pull_request.number }}/)
