@@ -243,6 +243,14 @@ https://<user>.github.io/<repository>/pr/<number>/
 A comment with the preview link is automatically added to the pull request after the GitHub Pages deployment is complete — both for the initial PR and for subsequent updates.
 If the site content hasn’t changed, the workflow exits early without posting a comment.
 
+#### Pull requests from forks
+
+Previews are not deployed automatically for pull requests opened from forked repositories, because GitHub Actions do not have permission to write to the `gh-pages` branch in this case.
+
+Maintainers can manually trigger the **PR preview** workflow from the **Actions** tab after reviewing the pull request.
+
+> **Tip:** In the left sidebar of the **Actions** tab, select **PR preview** → **Run workflow**, enter the pull request number, and click **Run workflow**.
+
 #### Cleaning up stale previews
 
 To avoid accumulating outdated previews, a GitHub Actions workflow included in the repository:
