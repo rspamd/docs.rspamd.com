@@ -1,6 +1,7 @@
 // @ts-check
 // Note: type annotations allow type checking and IDEs autocompletion
 
+const path = require('path');
 const isPr = process.env.GITHUB_EVENT_NAME === 'pull_request';
 // Extract PR number from GITHUB_REF, which looks like "refs/pull/123/merge"
 const prNumber = isPr ? process.env.GITHUB_REF.match(/^refs\/pull\/(\d+)\/merge$/)?.[1] : null;
@@ -74,22 +75,21 @@ const config = {
 
   themes: ['@docusaurus/theme-mermaid'],
 
+  plugins: [
+    [
+      path.resolve(__dirname, './src/plugins/elasticsearch-search'),
+      {
+        searchBackend: {
+          endpoint: process.env.SEARCH_BACKEND_ENDPOINT || 
+                   (process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:3001'),
+        },
+      },
+    ],
+  ],
+
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
-      algolia: {
-        // The application ID provided by Algolia
-        appId: 'CT62O5YTD2',
-        // Public API key: it is safe to commit it
-        apiKey: '6bbd22f8f2bfbbf74c9da23d2f4acdb0',
-        indexName: 'rspamd',
-        // Optional: see doc section below
-        contextualSearch: true,
-        // Optional: Specify domains where the navigation should occur through window.location instead on history.push. Useful when our Algolia config crawls multiple documentation sites and we want to navigate with window.location.href to them.
-        externalUrlRegex: 'external\\.com|domain\\.com',
-        // Optional: Algolia search parameters
-        searchParameters: {},
-      },
       docs: {
         sidebar: {
           hideable: true,
@@ -168,6 +168,10 @@ const config = {
             to: '/changelog',
             label: 'Changelog',
             position: 'left',
+          },
+          {
+            type: 'search',
+            position: 'right',
           },
           {
             type: 'html',

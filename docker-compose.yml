@@ -1,0 +1,162 @@
+version: '3.8'
+
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: rspamd-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "bootstrap.memory_lock=true"
+    # No external ports - only accessible within Docker network
+    expose:
+      - "9200"
+      - "9300"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - elastic
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: rspamd-kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - xpack.security.enabled=false
+      - SERVER_PUBLICBASEURL=http://localhost:5601
+    # Only expose to localhost for admin access
+    ports:
+      - "127.0.0.1:5601:5601"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - elastic
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  search-backend:
+    build:
+      context: ./search-backend
+      dockerfile: Dockerfile
+    container_name: rspamd-search-backend
+    environment:
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - INDEX_NAME=rspamd-docs
+      - PORT=3001
+    ports:
+      - "3001:3001"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - elastic
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3001/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  search-indexer:
+    build:
+      context: .
+      dockerfile: search/Dockerfile
+    container_name: rspamd-search-indexer
+    environment:
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - SITE_URL=http://host.docker.internal:3000
+      - INDEX_NAME=rspamd-docs
+      - DOCS_PATH=/app/docs
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - elastic
+    volumes:
+      - ./search:/app/search
+      - ./docs:/app/docs
+      - ./blog:/app/blog
+      - ./changelogs:/app/changelogs
+    restart: "no"
+    profiles:
+      - indexing
+
+  search-indexer-lite:
+    build:
+      context: .
+      dockerfile: search/Dockerfile
+    container_name: rspamd-search-indexer-lite
+    environment:
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - INDEX_NAME=rspamd-docs
+      - DOCS_PATH=/app/docs
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - elastic
+    volumes:
+      - ./search:/app/search
+      - ./docs:/app/docs
+      - ./blog:/app/blog
+      - ./changelogs:/app/changelogs
+    restart: "no"
+    profiles:
+      - lite-indexing
+    command: ["node", "indexer-lite.js"]
+
+  # Optional: Auto-indexer that runs periodically
+  auto-indexer:
+    build:
+      context: .
+      dockerfile: search/Dockerfile
+    container_name: rspamd-auto-indexer
+    environment:
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - SITE_URL=http://host.docker.internal:3000
+      - INDEX_NAME=rspamd-docs
+      - DOCS_PATH=/app/docs
+      - AUTO_REINDEX=true
+      - REINDEX_INTERVAL=3600  # 1 hour
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - elastic
+    volumes:
+      - ./search:/app/search
+      - ./docs:/app/docs
+      - ./blog:/app/blog
+      - ./changelogs:/app/changelogs
+    restart: unless-stopped
+    profiles:
+      - auto-indexing
+    command: ["node", "auto-indexer.js"]
+
+volumes:
+  elasticsearch_data:
+    driver: local
+
+networks:
+  elastic:
+    driver: bridge 
