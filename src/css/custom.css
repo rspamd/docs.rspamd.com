@@ -2,6 +2,8 @@
  * Custom CSS for Rspamd documentation
  */
 
+@import './elasticsearch-search.css';
+
 :root {
   --ifm-color-primary: rgb(222, 71, 0);
   --ifm-color-primary-dark: rgb(200, 64, 0);
