@@ -289,7 +289,7 @@ Type attribute means what is matched with this map. The following types are supp
 | `rcpt` | matches any of  **envelope** rcpt or header `To` if envelope info is missing
 | `selector` | applies generic [selector](/configuration/selectors) and check data returned in the specific map. This type must have `selector` option and an optional `delimiter` option that defines how to join multiple selectors (an empty string by default). If a selector returns multiple values, e.g. `urls`, then all values are checked. Normal filter logic can also be applied to the selector's results.
 | `symbol_options` | (new in 1.6.3) match 'options' yielded by whichever symbol of interest (requires `target_symbol` parameter)
-| `url` | matches URLs in messages against maps (this excludes by default images urls and urls extracted from content parts, e.g. PDF parts)
+| `url` | matches URLs in messages against maps (this excludes images urls and urls extracted from content parts, e.g. PDF parts, to achieve this please use `selector` with `specific_urls({need_content = true, limit = 10})`)
 | `user` | matches authenticated username against maps
 
 DNS maps are considered legacy and it is not encouraged to use them in new projects. Instead, [rbl](/modules/rbl) should be used for that purpose.
@@ -325,6 +325,15 @@ SENDER_FROM_WHITELIST {
   type = "from";
   map = "file:///tmp/from.map";
   regexp = true;
+}
+
+URL_MODIFIER_REGEX {
+  type = "selector";
+  selector = "specific_urls({need_content = true, limit = 10})";
+  map = "file:///tmp/urls.map";
+  regexp = true;
+  score = 1.0;
+  one_shot = true;
 }
 ~~~
 
