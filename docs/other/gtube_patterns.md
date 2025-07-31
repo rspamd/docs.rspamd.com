@@ -4,7 +4,7 @@ title: GTUBE-like test patterns
 
 # GTUBE-like test patterns
 
-Unlike SpamAssassin where GTUBE carries a spam score, in Rspamd it triggers an action and inserts the `GTUBE` symbol.
+Unlike SpamAssassin where GTUBE carries a spam score, in Rspamd it triggers an action and inserts the `GTUBE` symbol. It also skips calling all the modules, even if they have the `explicit_disable` and `ignore_passthrough` flags.
 
 |pattern|action|enabled|
 |---|---|---|
