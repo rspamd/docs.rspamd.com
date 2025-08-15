@@ -6,21 +6,23 @@ title: Actions and scores
 
 ## Introduction
 
-Unlike SpamAssassin, Rspamd provides **suggested** actions for specific scanned messages. These actions can be considered as recommendations for the MTA on how to handle the message. Here is a list of the possible choices sent by Rspamd:
+Rspamd produces a message score and a single resulting action. The action is a recommendation to your MTA about how to handle the message. You control when actions trigger via thresholds, and you control how symbols contribute to the score via weights.
 
-- `discard`: drop an email but return success for sender (should be used merely in special cases)
-- `reject`: ultimately reject message
-- `rewrite subject`: rewrite subject to indicate spam
-- `add header`: add specific header to indicate spam
-- `no action`: allow message
-- `soft reject`: temporarily delay message (this is used, for instance, to greylist or ratelimit messages)
+Actions returned by Rspamd:
+
+- `discard`: drop the email but return success to the sender (special cases only)
+- `reject`: ultimately reject the message
+- `rewrite subject`: rewrite the subject to indicate spam
+- `add header`: add a header to indicate spam
+- `no action`: allow the message
+- `soft reject`: temporarily defer the message (used by greylisting/ratelimiting; no threshold)
 
 From version 1.9, there are also some more actions:
 
 - `quarantine`: push a message to quarantine (must be supported by MTA)
 - `discard`: silently discard a message
 
-Starting from version 1.9, you have the flexibility to define custom actions with their own threshold in Rspamd. You can also utilize these custom actions in the `force_actions` module. This allows you to tailor the actions according to your specific requirements:
+Starting from version 1.9, you have the flexibility to define custom actions with their own thresholds in Rspamd. You can also utilize these custom actions in the `force_actions` module:
 
 ```hcl
 actions {
@@ -37,6 +39,35 @@ actions {
 
 Only one action could be applied to a message. Hence, it is generally useless to define two actions with the same threshold.
 
+## Actions vs thresholds (important)
+
+- Thresholds are numeric score cutoffs defined in `local.d/actions.conf`.
+- Actions are what Rspamd actually returns to the MTA.
+
+Key points:
+
+- `soft reject` has no threshold. It is emitted by modules (e.g. `greylist`, `ratelimit`) or by core logic (e.g. timeouts) via a pre-result.
+- The `greylist` threshold triggers the `soft reject` action. For example, `greylist = 4;` means “at score ≥ 4, apply greylisting and return action soft reject”. This is expected by design.
+
+Example:
+
+```hcl
+# /etc/rspamd/local.d/actions.conf
+actions {
+  reject = 15;      # final reject
+  add_header = 6;   # mark spam
+  greylist = 4;     # triggers soft reject (temporary deferral)
+
+  # Custom action (referenced by force_actions), no own threshold
+  phishing = {
+    flags = ["no_threshold"];
+  }
+}
+```
+
+Notes:
+- Modules can force an action regardless of thresholds (e.g. greylisting/ratelimit calling `task:set_pre_result('soft reject', ...)`). The most severe applicable action wins.
+- Do not define two thresholds at the same score; only one action is returned.
 
 ## Configuring scores and actions
 
@@ -92,17 +123,15 @@ Actions thresholds and configuration are defined in `local.d/actions.conf`:
 
 ```hcl
 # local.d/actions.conf
-# Generic threshold
-my_action = {
-	score = 9.0;
-},
-# Force action only
-phishing = {
-	flags = ["no_threshold"],
-},
-greylist = {
- score = 2.0,
- flags = ["no_action"],
+actions {
+  reject = 15;
+  add_header = 6;
+  greylist = 4; # will result in soft reject
+
+  # Optional custom action used by force_actions
+  phishing = {
+    flags = ["no_threshold"];
+  }
 }
 ```
 
@@ -120,5 +149,5 @@ $$
 
 The default value for this setting is `1.0`, indicating no weight increase is applied. By raising this value, the score of messages with multiple matching `spam` rules is amplified. It's important to note that negative score values do not affect this value.
 
-* `subject` - string value that replaces the message's subject if the `rewrite subject` action is applied. Original subject can be included with `%s`. Message score can be filled using `%d` extension.
-* `unknown_weight` - weight for unknown rules. If this parameter is specified, all rules can add symbols to this metric. If such a rule is not specified by this metric then its weight is equal to this option's value. Please note, that adding this option means that all rules will be checked by Rspamd, on the contrary, if no `unknown_weight` metric is specified then rules that are not registered anywhere are silently ignored by Rspamd.
+* `subject` - string value that replaces the message's subject if the `rewrite subject` action is applied. Original subject can be included with `%s`. Message score can be filled using `%d`.
+* `unknown_weight` - weight for unknown rules. If set, all rules may add symbols to this metric. If a rule is not specified in the metric, its weight defaults to this value. Without this option, rules not registered in any metric are ignored.
