@@ -4,7 +4,7 @@ title: Frequently asked questions
 
 
 # Frequently asked questions
-{:.no_toc}
+
 
 This document includes some questions and practical examples that are frequently asked by Rspamd users.
 

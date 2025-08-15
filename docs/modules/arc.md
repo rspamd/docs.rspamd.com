@@ -13,8 +13,8 @@ The configuration of this module is similar to the [dkim](/modules/dkim) and [dk
 
 ## Configuration
 
-- `whitelist` - a map of domains that are exempt from ARC checking (e.g. due to broken ARC signers)
-- `whitelisted_signers_map` - a map of the trusted ARC forwarders
+- `whitelist` - a map of domains with known broken ARC implementations that should be trusted despite validation failures. When ARC validation fails for a domain in this list, the chain continues as if that step was valid
+- `whitelisted_signers_map` - a map of trusted ARC forwarders. When a valid ARC chain from one of these domains is found, the `ARC_ALLOW_TRUSTED` symbol is added with a score of -2.0
 - `adjust_dmarc` (**true** by default) - a boolean flag that enables fixing of DMARC issues when a trusted ARC forwarder is in the chain. This is useful in situations where a domain, `X`, uses a signer, `Y`, to forward emails, but `X` has a strict DMARC policy while `Y` alters the message in a legitimate way. By trusting `Y`, this option allows fixing DMARC rejection for `X`
 
 ## Principles of operation
@@ -75,9 +75,16 @@ reuse_auth_results = false;
 #selector_map = "/etc/rspamd/arc_selectors.map";
 # map of domains -> paths to keys (since rspamd 1.5.3)
 #path_map = "/etc/rspamd/arc_paths.map";
-# map of trusted domains. Symbol ARC_ALLOW_TRUSTED is added to messages
+# Map of trusted ARC forwarders. Symbol ARC_ALLOW_TRUSTED is added to messages
 # with valid ARC chains from these domains. A failed DMARC result is removed/ignored.
-# whitelisted_signers_map = ["example.org", "example.com"]
+# Can be configured as inline array, file map, or URL map:
+# whitelisted_signers_map = ["example.org", "example.com"];  # inline array
+# whitelisted_signers_map = "file:///etc/rspamd/maps/arc_trusted_signers.map";  # file map
+# whitelisted_signers_map = "http://example.com/maps/arc_trusted_signers.txt";  # URL map
+
+# Map of domains with broken ARC implementations to trust despite validation failures
+# whitelist = ["broken-forwarder.com", "buggy-arc.example"];  # inline array
+# whitelist = "file:///etc/rspamd/maps/arc_whitelist.map";  # file map
 
 # From version 1.8.4, Rspamd uses a different set of sign_headers for ARC:
 sign_headers = "(o)from:(o)sender:(o)reply-to:(o)subject:(o)date:(o)message-id:(o)to:(o)cc:(o)mime-version:(o)content-type:(o)content-transfer-encoding:resent-to:resent-cc:resent-from:resent-sender:resent-message-id:(o)in-reply-to:(o)references:list-id:list-owner:list-unsubscribe:list-subscribe:list-post:dkim-signature"
@@ -92,6 +99,50 @@ domain {
   }
 }
 ~~~
+
+## Trusted ARC forwarders
+
+The `whitelisted_signers_map` setting allows you to configure trusted ARC forwarders. When an email has a valid ARC chain that includes a signature from one of these trusted domains, Rspamd will:
+
+1. Add the `ARC_ALLOW_TRUSTED` symbol with a score of -2.0
+2. Optionally adjust DMARC policy violations if `adjust_dmarc` is enabled
+
+This is particularly useful for legitimate email forwarding services that may alter messages in ways that break DMARC alignment, but can be trusted based on their ARC signatures.
+
+### Configuration examples
+
+~~~hcl
+# local.d/arc.conf
+
+# Inline array (simple list)
+whitelisted_signers_map = ["mailgun.org", "sendgrid.net", "amazonses.com"];
+
+# File-based map
+whitelisted_signers_map = "file:///etc/rspamd/maps/arc_trusted_signers.map";
+
+# URL-based map (updated dynamically)
+whitelisted_signers_map = "http://example.com/maps/arc_trusted_signers.txt";
+~~~
+
+For file-based maps, create a simple text file with one domain per line:
+~~~
+mailgun.org
+sendgrid.net
+amazonses.com
+~~~
+
+## ARC chain validation and broken forwarders
+
+ARC validation works by verifying a chain of signatures and seals (i=1, i=2, i=3, etc.). If any step in this chain fails validation, the entire ARC chain is considered broken. However, in real-world deployments, you may encounter legitimate email forwarders that have buggy ARC implementations.
+
+The `whitelist` feature addresses this by allowing ARC chain validation to continue despite failures from trusted domains. For example:
+
+- Message has ARC chain: i=1 (good.example), i=2 (broken-forwarder.com), i=3 (final.example)
+- i=2 fails validation due to broken ARC implementation at broken-forwarder.com
+- If broken-forwarder.com is in the whitelist, validation continues treating i=2 as valid
+- i=3 validation proceeds normally, preserving the overall chain integrity
+
+This is different from traditional whitelisting which would skip ARC checks entirely. Instead, it "patches over" known broken implementations while maintaining the ARC chain's security properties.
 
 ## ARC keys in Redis
 

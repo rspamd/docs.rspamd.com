@@ -3,7 +3,7 @@ title: RBL module
 ---
 
 # RBL module
-{:.no_toc}
+
 
 The RBL module offers support for checking various message elements, such as the sender's IP addresses, URLs, emails, Received headers chains, SMTP data (e.g. HELO domain), and more, against a set of Runtime Black Lists (RBL) typically provided through dedicated DNS zones.
 

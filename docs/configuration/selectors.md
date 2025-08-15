@@ -4,7 +4,7 @@ title: Selectors
 
 
 # Rspamd selectors settings
-{:.no_toc}
+
 
 Rspamd selectors is a Lua framework that allows functional extraction and processing of data from messages.
 

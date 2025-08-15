@@ -4,7 +4,7 @@ title: Ratelimit module
 
 
 # Ratelimit plugin
-{:.no_toc}
+
 
 Ratelimit plugin is designed to limit messages coming from certain senders, to
 certain recipients from certain IP addresses combining these parameters into

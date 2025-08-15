@@ -3,7 +3,7 @@ title: Rspamd configuration
 ---
 
 # Rspamd configuration
-{:.no_toc}
+
 
 Rspamd employs the Universal Configuration Language (UCL) for its configuration. You can find an extensive description of the UCL format in this [document](/configuration/ucl). Additionally, Rspamd introduces a range of variables and macros to enhance UCL's functionality.
 

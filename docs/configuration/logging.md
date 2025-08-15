@@ -4,7 +4,7 @@ title: Logging settings
 
 
 # Rspamd logging settings
-{:.no_toc}
+
 
 
 

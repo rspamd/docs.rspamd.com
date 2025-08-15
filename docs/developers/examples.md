@@ -4,7 +4,7 @@ title: Lua rules examples
 
 
 # Lua rules examples
-{:.no_toc}
+
 
 Here is the collection of the useful Lua rules snippets that are not the official rules but could be used to filter specific spam.
 

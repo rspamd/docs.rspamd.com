@@ -4,7 +4,7 @@ title: Greylisting module
 
 
 # Greylisting module
-{:.no_toc}
+
 
 The purpose of this module is to delay messages that have a spam score above the `greylisting` action threshold.
 
