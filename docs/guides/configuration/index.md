@@ -156,7 +156,7 @@ greylist = 4;
 ### Production Configuration
 Balanced setup for business email:
 
-``hcl
+```hcl
 # /etc/rspamd/local.d/actions.conf
 reject = 12;
 add_header = 5;
@@ -171,7 +171,7 @@ symbol "FORGED_SENDER" {
 ### High-Volume Configuration
 Optimized for performance:
 
-``hcl
+```hcl
 # /etc/rspamd/local.d/worker-normal.inc
 max_tasks = 200;
 task_timeout = 5s;
