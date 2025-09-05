@@ -46,6 +46,7 @@ flowchart TD
 ### Prerequisites
 - Docker installed and running
 - Basic familiarity with Docker commands
+- A fast local recursive DNS resolver (required – see DNS notes below)
 
 ### Step 1: Run Rspamd Container
 
@@ -64,6 +65,38 @@ docker run -d \
   -v "$(pwd)/logs:/var/log/rspamd" \
   rspamd/rspamd:latest
 ```
+
+### Important: DNS requirement for Docker
+
+Rspamd performs intensive DNS lookups (RBLs, URI checks, DKIM/ARC, DMARC, etc.). For accurate and fast results, Rspamd must use a nearby recursive DNS resolver. Public resolvers (8.8.8.8, 1.1.1.1, etc.) often rate-limit or filter RBL traffic and will cause timeouts or poor accuracy.
+
+- Recommended: run a local recursive resolver (e.g. Unbound, Knot Resolver, PowerDNS Recursor) on the host or as a sidecar container.
+- Docker's embedded DNS (127.0.0.11) is only a forwarding stub; it is not a recursive resolver itself.
+
+Configure Rspamd to use your local resolver by adding `config/options.inc`:
+
+```hcl
+# /etc/rspamd/local.d/options.inc
+dns {
+  # For Rspamd 3.13+ you may specify hostnames here (e.g. "unbound")
+  # For older versions, use IP addresses or leave this unset to use /etc/resolv.conf
+  timeout = 1s;
+  sockets = 16;
+}
+```
+
+If you run a resolver as a sidecar container (see docker-compose example below), set:
+
+```hcl
+dns {
+  nameserver = ["unbound"];  # Requires Rspamd 3.13+ (hostname support)
+}
+```
+
+For Rspamd versions prior to 3.13 (no hostname support in `dns.nameserver`), do one of the following:
+
+- Do not set `dns.nameserver` and ensure the container's `/etc/resolv.conf` points to your local recursive resolver (configure Docker/daemon with `--dns=<resolver_ip>`), or
+- Set `dns.nameserver` to the resolver's IP address explicitly.
 
 ### Step 2: Set Web Interface Password
 
@@ -288,6 +321,7 @@ services:
       - ./logs:/var/log/rspamd
     depends_on:
       - redis
+      - unbound
     restart: unless-stopped
 
   redis:
@@ -296,6 +330,17 @@ services:
     volumes:
       - redis-data:/data
     restart: unless-stopped
+
+  # Local recursive DNS resolver (recommended)
+  # Note: you can use any unbound image; this is an example. Ensure it is configured for recursion
+  unbound:
+    image: mvance/unbound:latest
+    container_name: rspamd-unbound
+    restart: unless-stopped
+    # Expose only to the compose network by default; no published ports are required
+    # You can mount custom configs if desired:
+    # volumes:
+    #   - ./unbound:/opt/unbound/etc/unbound
 
 volumes:
   redis-data:
@@ -441,6 +486,26 @@ redis-cli ping
 sudo rspamc stat
 # Should show statistics if Redis is working
 ```
+
+### DNS Resolver Problems (Docker)
+```bash
+# Check what resolver the container sees
+docker exec rspamd-test cat /etc/resolv.conf
+
+# If using a sidecar resolver, verify name resolution inside the container (Rspamd 3.13+)
+docker exec rspamd-test getent hosts unbound || true
+
+# Inspect Rspamd DNS stats and errors
+docker exec rspamd-test rspamc stat | grep -i dns || true
+```
+
+Checklist:
+- Ensure a local recursive resolver is available (host or sidecar).
+- For Rspamd < 3.13, avoid hostnames in `dns.nameserver`; use IPs or rely on `/etc/resolv.conf`.
+- Avoid public resolvers for RBL traffic to prevent rate limiting and timeouts.
+- Keep `dns.timeout` conservative (e.g., 1s–2s) and ensure network connectivity (UDP/53).
+
+Version note: Rspamd 3.13+ supports resolving hostnames in `dns.nameserver`. Older versions only accept IP addresses or `/etc/resolv.conf`.
 
 ## What's Next?
 
