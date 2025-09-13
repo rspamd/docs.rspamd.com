@@ -851,6 +851,16 @@ selector HAS_SHORT_URL specific_urls({need_content = true, limit = 10}):get_tld 
 selector NOT_CORP_FROM from:addr !~ /@corp\.example$/i
 ~~~
 
+IP subnet matching with selectors:
+
+~~~
+# Match IPv4 address in 203.0.113.0/24 using masking
+selector FROM_TEST_V4 ip.ipmask(24) =~ /^203\.0\.113\.0$/
+
+# Match IPv6 address in 2001:db8:1234::/48 using masking
+selector FROM_TEST_V6 ip.ipmask(48) =~ /^2001:db8:1234::$/i
+~~~
+
 #### Meta Rules
 
 Meta rules combine multiple atoms using logical expressions:
@@ -981,3 +991,35 @@ score MONEY_SCAM 8.5
 - Some advanced SpamAssassin features may not be available
 - Rules are processed in the order they appear in the file
 - **Symbol Removal**: When symbols are removed between map updates, they remain in the symbol table until restart. Automatic cleanup of removed symbols will be implemented in a future version.
+
+### Guidance: atoms, meta, and scored atoms
+
+- **Atoms (no explicit score)**: Basic building blocks (header/body/uri/selector rules) that only produce a boolean result/symbol. Use these for most matching. They are fast and can be combined by meta rules. If you do not need an immediate score, do not set one.
+
+  Example:
+  ~~~
+  header SIMPLE_SUBJECT Subject =~ /alert|urgent/i
+  selector FROM_TEST_V4 ip.ipmask(24) =~ /^203\.0\.113\.0$/
+  ~~~
+
+- **Meta rules**: Combine atoms (and other meta) using logical ops. Preferred place to attach scores for combinations of conditions. This is usually cheaper than assigning scores to every atom and gives cleaner control.
+
+  Example:
+  ~~~
+  meta SUSPICIOUS SIMPLE_SUBJECT & FROM_TEST_V4
+  score SUSPICIOUS 4.0
+  ~~~
+
+- **Scored atoms**: Any atom can be given a score with `score RULE X.Y`. This makes the atom immediately contribute to the result. While allowed, assigning many individual scores can be more expensive at runtime and harder to maintain. Prefer to keep atoms unscored and drive decisions via meta rules; only score atoms directly if you explicitly need that behavior.
+
+  Example:
+  ~~~
+  selector FROM_TEST_V6 ip.ipmask(48) =~ /^2001:db8:1234::$/i
+  score FROM_TEST_V6 2.0
+  ~~~
+
+Best practice:
+
+- Keep matching logic in atoms; aggregate and assign scores in meta rules.
+- If a rule does not need to produce a score, avoid setting it — this keeps evaluation cheaper.
+- If strictly required, you can set scores for any atom or meta, but prefer restraint to prevent scoring bloat and performance overhead.
