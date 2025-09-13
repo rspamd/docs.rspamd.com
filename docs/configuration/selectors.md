@@ -84,6 +84,27 @@ header('Subject').regexp("^A-Z{10,}\"'.*")
 header('Subject').regexp('^A-Z{10,}"\'.*')
 ```
 
+### Operators: ':' vs '.' (order matters)
+
+A selector has a strict order of parts:
+
+- extractor [: method]
+- [. transform] [. transform] ...
+
+Key rules:
+
+- **`:` (method) goes immediately after the extractor and can appear at most once.** It is used to access a field on a table or call a method on a userdata object returned by the extractor. If the extractor returns a list, the method is applied element-wise.
+- **`.` (transform) chains after that** and applies selector transforms (e.g. `lower`, `first`, `regexp`, ...). Transforms generally work on simple types (`string`, `string_list`) and many are also mapped over lists.
+- **You cannot place `:` after you started `.` transforms.** The grammar allows the optional method only right after the extractor.
+- **Names after `:` must be object fields/methods, not transforms.** Typical examples: `from:addr`, `from('mime'):name`, `urls:get_tld`, `ip:to_string`.
+
+Examples:
+
+- Works: `from:addr.lower` — take MIME/SMTP From object, get its `addr` field, then lowercase it.
+- Works: `rcpts:domain.first` — take list of recipients, get `domain` for each, then take the first domain.
+- Does NOT work: `rcpts:first.domain` — `first` is a transform (not a method), and `domain` is a method (not a transform). Also, `:` can only appear right after the extractor.
+- Does NOT work: `from.lower:addr` — place the method before transforms: `from:addr.lower`.
+
 ### Data transformation method
 
 Certain data extractors yield intricate objects or lists of such objects, including:
@@ -263,15 +284,15 @@ local samples = {
     },
     ["map filter list"] = {
       selector = "list('key', 'key1', 'key2').filter_map(test_map)",
-      expect = 
+      expect = {'key', 'key1'}
     },
     ["map apply list"] = {
       selector = "list('key', 'key1', 'key2', 'key3').apply_map(test_map)",
-      expect = 
+      expect = {'value', 'value1', 'value1'}
     },
     ["map apply list uniq"] = {
       selector = "list('key', 'key1', 'key2', 'key3').apply_map(test_map).uniq",
-      expect = 
+      expect = {'value', 'value1'}
     },
 }
 ~~~
@@ -294,6 +315,14 @@ Hence, a list of elements of type `t` undergoes an element-wise transformation u
 To enhance convenience, the ultimate values can be implicitly converted to their string representation. This is particularly applicable to URLs, email addresses, and IP addresses, all of which can be seamlessly converted to strings.
 
 In general, you need not be overly concerned about type safety unless you encounter actual type errors. This mechanism serves to safeguard the selectors framework from inadvertent user errors.
+
+## Common pitfalls
+
+- **Mixing `:` and `.` order**: `:` must be right after the extractor and only once. Use `rcpts:domain.first`, not `rcpts:first.domain`.
+- **Calling methods as transforms (or vice versa)**: `domain`, `addr`, `name`, `get_tld`, `to_string` are methods/fields (use with `:`). `first`, `last`, `lower`, `uniq`, `regexp` are transforms (use with `.`).
+- **Forgetting to convert complex types**: If you need a string, either use a method (`from:addr`) or rely on implicit conversion where applicable. Transforms generally expect strings or lists of strings.
+- **List length mismatches when combining**: When combining multiple list selectors with `;`, the shortest list determines the number of results (see examples above).
+- **Nil semantics**: If any step returns `nil`, the entire selector is ignored. Boolean-style transforms like `in`/`not_in` exploit this to include or exclude parts.
 
 ## Own selectors
 

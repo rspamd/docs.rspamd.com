@@ -303,6 +303,39 @@ SOME_SYMBOL {
 }
 ~~~
 
+### Using selectors in Multimap
+
+Selector maps use the same selector pipeline as described in the [Selectors guide](/configuration/selectors). A quick reminder about operator order when writing selectors in multimap rules:
+
+- **`:` (method) must go immediately after the extractor and can appear at most once.** It accesses a field or calls a method on the object returned by the extractor. For lists, the method is applied element‑wise.
+- **`.` (transform) chains after that** and applies transforms like `first`, `lower`, `uniq`, etc. Most transforms work on strings or lists of strings.
+- **You cannot put `:` after starting `.` transforms.** Names after `:` are object fields/methods (e.g. `addr`, `name`, `get_tld`, `to_string`), while names after `.` are transforms (e.g. `first`, `last`, `lower`).
+
+Examples:
+
+- Works: `rcpts:domain.first` — take list of recipients, get each `domain`, then take the first.
+- Does NOT work: `rcpts:first.domain` — `first` is a transform (not a method); `:` can only follow the extractor.
+- Works: `from:addr.lower` — get `addr` field first, then lowercase.
+- Does NOT work: `from.lower:addr` — put the method before transforms.
+
+Configuration example in Multimap:
+
+~~~hcl
+BAD_RCPTS_SELECTOR {
+  type = "selector";
+  selector = "rcpts:first.domain"; # incorrect
+  map = "/etc/rspamd/maps/domains.map";
+  score = 1.0;
+}
+
+GOOD_RCPTS_SELECTOR {
+  type = "selector";
+  selector = "rcpts:domain.first"; # correct
+  map = "/etc/rspamd/maps/domains.map";
+  score = 1.0;
+}
+~~~
+
 ## Regexp maps
 
 All maps, except for `ip` and `dnsbl` maps, support the `regexp` mode. In this mode, all keys in maps are treated as regular expressions. For example:
