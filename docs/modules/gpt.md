@@ -40,12 +40,26 @@ gpt {
   api_key = "xxx";
   
   # Model name (string or a list for ensemble requests)
-  model = "gpt-4o-mini";
-  
-  # Maximum number of tokens to request
+  model = "gpt-5-mini";
+
+  # Per-model parameters (only for openai model)
+  model_parameters = {
+    "gpt-5-mini" = {
+      max_completion_tokens = 1000,
+    },
+    "gpt-5-nano" = {
+      max_completion_tokens = 1000,
+    },
+    "gpt-4o-mini" = {
+      max_tokens = 1000,
+      temperature = 0.0,
+    }
+  };
+
+  # Maximum number of tokens to request (only for ollama model)
   max_tokens = 1000;
   
-  # Temperature for sampling
+  # Temperature for sampling (only for ollama model)
   temperature = 0.0;
   
   # Timeout for requests
@@ -95,6 +109,7 @@ gpt {
   #     score = 0.0;
   #     description = "GPT model detected marketing content";
   #     category = "marketing";
+  #     group = "GPT";
   #   };
   # };
 
@@ -115,8 +130,9 @@ gpt {
 - **type**: LLM provider. Accepts `openai` (default) or `ollama`.
 - **api_key**: OpenAI API key. Not required for `ollama`.
 - **model**: Model name (string) or a list of names to query in parallel.
-- **max_tokens**: Maximum number of tokens returned by the model.
-- **temperature**: Sampling temperature.
+- **model_parameters**: For each model the required parameters. Required for `openai`.
+- **max_tokens**: Maximum number of tokens returned by the model. Required for `ollama`.
+- **temperature**: Sampling temperature. Required for `ollama`.
 - **timeout**: Network timeout for LLM requests.
 - **prompt**: Custom system prompt. If omitted, a sensible default is used.
 - **condition**: A Lua function that decides whether a message should be sent to GPT.
@@ -142,9 +158,12 @@ gpt {
   enabled = true;
   type = "openai";
   api_key = "your_api_key_here";
-  model = "gpt-4o-mini";
-  max_tokens = 1000;
-  temperature = 0.0;
+  model = "gpt-5-mini";
+  model_parameters = {
+    "gpt-5-mini" = {
+      max_completion_tokens = 1000,
+    }
+  }
   timeout = 10s;
   reason_header = "X-GPT-Reason";
 }
@@ -162,7 +181,7 @@ If `reason_header` is set to a non-empty string, the plugin injects a mail heade
 The `model` option can be a list:
 
 ```hcl
-model = ["gpt-4o-mini", "gpt-3.5-turbo"];
+model = ["gpt-4o-mini", "gpt-5-nano"];
 ```
 
 In this case Rspamd queries all listed models in parallel and applies a *consensus* algorithm:
