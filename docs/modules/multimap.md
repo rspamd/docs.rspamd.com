@@ -528,7 +528,7 @@ If symbols used in a map are not defined in the `symbols` attribute, they will b
 
 If the symbol names are unknown/dynamic, you can use the option `dynamic_symbols = true` to add all possible symbols from that map:
 
-~~~
+~~~hcl
 DYN_MULTIMAP {
   type = "hostname";
   map = "/maps/dynamic_symbols.map";
@@ -803,6 +803,21 @@ uri CUSTOM_URI_RULE /bit\.ly|tinyurl/i
 full CUSTOM_FULL_RULE /malicious\s+content/i
 ~~~
 
+#### Selector Rules
+
+Selector rules apply a full selector pipeline and test its output against a regular expression. The selector can return a single value or a list of values; a match occurs if any value matches the regexp. Negation with `!~` is supported.
+
+~~~
+# Selector syntax uses the standard selectors pipeline
+selector FROM_CORP_DOMAIN from:domain =~ /^(?:corp|intra)\.example$/i
+
+# Match on specific URLs found in content (HTML or text)
+selector HAS_SHORT_URL specific_urls({need_content = true, limit = 10}):tld =~ /(bit\.ly|tinyurl|goo\.gl)$/i
+
+# Negation example
+selector NOT_CORP_FROM from:addr !~ /@corp\.example$/i
+~~~
+
 #### Meta Rules
 
 Meta rules combine multiple atoms using logical expressions:
@@ -887,6 +902,9 @@ body BODY_MONEY /\$\d+,?\d*\s*(million|thousand)/i
 # URI checks  
 uri URI_SUSPICIOUS /bit\.ly|tinyurl|goo\.gl/i
 
+# Selector checks
+selector FROM_CORP from:domain =~ /corp\.example$/i
+
 # Meta combinations
 meta SPAM_LIKELY SUSPICIOUS_SUBJECT & BODY_SUSPICIOUS
 meta PHISH_LIKELY FROM_SUSPICIOUS & URI_SUSPICIOUS
@@ -915,6 +933,7 @@ score MONEY_SCAM 8.5
 - **Score Management**: Flexible scoring system
 - **Named Results**: Full support for Rspamd's named results system
 - **Negation Support**: Header rules support `!~` for negation
+- **Selector pipeline support**: Selector rules apply regexps to selector outputs and are fully integrated with regexp-cache and Hyperscan
 
 ### Performance Considerations
 
