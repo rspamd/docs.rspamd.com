@@ -812,7 +812,7 @@ Selector rules apply a full selector pipeline and test its output against a regu
 selector FROM_CORP_DOMAIN from:domain =~ /^(?:corp|intra)\.example$/i
 
 # Match on specific URLs found in content (HTML or text)
-selector HAS_SHORT_URL specific_urls({need_content = true, limit = 10}):tld =~ /(bit\.ly|tinyurl|goo\.gl)$/i
+selector HAS_SHORT_URL specific_urls({need_content = true, limit = 10}):get_tld =~ /(bit\.ly|tinyurl|goo\.gl)$/i
 
 # Negation example
 selector NOT_CORP_FROM from:addr !~ /@corp\.example$/i
