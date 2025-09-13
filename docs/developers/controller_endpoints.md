@@ -74,7 +74,7 @@ Lua endpoints provide a flexible way to extend controller functionality. They ar
 
 ### Basic Structure
 
-Create a Lua file in `rules/controller/` directory:
+Create a Lua file at `$LOCAL_CONFDIR/controller.lua`:
 
 ```lua
 -- rules/controller/example.lua
@@ -87,10 +87,12 @@ local function handle_hello(task, conn, req_params)
 end
 
 return {
-  hello = {
-    handler = handle_hello,
-    enable = false,     -- Normal password sufficient for read-only operation
-    need_task = false,
+  example = {
+    hello = {
+      handler = handle_hello,
+      enable = false,     -- Normal password sufficient for read-only operation
+      need_task = false,
+    }
   }
 }
 ```
@@ -1166,4 +1168,4 @@ end
 
 The Rspamd controller provides a powerful framework for extending WebUI functionality through Lua plugins. By following the patterns and best practices outlined in this guide, you can create robust, secure, and efficient endpoints that integrate seamlessly with the existing system.
 
-For more examples, examine the existing plugins in the `rules/controller/` directory and refer to the Rspamd Lua API documentation for detailed information about available functions and objects. 
+For more examples, examine the existing plugins in the `$RULESDIR/controller/` directory and refer to the Rspamd Lua API documentation for detailed information about available functions and objects.
