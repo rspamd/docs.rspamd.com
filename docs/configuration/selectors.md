@@ -227,51 +227,76 @@ The data definition part specifies what needs to be extracted. Here is the list 
 | `uid` | 2.6+ | Get ID of the task being processed
 | `urls` | 1.8+ | Get list of all urls. If no arguments specified, returns list of url objects. Otherwise, calls a specific method, e.g. `get_tld`
 | `user` | 1.8+ | Get authenticated user name
+| `specific_urls` | — | Get most specific URLs; accepts options (e.g. `limit`, `need_content`, `exclude_flags`)
+| `specific_urls_filter_map` | — | Get most specific URLs filtered by a named map (from `lua_selectors.maps`)
+| `urls_filtered` | — | Get URLs filtered by flags include/exclude
+| `words` | — | Get words from text parts (`stem`, `raw`, `norm`, `full`)
+| `task_cache` | — | Get value by key from task cache
+| `scan_result` | — | Get full scan result table (default or shadow)
+| `metatokens` | — | Get metatokens for a message as strings
+| `rspamd_hostname` | — | Get hostname of the filter server
 
 ## Transformation functions
 
-| Transform  method          | Version  | Description                       |
-| :------------------------- | :------: | :-------------------------------- |
-| `append` | 2.0+ | Appends a string or a strings list
-| `apply_map` | 2.0+ | Returns a value from some map corresponding to some key (or acts like a `map` function). Map name must be registered first!
-| `digest` | 1.8+ | Create a digest from a string. The first argument is encoding (`hex`, `base32`, `base64`), the second argument is optional hash type (`blake2`, `sha256`, `sha1`, `sha512`, `md5`)
-| `drop_n` | 1.8+ | Returns list without the first n elements
-| `equal` | 2.0+ | Boolean function equal. Returns either nil or its argument if input is equal to argument
-| `filter_map` | 2.0+ | Returns a value if it exists in some map (or acts like a `filter` function). Map name must be registered first!
-| `first` | 1.8+ | Returns the first element
-| `id` | 1.8+ | Drops input value and return values from function's arguments or an empty string
-| `in` | 1.8+ | Boolean function in. Returns either nil or its input if input is in args list
-| `inverse` | 2.0+ | Inverses input. Empty string comes the first argument or `true`, non-empty string comes `nil`
-| `ipmask` | 2.0+ | Applies mask to IP address. The first argument is the mask for IPv4 addresses, the second is the mask for IPv6 addresses.
-| `join` | 1.8+ | Joins strings into a single string using separator in the argument
-| `last` | 1.8+ | Returns the last element
-| `lower` | 1.8+ | Returns the lowercased string
-| `not_in` | 1.8+ | Boolean function not in. Returns either nil or its input if input is not in args list
-| `nth` | 1.8+ | Returns the `n`-th element
-| `prepend` | 2.0+ | Prepends a string or a strings list
-| `regexp` | 1.8+ | Regexp matching
-| `sort` | 2.0+ | Sort strings lexicographically
-| `substring` | 1.8+ | Extracts substring. Arguments are equal to lua [string.sub](https://web.archive.org/web/20231130143649/https://pgl.yoyo.org/luai/i/string.sub)
-| `take_n` | 1.8+ | Returns the n first elements
-| `to_ascii` | 2.6+ | Returns the string with all non-ascii bytes replaced with the character given as second argument or `?`
-| `uniq` | 2.0+ | Returns a list of unique elements (using a hash table - no order preserved!)
+| Transform method | Version | Description | Example |
+| :--------------- | :-----: | :---------- | :------ |
+| `append` | 2.0+ | Appends a string or a strings list | `from:addr.append(':tag')` |
+| `apply_map` | 2.0+ | Returns a value from a named map or nil | `id('key').apply_map(test_map)` |
+| `digest` | 1.8+ | Create a digest from a string | `header('Subject').digest('hex','sha256')` |
+| `drop_n` | 1.8+ | Returns list without the first n elements | `rcpts:addr.drop_n(1)` |
+| `equal` | 2.0+ | Boolean equal; returns input or nil | `user.equal('postmaster')` |
+| `filter_map` | 2.0+ | Keep input if it exists in map | `id('key').filter_map(test_map)` |
+| `first` | 1.8+ | Returns the first element of a list | `rcpts:addr.first` |
+| `id` | 1.8+ | Drop input, return arguments | `time('connect','!%w').in(6,7).id('weekends')` |
+| `in` | 1.8+ | Keep input if it is in args | `from:domain.in('example.com','example.org')` |
+| `inverse` | 2.0+ | Returns nil if input is non-empty | `user.inverse('nouser')` |
+| `ipmask` | 2.0+ | Apply mask to IP (v4/v6) | `ip.ipmask(24)` |
+| `join` | 1.8+ | Join strings with separator | `rcpts:addr.take_n(3).join(',')` |
+| `last` | 1.8+ | Returns the last element of a list | `rcpts:addr.last` |
+| `lower` | 1.8+ | Lowercase string | `from:addr.lower` |
+| `not_in` | 1.8+ | Keep input if not in args | `from:domain.not_in('bad.com')` |
+| `nth` | 1.8+ | Returns n-th element | `rcpts:addr.nth(2)` |
+| `prepend` | 2.0+ | Prepend string(s) | `from:addr.prepend('sender:')` |
+| `regexp` | 1.8+ | Regexp matching | `header('Subject').regexp('/viagra/i')` |
+| `sort` | 2.0+ | Sort strings lexicographically | `rcpts:addr.sort` |
+| `substring` | 1.8+ | Extract substring | `header('Subject').substring(1,16)` |
+| `take_n` | 1.8+ | Take first n elements | `rcpts:addr.take_n(5)` |
+| `to_ascii` | 2.6+ | Replace non-ASCII bytes | `header('Subject').to_ascii('?')` |
+| `uniq` | 2.0+ | Unique elements (hash-based) | `urls:get_tld.uniq` |
+| `lower_utf8` | — | Lowercase UTF‑8 string | `header('Subject').lower_utf8` |
+| `join_nth` | — | Join by chunks of N | `list('a','b','c','d').join_nth(2,':')` |
+| `join_tables` | — | Join list of tables into strings | `header('Received','full').join_tables(' ')` |
+| `get_tld` | — | Extract eSLD from hostname string | `rcpts:domain.get_tld` |
+| `pack_numbers` | — | Pack list of numbers into string | `list('10','20').pack_numbers('I')` |
+| `filter_string_nils` | — | Remove 'nil' strings from list | `list('a','nil','b').filter_string_nils` |
+| `apply_methods` | — | Call methods on userdata; return results | `urls.first.apply_methods('get_tld','get_host')` |
+| `filter_method` | — | Keep userdata where method is truthy | `urls.filter_method('is_redirected')` |
+| `except_map` | — | Keep input if it is NOT in map | `id('key').except_map(test_map)` |
+| `match` | — | Alias of `regexp` | `header('Subject').match('/re/i')` |
 
 You can access the latest list of all selector functions and also test Rspamd selector pipelines through the integrated Web Interface. This provides you with a convenient way to explore and experiment with Rspamd's selector capabilities.
 
 ### Maps in transformations
 
-Starting from version 2.0, Rspamd introduces support for using maps within selectors. This is achieved by incorporating maps into a designated `lua_selectors.maps` table. The table should consist of name-value pairs where the `name` represents the symbolic name of the map, which can be employed in extraction or transformation functions, and the `value` is the output of `lua_maps.map_add_from_ucl`. To illustrate this concept:
+Starting from version 2.0, Rspamd introduces support for using maps within selectors. This is achieved by incorporating maps into a designated `lua_selectors.maps` table or by using the helper `lua_selectors.add_map(name, map)`. The table should consist of name-value pairs where the `name` represents the symbolic name of the map, which can be employed in extraction or transformation functions, and the `value` is the output of `lua_maps.map_add_from_ucl`. To illustrate this concept:
 
 
 ~~~lua
 local lua_selectors = require "lua_selectors"
 local lua_maps = require "lua_maps"
 
+-- Either assign directly to the maps table
 lua_selectors.maps.test_map = lua_maps.map_add_from_ucl({
     'key value',
     'key1 value1',
     'key3 value1',
   }, 'hash', 'test selectors maps')
+
+-- Or register via helper (equivalent)
+lua_selectors.add_map('test_map2', lua_maps.map_add_from_ucl({
+    'x 1',
+    'y 2',
+  }, 'hash', 'another selectors map'))
 
 local samples = {
     ["map filter"] = {
@@ -296,6 +321,16 @@ local samples = {
     },
 }
 ~~~
+
+Available map-aware transforms:
+
+- `filter_map(map_name)` – keep input only if it exists in the named map
+- `apply_map(map_name)` – replace input with the corresponding map value
+- `except_map(map_name)` – keep input only if it does NOT exist in the named map
+
+Map-aware extractors:
+
+- `specific_urls_filter_map(map_name, opts)` – extract most specific URLs filtered by the named map
 
 
 ## Type safety
