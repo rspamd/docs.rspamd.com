@@ -77,7 +77,7 @@ Lua endpoints provide a flexible way to extend controller functionality. They ar
 Create a Lua file at `$LOCAL_CONFDIR/controller.lua`:
 
 ```lua
--- rules/controller/example.lua
+-- /etc/rspamd/controller.lua
 local function handle_hello(task, conn, req_params)
   conn:send_ucl({
     success = true,
