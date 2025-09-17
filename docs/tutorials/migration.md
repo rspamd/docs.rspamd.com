@@ -32,6 +32,77 @@ Discover a reliable step-by-step process for upgrading your Rspamd cluster while
 
 10. Repeat the entire process starting from `step 1` for future updates. This approach ensures a smooth and controlled upgrade process that minimizes potential downtime and issues in your production environment.
 
+## Migration to Rspamd 3.13.0
+
+### Multi-class Bayes
+
+Rspamd 3.13 adds multi-class Bayes classification, allowing categories beyond spam/ham (e.g. newsletters, transactional, phishing). The recommended production setup is to keep the classic spam/ham classifier separate and add a second classifier for non-binary classes.
+
+#### Incompatibilities
+
+- In a multi-class classifier you must use `class = "<name>"` in each `statfile` and you must not use `spam = true/false` there.
+- Do not mix binary and multi-class statfiles within the same classifier block.
+- A multi-class classifier requires at least two classes.
+- `min_learns` applies per class; insufficiently trained classes are ignored during classification.
+
+#### Keeping existing spam/ham database intact
+
+- Preserve your current binary classifier as-is (same symbols `BAYES_SPAM`/`BAYES_HAM`, same backend). It will continue to use your existing Redis data; no relearning is required.
+- Add a new classifier for multi-class categories. It will build its own dataset independently.
+
+Example:
+
+~~~hcl
+# Keep binary classifier (uses existing DB)
+classifier "bayes" {
+  name = "bayes_binary";
+  tokenizer { name = "osb"; }
+  backend = "redis";
+  min_tokens = 11;
+  min_learns = 200;
+  statfile { symbol = "BAYES_HAM"; spam = false; }
+  statfile { symbol = "BAYES_SPAM"; spam = true; }
+  learn_condition = 'return require("lua_bayes_learn").can_learn';
+}
+
+# Add new multi-class classifier
+classifier "bayes" {
+  name = "bayes_multi";
+  tokenizer { name = "osb"; }
+  backend = "redis";
+  min_tokens = 11;
+  min_learns = 200;
+  statfile { symbol = "BAYES_NEWSLETTER"; class = "newsletter"; }
+  statfile { symbol = "BAYES_TRANSACTIONAL"; class = "transactional"; }
+  statfile { symbol = "BAYES_PHISHING"; class = "phishing"; }
+  learn_condition = 'return require("lua_bayes_learn").can_learn';
+}
+~~~
+
+#### Learning commands
+
+- Binary (unchanged):
+
+```bash
+rspamc learn_spam msg.eml
+rspamc learn_ham msg.eml
+```
+
+- Multi-class (new):
+
+```bash
+rspamc learn_class:newsletter newsletter1.eml
+rspamc learn_class:transactional order_confirmation.eml
+```
+
+#### Upgrade checklist
+
+1. Keep your existing binary classifier unchanged to reuse data.
+2. Add a new multi-class classifier with `class = "..."` statfiles.
+3. Do not mix `spam = true/false` with `class = "..."` in one classifier.
+4. Start learning new classes using `learn_class:<name>`.
+5. Validate with `rspamd -t` and monitor results.
+
 ## Migration to Rspamd 3.9.0
 
 * The `ratelimit` module now operates in non-dynamic mode by default. This change does not affect any existing buckets, as dynamic rates and dynamic bursts will simply be unused in this mode. To retain the old behaviour, please either set the `dynamic_rate_limit` option to `true` (globally for all ratelimit rules) or configure the `ham_factor_rate`/`spam_factor_rate` and/or `ham_factor_burst`/`spam_factor_burst` multipliers for individual rules as needed.

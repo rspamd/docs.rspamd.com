@@ -81,6 +81,82 @@ For most of setups where there is only one classifier is used - `classifier-baye
 
 If you need describe multiply different classifiers - then you need create `local.d/statistic.conf`, that should describe classifier sections, each classifier **must** have own `name` and have all options from default config, as there will be no fallback. Common usecase for such case is when first classifier is `per_user` and second is not.
 
+## Multi-class Bayes (3.13+)
+
+Starting with Rspamd 3.13, the Bayes classifier supports multiple classes (e.g. newsletters, transactional, phishing) in addition to the classic binary spam/ham. For production setups we strongly recommend keeping spam/ham as a separate classifier and adding another classifier for non-binary classes. This preserves clear decision making for actions (reject, add header, etc.) while allowing additional categorisation.
+
+### Configuration model and incompatibilities
+
+- In a multi-class classifier every `statfile` must define `class = "<name>"`.
+- Do not mix `spam = true/false` with `class = "..."` in the same classifier.
+- A multi-class classifier must have at least two classes (two or more `statfile` sections with distinct `class`).
+- `min_learns` (if set) is applied per class.
+
+### Recommended layout: two separate classifiers
+
+Create two classifiers in `local.d/statistic.conf`: one strictly binary (spam/ham), and a second one for other classes.
+
+~~~hcl
+# local.d/statistic.conf
+
+# 1) Binary classifier: spam/ham only (reuses existing data if you already have it)
+classifier "bayes" {
+  name = "bayes_binary";
+  tokenizer { name = "osb"; }
+  backend = "redis";
+  min_tokens = 11;
+  min_learns = 200;
+
+  statfile { symbol = "BAYES_HAM"; spam = false; }
+  statfile { symbol = "BAYES_SPAM"; spam = true; }
+
+  learn_condition = 'return require("lua_bayes_learn").can_learn';
+}
+
+# 2) Multi-class classifier: additional categories (builds its own data)
+classifier "bayes" {
+  name = "bayes_multi";
+  tokenizer { name = "osb"; }
+  backend = "redis";
+  min_tokens = 11;
+  min_learns = 200;
+
+  # Define non-binary classes
+  statfile { symbol = "BAYES_NEWSLETTER"; class = "newsletter"; }
+  statfile { symbol = "BAYES_TRANSACTIONAL"; class = "transactional"; }
+  statfile { symbol = "BAYES_PHISHING"; class = "phishing"; }
+
+  # Optional:
+  # per_user = true;  # enable per-user multi-class stats if desired
+
+  learn_condition = 'return require("lua_bayes_learn").can_learn';
+}
+~~~
+
+### Learning
+
+- Binary classifier (unchanged):
+
+```bash
+rspamc learn_spam message.eml
+rspamc learn_ham message.eml
+```
+
+- Multi-class classifier (new command format):
+
+```bash
+rspamc learn_class:newsletter newsletter.eml
+rspamc learn_class:transactional order_confirmation.eml
+```
+
+### Backwards compatibility (existing Bayes database)
+
+- If you already have Bayes data for spam/ham in Redis, keep your existing binary classifier section intact (same symbols, same backend parameters). No relearning is needed for spam/ham.
+- Add the new `bayes_multi` classifier alongside it as shown above. It will build its own database independently from the binary classifier.
+- Avoid changing symbol names or backend addressing for the binary classifier to ensure it continues using the old database.
+
+See the Migration notes for 3.13.0 for a concise upgrade checklist.
+
 ### Classifier and headers
 
 The classifier in Rspamd learns headers that are specifically defined in the `classify_headers` section of the `options.inc `file. Therefore, there is no need to remove any additional headers (e.g., X-Spam) before the learning process, as these headers will not be utilized for classification purposes. Rspamd also takes into account the `Subject` header, which is tokenized according to the aforementioned rules. Additionally, Rspamd considers various meta-tokens, such as message size or the number of attachments, which are extracted from the messages for further analysis.
