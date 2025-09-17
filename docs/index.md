@@ -24,76 +24,64 @@ Rspamd recommends actions for the MTA - whether to pass, reject, quarantine, or 
 Designed for high-performance environments, Rspamd processes hundreds of messages per second while maintaining
 the flexibility to adapt to evolving security requirements through its extensible Lua API.
 
-## Choose Your Path
+## Choose your path
 
 This documentation is designed to help you succeed with Rspamd, whether you're a complete beginner or an experienced administrator. Choose the path that matches your needs:
 
 ### 🆕 New to Rspamd?
-**Start here**: [Getting Started Guide](/getting-started/)
+**Start here**: [Getting started](/getting-started/)
 
 - **[Understanding Rspamd](/getting-started/understanding-rspamd)** - Build the right mental model first
-- **[Installation Guide](/getting-started/installation)** - Choose the best installation method for your needs  
-- **[First Success Setup](/getting-started/first-setup)** - Get working spam filtering in 30 minutes
+- **[Installation](/getting-started/installation)** - Choose the best installation method for your needs  
+- **[First setup](/getting-started/first-setup)** - Get working spam filtering in 30 minutes
 
-### 🎯 Need Practical Configuration?
-**Go to**: [Configuration Guide](/guides/configuration/)
+### 🎯 Need practical configuration?
+**Go to**: [Configuration guides](/guides/configuration/)
 
-- **[Configuration Fundamentals](/guides/configuration/fundamentals)** - Understand what to configure and how
-- **[Tool Selection Guide](/guides/configuration/tool-selection)** - Choose the right approach for your task
-- **Real-world examples** with complete, tested configurations
+- **[Configuration fundamentals](/guides/configuration/fundamentals)** - Understand what to configure and how
+- **[Tool selection](/guides/configuration/tool-selection)** - Choose the right approach for your task
+- Examples with complete, tested configurations
 
-### 🏢 Looking for Your Specific Scenario?
-**Browse**: [Real-World Scenarios](/scenarios/)
 
-- **[Small Business Setup](/scenarios/small-business)** - Complete guide for businesses with < 1000 users
-- **Enterprise configurations** - Scalable setups for large organizations
-- **Migration guides** - Move from SpamAssassin or other solutions
+### 🔧 Need technical reference?
+Use the traditional documentation sections below
 
-### 🔧 Need Technical Reference?
-**Reference**: Traditional documentation sections below
-
-- **[Module Documentation](/modules/)** - Detailed parameter reference
+- **[Module documentation](/modules/)** - Detailed parameter reference
 - **[Lua API](/lua/)** - Programming interface documentation  
-- **[Developer Guides](/developers/)** - Extending Rspamd functionality
+- **[Developer guides](/developers/)** - Extending Rspamd functionality
 
-## What Makes This Documentation Different?
+ 
 
-Traditional Rspamd documentation has been reference-focused. We've added practical, user-friendly guides that:
-
-✅ **Answer "how to accomplish X"** instead of just "what parameter Y does"
-✅ **Provide decision frameworks** to help you choose the right approach
-✅ **Include real-world scenarios** beyond basic setup examples  
-✅ **Connect related concepts** so you understand how pieces fit together
-✅ **Offer multiple learning paths** for different user needs and experience levels
-
-## Quick Start Options
+## Quick start options
 
 If you want to get started immediately:
 
-### Docker Test Setup (15 minutes)
+### Docker test setup (15 minutes)
 ```bash
 # Quick test environment
 docker run -d --name rspamd-test -p 11334:11334 rspamd/rspamd:latest
 # Access web interface at http://localhost:11334
 ```
 
-### Production Package Install (Ubuntu/Debian)
+### Production package install (Ubuntu/Debian)
 ```bash
-# Add repository and install
-curl -sSL https://rspamd.com/apt-stable/gpg.key | sudo apt-key add -
-echo "deb https://rspamd.com/apt-stable/ $(lsb_release -cs) main" | \
-  sudo tee /etc/apt/sources.list.d/rspamd.list
-sudo apt update && sudo apt install rspamd
+# Add repository key and list (modern keyring method)
+sudo install -d -m 0755 /etc/apt/keyrings
+wget -O- https://rspamd.com/apt-stable/gpg.key | gpg --dearmor | sudo tee /etc/apt/keyrings/rspamd.gpg > /dev/null
+echo "deb [signed-by=/etc/apt/keyrings/rspamd.gpg] https://rspamd.com/apt-stable/ $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/rspamd.list
+sudo apt update && sudo apt install -y rspamd
 ```
 
-For complete setup instructions, see the [Installation Guide](/getting-started/installation).
+For complete setup instructions, see the [installation guide](/getting-started/installation).
 
-## Community and Support
+## Community and support
 
-- **[Community Forum](https://forum.rspamd.com/)** - Get help from users and developers
-- **[GitHub Repository](https://github.com/rspamd/rspamd)** - Source code, issues, and contributions
-- **[IRC Channel](https://web.libera.chat/#rspamd)** - Real-time chat support
-- **[Professional Support](/support)** - Commercial support options
+- **[GitHub Discussions](https://github.com/rspamd/rspamd/discussions)** - Ask questions and share ideas
+- **[Telegram](https://t.me/rspamd)** - Community chat
+
+- **[GitHub repository](https://github.com/rspamd/rspamd)** - Source code, issues, and contributions
+- **[Mailing lists](https://lists.rspamd.com)** - Mailing lists for long term discussions and questions
+- **[Support](/support)** - Commercial support options
 
 
 ## License
