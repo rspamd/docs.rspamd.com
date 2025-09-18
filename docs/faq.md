@@ -1310,6 +1310,33 @@ Please check the [following document](/configuration/statistic#autolearning) for
 
 Migrating from C to Lua can incur expenses. Consequently, it is advisable to utilise regular expressions for straightforward checks whenever feasible. If Rspamd is compiled with [Hyperscan](https://www.hyperscan.io/), the addition of another regular expression is typically cost-effective. However, it's essential to avoid constructs not supported by Hyperscan, such as backtracking, lookbehind, and some [others](http://intel.github.io/hyperscan/dev-reference/compilation.html#unsupported-constructs). Conversely, Lua offers distinct functions that regular expressions do not cover. In such instances, it is recommended to opt for Lua.
 
+### Why might fuzzy hash checks not work
+
+Rspamd queries the public fuzzy storage over UDP on port 1335. Packets are encrypted using Rspamd's own lightweight protocol and are not related to SSL/TLS certificates.
+
+-  **Check your firewall/NAT**: Ensure outbound UDP to port 1335 is allowed and reply packets are not filtered. Opening TCP 1335 is not sufficient.
+-  **Don't use TCP tools**: `telnet`, `nc`, `curl`, and certificate checkers are useless here because fuzzy uses UDP, not TCP, and does not use TLS.
+
+To test connectivity use:
+
+```sh
+rspamadm fuzzyping
+```
+
+Example output:
+
+```text
+reply from 135.181.136.158: 43.62 ms
+reply from 135.181.136.158: 44.9 ms
+reply from 135.181.136.158: 44.372 ms
+reply from 135.181.136.158: 43.532 ms
+reply from 135.181.136.158: 45.343 ms
+Summary for 135.181.136.158: 5 packets transmitted, 5 packets received, 0.0% packet loss
+round-trip min/avg/max/std-dev = 43.53/44.35/45.34/0.79 ms
+```
+
+If you see high packet loss or no replies, fix your network/firewall first. If connectivity is fine but fuzzy results are still missing, verify that the fuzzy module is enabled and not disabled by settings.
+
 ## WebUI questions
 
 ### What are `enable_password` and `password` for the WebUI
