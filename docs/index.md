@@ -77,6 +77,7 @@ For complete setup instructions, see the [installation guide](/getting-started/i
 ## Community and support
 
 - **[GitHub Discussions](https://github.com/rspamd/rspamd/discussions)** - Ask questions and share ideas
+- **[Discord](https://discord.gg/RsBM5KXtgX)** - Real-time chat for quick questions and updates
 - **[Telegram](https://t.me/rspamd)** - Community chat
 
 - **[GitHub repository](https://github.com/rspamd/rspamd)** - Source code, issues, and contributions

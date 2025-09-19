@@ -21,12 +21,17 @@ If you find a bug or would like to request a specific feature, please use our is
 
 Join our community for updates, release announcements, and other news:
 
+Discord provides a real-time place for quick questions, status updates, and community coordination. It complements GitHub Discussions and mailing lists: use GitHub for bug reports and feature proposals, and Discord for short Q&A, troubleshooting hints, and release announcements. Please do not share sensitive data; redact logs and addresses.
+
 <div className="buttons-row">
   <a className="button button--primary button--lg" href="https://lists.rspamd.com" target="_blank" rel="noopener noreferrer">
     <i className="fa-solid fa-envelope"></i> Mailing Lists
   </a>
   <a className="button button--secondary button--lg" href="https://github.com/rspamd/rspamd/discussions" target="_blank" rel="noopener noreferrer">
     <i className="fa-brands fa-github"></i> GitHub Discussions
+  </a>
+  <a className="button button--info button--lg" href="https://discord.gg/RsBM5KXtgX" target="_blank" rel="noopener noreferrer">
+    <i className="fa-brands fa-discord"></i> Discord
   </a>
   <a className="button button--info button--lg" href="https://t.me/rspamd" target="_blank" rel="noopener noreferrer">
     <i className="fa-solid fa-paper-plane"></i> Telegram
