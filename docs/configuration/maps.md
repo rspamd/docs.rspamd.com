@@ -18,9 +18,10 @@ Maps are one of the most important and flexible features in Rspamd, allowing for
 7. [External Maps](#external-maps)
 8. [Authentication for HTTP Maps](#authentication-for-http-maps)
 9. [Compression Support](#compression-support)
-10. [Fallback Options](#fallback-options)
-11. [CDB Maps](#cdb-maps)
-12. [Map API Reference](#map-api-reference)
+10. [Encrypted Maps](#encrypted-maps)
+11. [Fallback Options](#fallback-options)
+12. [CDB Maps](#cdb-maps)
+13. [Map API Reference](#map-api-reference)
 
 ## What Are Maps?
 
@@ -319,6 +320,77 @@ Compressed maps:
 - Reduce network bandwidth usage
 - Reduce storage requirements for larger maps
 - Are automatically decompressed when loaded
+
+## Encrypted Maps
+
+Rspamd supports symmetric encryption of map payloads using Secretbox. Encrypted maps work for both file and HTTP backends and can be combined with compression.
+
+- Supported extensions:
+  - `.enc` — encrypted (no compression)
+  - `.zst.enc` / `.zstd.enc` — Zstandard-compressed then encrypted
+
+### Processing order
+
+- Recommended chain: compress plaintext → encrypt compressed bytes.
+- On load, Rspamd performs decrypt → decompress.
+- Zstandard is auto-detected by frame magic after decryption, even if compression wasn’t explicitly set in the URL.
+
+### Key configuration
+
+Place a symmetric key in the `maps` block either at root level or under `options`:
+
+```hcl
+maps {
+  # Key formats: base64 (recommended), hex, or raw 32 bytes
+  secretbox_key = "<hex|base64|raw32>";
+}
+
+# or
+
+options {
+  maps {
+    secretbox_key = "<hex|base64|raw32>";
+  }
+}
+```
+
+Per-backend override is supported by using the exact URL/path as a nested key:
+
+```hcl
+maps {
+  "https://example.com/rules.map.zst.enc" {
+    secretbox_key = "<base64>";
+  }
+  # Global default fallback
+  secretbox_key = "<base64>";
+}
+```
+
+Keys are expanded to a 32‑byte Secretbox key via `crypto_generichash`, matching the Lua API `rspamd_cryptobox_secretbox.create`.
+
+### Preparing an encrypted map
+
+```bash
+# 1) Compress the plaintext map
+zstd -f -q /path/to/map
+
+# 2) Generate a symmetric key (base64)
+rspamadm secretbox keygen -B > key.b64
+
+# 3) Encrypt the compressed file (outputs nonce||ciphertext)
+rspamadm secretbox encrypt -k "$(cat key.b64)" -R < /path/to/map.zst > /path/to/map.zst.enc
+
+# 4) Configure the key in Rspamd
+options {
+  maps {
+    secretbox_key = "$(cat key.b64)";
+  }
+}
+```
+
+Notes:
+- The encrypted payload layout is `nonce(24 bytes) || ciphertext+MAC`.
+- HTTP caching (ETag/Last‑Modified) continues to work; cached metadata is preserved.
 
 ## Fallback Options
 
