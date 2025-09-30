@@ -109,6 +109,7 @@ equals `match_count / shingles_count`.
 
 Fuzzy storage accepts the following extra options:
 
+- `count` - number of Fuzzy worker processes, default value: 0
 - `hashfile` - path to the sqlite storage (where are also few outdated aliases for this command exist: hash_file, file, database)
 - `backend` - set it to `redis` if you want to use a redis server
 - `sync` - time to perform database sync in seconds, default value: 60
