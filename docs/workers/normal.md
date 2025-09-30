@@ -6,6 +6,7 @@ title: Normal worker (scanner)
 
 Rspamd normal worker is intended to scan messages for spam. It has the following configuration options available:
 
+* `count`: number of normal worker processes to run, default: 4
 * `mime`: turn to `false` if you want to scan non-mime messages (e.g. forum comments or SMS), default: `true`
 * `allow_learn`: turn to `true` if you want to learn messages using this worker (usually you should use [controller](/workers/controller) worker), default: `false`
 * `timeout`: input/output timeout, default: `1min`
