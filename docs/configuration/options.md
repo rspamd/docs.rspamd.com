@@ -156,11 +156,13 @@ On the Rspamd server where you want to point your web browser, add a `neighbours
 
 ~~~hcl
 neighbours {
-    server1 { host = "host1.example.com"; }
-    server2 { host = "host2.example.com"; }
+    server1 { host = "https://host1.example.com:443"; }
+    server2 { host = "https://host2.example.com:443"; }
     server3 { host = "10.10.10.10:11334"; }
 }
 ~~~
+
+You must include the scheme and the port number in the URL, and you must include an entry for the local server.
 
 There is no direct communication between cluster members. Rspamd sends the neighbours list to the web browser, and all subsequent communication occurs directly between the browser and the listed neighbours via HTTP requests.
 
