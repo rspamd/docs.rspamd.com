@@ -142,9 +142,12 @@ Open http://localhost:11334 and log in with your password.
 ### Ubuntu/Debian Installation
 
 ```bash
+# Add Rspamd repository GPG key (modern method)
+curl -fsSL https://rspamd.com/apt-stable/gpg.key | \
+  sudo gpg --dearmor -o /usr/share/keyrings/rspamd.gpg
+
 # Add Rspamd repository
-curl -sSL https://rspamd.com/apt-stable/gpg.key | sudo apt-key add -
-echo "deb [arch=amd64] https://rspamd.com/apt-stable/ $(lsb_release -cs) main" | \
+echo "deb [signed-by=/usr/share/keyrings/rspamd.gpg] https://rspamd.com/apt-stable/ $(lsb_release -cs) main" | \
   sudo tee /etc/apt/sources.list.d/rspamd.list
 
 # Update package list
@@ -211,26 +214,27 @@ Install build dependencies:
 
 **Ubuntu/Debian**:
 ```bash
-sudo apt install build-essential cmake libssl-dev libpcre3-dev \
+sudo apt install build-essential cmake libssl-dev libpcre2-dev \
   zlib1g-dev libluajit-5.1-dev libglib2.0-dev libevent-dev \
-  libsodium-dev libhyperscan-dev ragel
+  libsodium-dev libhyperscan-dev ragel libicu-dev libsqlite3-dev
 ```
 
 **CentOS/RHEL**:
 ```bash
 sudo dnf groupinstall "Development Tools"
-sudo dnf install cmake openssl-devel pcre-devel zlib-devel \
+sudo dnf install cmake openssl-devel pcre2-devel zlib-devel \
   luajit-devel glib2-devel libevent-devel libsodium-devel \
-  hyperscan-devel ragel
+  hyperscan-devel ragel libicu-devel sqlite-devel
 ```
 
 ### Compilation Steps
 
 ```bash
-# Download source
-wget https://github.com/rspamd/rspamd/archive/master.tar.gz
-tar xzf master.tar.gz
-cd rspamd-master
+# Download latest stable release
+# Replace X.Y.Z with the actual version number from https://github.com/rspamd/rspamd/releases
+wget https://github.com/rspamd/rspamd/archive/X.Y.Z.tar.gz
+tar xzf X.Y.Z.tar.gz
+cd rspamd-X.Y.Z
 
 # Create build directory
 mkdir build
@@ -250,12 +254,13 @@ make -j4
 # Install
 sudo make install
 
-# Create system user
-sudo useradd -r -g mail -d /var/lib/rspamd -s /bin/false rspamd
+# Create system user and group
+sudo groupadd -r _rspamd
+sudo useradd -r -g _rspamd -d /var/lib/rspamd -s /bin/false -c "Rspamd spam filtering system" _rspamd
 
 # Create directories
 sudo mkdir -p /var/lib/rspamd /var/log/rspamd /run/rspamd
-sudo chown rspamd:mail /var/lib/rspamd /var/log/rspamd /run/rspamd
+sudo chown _rspamd:_rspamd /var/lib/rspamd /var/log/rspamd /run/rspamd
 ```
 
 ### Create Systemd Service
@@ -264,16 +269,21 @@ Create `/etc/systemd/system/rspamd.service`:
 
 ```ini
 [Unit]
-Description=Rspamd spam filtering system
-After=network.target
+Description=rapid spam filtering system
+After=nss-lookup.target network-online.target redis.service
+Documentation=https://rspamd.com/doc/
+# Note: Redis is optional. If Redis is not installed, systemd will ignore redis.service
 
 [Service]
-Type=forking
-PIDFile=/run/rspamd/rspamd.pid
-ExecStart=/usr/local/bin/rspamd -f
-ExecReload=/bin/kill -USR1 $MAINPID
-User=rspamd
-Group=mail
+LimitNOFILE=1048576
+NonBlocking=true
+ExecStart=/usr/local/bin/rspamd -c /etc/rspamd/rspamd.conf -f
+ExecReload=/bin/kill -HUP $MAINPID
+User=_rspamd
+Group=_rspamd
+RuntimeDirectory=rspamd
+RuntimeDirectoryMode=0755
+Restart=always
 
 [Install]
 WantedBy=multi-user.target
@@ -461,7 +471,7 @@ Send a test email through your mail server and verify:
 ### Permission Problems
 ```bash
 # Fix ownership
-sudo chown -R rspamd:mail /var/lib/rspamd /var/log/rspamd
+sudo chown -R _rspamd:_rspamd /var/lib/rspamd /var/log/rspamd
 
 # Fix SELinux (if applicable)
 sudo setsebool -P antivirus_can_scan_system 1
