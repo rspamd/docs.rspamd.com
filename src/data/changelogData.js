@@ -3,6 +3,48 @@
 
 export const changelogData = [
   {
+    "version": "3.13.2",
+    "date": "2025-10-05",
+    "type": "minor",
+    "title": "Feature Update with Enhanced Security and Performance",
+    "sections": [
+      {
+        "title": "Added",
+        "items": [
+          "**Fuzzy check encryption**: Separate encryption keys for read and write operations in fuzzy_check plugin ([#5665](https://github.com/rspamd/rspamd/pull/5665))",
+          "**DKIM ED25519 support**: Full ED25519 support for DKIM signing and verification with OpenSSL version checks ([#5664](https://github.com/rspamd/rspamd/pull/5664))",
+          "**Vault KV v2 support**: HashiCorp Vault KV version 2 support for DKIM key management with backward compatibility ([#5654](https://github.com/rspamd/rspamd/pull/5654))",
+          "**MetaDefender integration**: MetaDefender Cloud Lua module for SHA256 hash lookups as free-tier anti-malware scanning alternative ([#5656](https://github.com/rspamd/rspamd/pull/5656))",
+          "**LLM context support**: User/domain context support for LLM-based classification with Redis-based conversation context ([#5647](https://github.com/rspamd/rspamd/pull/5647))",
+          "**DMARC RUA exclusion**: Configuration option to exclude specific RUA addresses from DMARC report storage ([#5653](https://github.com/rspamd/rspamd/pull/5653))"
+        ]
+      },
+      {
+        "title": "Fixed",
+        "items": [
+          "**DKIM bodyhash calculation**: Fixed relaxed bodyhash calculation for lines with only spaces to comply with RFC 6376 Section 3.4.4 ([#5662](https://github.com/rspamd/rspamd/pull/5662))",
+          "**DKIM key loading**: Fixed ED25519 key loading to prevent memory corruption in union handling ([#5664](https://github.com/rspamd/rspamd/pull/5664))",
+          "**HTTP map intervals**: Enforced server-controlled refresh intervals and prevented aggressive polling behavior ([#5660](https://github.com/rspamd/rspamd/pull/5660))",
+          "**HTTP map overflow**: Prevented time_t overflow in expires header processing ([#5660](https://github.com/rspamd/rspamd/pull/5660))",
+          "**Once received plugin**: Fixed duplicate symbol addition by changing break to return in check_quantity_received ([#5658](https://github.com/rspamd/rspamd/pull/5658))",
+          "**Redis Sentinel**: Properly propagate unused Sentinel options ([#5597](https://github.com/rspamd/rspamd/pull/5597))",
+          "**Fuzzy check decryption**: Fixed reply decryption when using separate read/write keys ([#5665](https://github.com/rspamd/rspamd/pull/5665))",
+          "**Fuzzy check fallback**: Added fallback when only one specific encryption key is set ([#5665](https://github.com/rspamd/rspamd/pull/5665))",
+          "**Fuzzy check filtering**: Fixed duplicate key filtering in reply decryption ([#5665](https://github.com/rspamd/rspamd/pull/5665))",
+          "**Fuzzy ping servers**: Allow read/write servers configuration ([#5665](https://github.com/rspamd/rspamd/pull/5665))"
+        ]
+      },
+      {
+        "title": "Improved",
+        "items": [
+          "**Fuzzy check performance**: Refactored encryption key selection into helper functions for better maintainability ([#5665](https://github.com/rspamd/rspamd/pull/5665))",
+          "**Fuzzy check efficiency**: Stop early when found a correct key to improve performance ([#5665](https://github.com/rspamd/rspamd/pull/5665))",
+          "**Development workflow**: Added cursor rules for improved development experience ([#5665](https://github.com/rspamd/rspamd/pull/5665))"
+        ]
+      }
+    ]
+  },
+  {
     "version": "3.13.1",
     "date": "2025-09-30",
     "type": "minor",
