@@ -63,8 +63,11 @@ Below are the configuration parameters for DMARC reporting, along with correspon
     #exclude_domains = '/path/to/map'; # Exclude reports from domains or eSLDs listed in this map
     #exclude_domains = ["example.com", "another.com"]; # Alternative, use array to exclude reports from domains or eSLDs
     # Available from 3.8
-    #exclude_recipients = '/path/to/map'; # Exclude reports for recipients listed in this map
-    #exclude_recipients = ["a@example.com", "b@another.com"]; # Alternative, use array to exclude reports for recipients
+    #exclude_recipients = '/path/to/map'; # Exclude reports for local recipients listed in this map
+    #exclude_recipients = ["a@example.com", "b@another.com"]; # Alternative, use array to exclude reports for local recipients
+    # Available from 3.13.2
+    #exclude_rua_addresses = '/path/to/map'; # Exclude reports for rua recipients listed in this map
+    #exclude_rua_addresses = ["a@example.com", "b@another.com"]; # Alternative, use array to exclude reports for rua recipients
   }
 ~~~
 
@@ -85,11 +88,14 @@ Here is the list of options explained:
 * `keys_expire` (Optional): The expiration time for Redis keys storing report data.
 * `only_domains` (Optional): A path to a map file containing a list of domains or eSLDs for which reports should be stored. Reports from other domains will be ignored.
 * `exclude_domains` (Optional): A path to a map file containing a list of domains or eSLDs to be excluded from the reports. Alternatively, an array of domains can be used for the same purpose.
-* `exclude_recipients` (Optional): A path to a map file containing a list of recipients to not send reports to. Alternatively, an array of recipients can be used for the same purpose.
+* `exclude_recipients` (Optional): A path to a map file containing a list of local recipients to not send reports for. Alternatively, an array of local recipients can be used for the same purpose.
+* `exclude_rua_addresses` (Optional): A path to a map file containing a list of rua recipients to not send reports to. Alternatively, an array of rua recipients can be used for the same purpose.
 
 In versions of Rspamd prior to 3.3, you could exclude certain domains from reporting by configuring the `no_reporting_domains` setting, which is a map of domains or eSLDs to be excluded. Starting from Rspamd 3.3, this option is also available in the `reporting` section. However, the legacy option `settings.no_reporting_domains` is still supported (although it's not recommended).
 
-Starting from Rspamd 3.8, there is a new option `exclude_recipients` available in the reporting section. Here you can list recipient email addresses for which no reporting data should be collected (because the recipients generate bounces all the time).
+Starting from Rspamd 3.8, there is a new option `exclude_recipients` available in the reporting section. Here you can list local recipient email addresses for which no reporting data should be collected (for example to break DMARC reporting endless loops).
+
+Starting from Rspamd 3.13.2, there is a new option `exclude_rua_addresses` available in the reporting section. Here you can list rua recipient email addresses for which no reporting data should be collected (because the recipients generate bounces ("user does not exist" and so on) all the time).
 
 Rspamd does not support sending `forensic` DMARC reports.
 
