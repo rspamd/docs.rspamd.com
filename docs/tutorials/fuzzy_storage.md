@@ -11,6 +11,14 @@ title: Usage of fuzzy hashes
 
 Fuzzy hashing can be used to search for similar messages, allowing us to identify messages with the same or slightly modified text. This technique is particularly useful for blocking spam that is sent to many users simultaneously.
 
+Starting from version **3.14.0**, fuzzy hashing extends to HTML structure matching. This enables:
+- Detecting spam campaigns with varying personalized text but same HTML template
+- Phishing protection: matching legitimate HTML structure but different CTA domains
+- Brand protection: identifying legitimate vs. fake branded emails
+- Newsletter grouping: same template with different weekly content
+
+HTML fuzzy works alongside text fuzzy and uses the same storage infrastructure.
+
 
 
 The purpose of this page is to explain how to use fuzzy hashes, not to provide extensive details or a thorough understanding of how they work within Rspamd. However, the following summary should provide a basic understanding of the content covered on this page.
@@ -83,6 +91,26 @@ The "honeypot" method of improving the value of the hash storage involves using 
 One way to set up a spam trap is to expose addresses to spammer databases, but not to legitimate users. This can be done by placing email addresses in a hidden *iframe* element on a popular website, for example. The element is not visible to users due to the *hidden* property or zero size, but it is visible to spam bots. This method is not as effective as it used to be, as spammers have learned how to avoid such traps.
 
 Another way to create a trap is to find domains that were popular in the past but are no longer functional. These domain names can be found in many spam databases. Purchase these domains and allow all incoming mail to go to a catch-all address, where it is processed for fuzzy hashing and then discarded. In general, setting up your own traps like this is only practical for large mail systems, as it can be costly in terms of maintenance and direct expenses such as domain purchases.
+
+### HTML Structure Hashing
+
+When selecting sources for HTML fuzzy learning, consider:
+
+**For whitelists (legitimate templates):**
+- Newsletter templates from known brands
+- Notification templates from services (social networks, marketplaces)
+- Transactional email templates (receipts, confirmations)
+
+These should be learned with appropriate flags for later identification.
+
+**For blacklists (spam/phishing):**
+- Known phishing templates (especially brand impersonation)
+- Spam campaign templates
+- Confirmed malicious HTML structures
+
+**Important:** HTML fuzzy includes CTA (Call-To-Action) domain verification.
+Phishing attempts copying legitimate HTML but using different CTA domains
+will have low similarity scores despite matching structure.
 
 ----
 
@@ -379,6 +407,243 @@ test/rspamd-test -p /rspamd/shingles
 ```
 
 **Important note:** Changing this parameter **will result in losing all data in the fuzzy hash storage**, since only one algorithm can be used for each storage at a time. It is not possible to convert one type of hash to another, as hash functions are designed to be irreversible.
+
+### HTML Fuzzy Configuration (Since 3.14.0)
+
+HTML fuzzy hashing can be enabled per-rule:
+
+~~~hcl
+rule "HTML_ENABLED" {
+  servers = "localhost:11335";
+  algorithm = "mumhash";  # Used for HTML shingles too
+  
+  # Enable HTML structure fuzzy hashing
+  html_shingles = true;
+  
+  # Minimum HTML tags (default: 10)
+  # Lower values = more emails hashed, higher FP risk
+  # Higher values = fewer emails, more unique structures
+  min_html_tags = 15;
+  
+  # Weight multiplier for HTML matches (default: 1.0)
+  html_weight = 1.0;
+  
+  # Text fuzzy can be enabled simultaneously
+  text_shingles = true;
+  min_length = 32;
+  
+  fuzzy_map = {
+    FUZZY_HTML_SPAM {
+      flag = 100;
+      max_score = 20.0;
+    }
+  }
+}
+~~~
+
+**When HTML hash is generated:**
+
+For each HTML text part, if `html_shingles = true`:
+1. Check if part is HTML with parsed structure
+2. Verify `tags_count >= min_html_tags`
+3. Verify at least 2 links (prevent generic templates)
+4. Verify DOM depth >= 3 (prevent flat structures)
+5. Generate HTML tokens from DOM structure
+6. Create shingles + metadata hashes
+7. Send to storage alongside text hash (if enabled)
+
+**HTML token format:** `tagname[.class][@domain]`
+
+Example tokens from a newsletter:
+```
+html → head → title → body → div.header → a@brand.com → img@cdn.brand.com →
+div.content → h1 → p → div.article → h2 → p → a.button@brand.com →
+div.footer → p → a@brand.com
+```
+
+**What makes HTML fuzzy special:**
+
+1. **Structure-based**: Ignores text content completely
+2. **Domain-aware**: Captures eTLD+1 from all links
+3. **CTA-focused**: Separately tracks CTA link domains (30% weight)
+4. **Stable**: Filters tracking classes, normalizes dynamic attributes
+
+### HTML Fuzzy for Phishing Detection
+
+HTML fuzzy's killer feature is **CTA domain verification** for phishing protection:
+
+#### The Problem
+
+Traditional fuzzy matching can miss phishing that:
+- Copies text from legitimate emails (high text fuzzy match)
+- Copies HTML structure from legitimate emails (high HTML match)
+- But changes CTA links to phishing domains
+
+#### The Solution
+
+HTML fuzzy includes CTA domains in the hash with **30% weight**:
+
+```
+Legitimate email from Amazon:
+  HTML structure: div.header → a@amazon.com → div.content → a.button@amazon.com
+  CTA domains: [amazon.com]
+  HTML hash: HASH_A
+
+Phishing attempt:
+  HTML structure: div.header → a@phishing.com → div.content → a.button@phishing.com
+  CTA domains: [phishing.com]
+  HTML hash: HASH_B (DIFFERENT!)
+
+Even if DOM structure identical:
+  Structure similarity: 0.9 (high)
+  CTA domains match: 0.0 (different)
+  Combined similarity: 0.9×0.5 + 0.0×0.3 + ... = 0.45 (LOW!)
+```
+
+**Result:** Phishing detected despite matching structure!
+
+#### Deployment Strategy
+
+**Step 1: Learn legitimate templates**
+
+```bash
+# Learn legitimate emails from known brands
+rspamc -f 1 -w 10 fuzzy_add legitimate/amazon_notification.eml
+rspamc -f 1 -w 10 fuzzy_add legitimate/facebook_notification.eml
+rspamc -f 1 -w 10 fuzzy_add legitimate/paypal_receipt.eml
+```
+
+**Step 2: Configure phishing detection**
+
+~~~hcl
+rule "BRAND_PROTECTION" {
+  html_shingles = true;
+  min_html_tags = 20;  # Brands use complex HTML
+  html_weight = 1.5;   # Prioritize structure
+  
+  fuzzy_map = {
+    FUZZY_LEGIT_BRANDS {
+      flag = 1;
+      max_score = 20.0;
+    }
+  }
+}
+~~~
+
+**Step 3: Monitor and refine**
+
+Look for:
+- High HTML fuzzy match + suspicious CTA = phishing
+- High HTML match + same CTA + low text match = legitimate variation (newsletter)
+
+### HTML Fuzzy for Spam Campaigns
+
+Spam campaigns often use:
+- Same HTML template across thousands of messages
+- Personalized text (recipient name, dates, offers)
+- Rotating domains but similar structure
+
+**Traditional fuzzy:** Misses campaign due to text variations  
+**HTML fuzzy:** Catches entire campaign via structure match
+
+**Configuration:**
+
+~~~hcl
+rule "SPAM_CAMPAIGNS" {
+  html_shingles = true;
+  min_html_tags = 15;
+  html_weight = 1.0;
+  
+  fuzzy_map = {
+    FUZZY_SPAM_TEMPLATES {
+      flag = 200;
+      max_score = 15.0;
+    }
+  }
+}
+~~~
+
+**Learning:**
+
+```bash
+# Learn first spam from campaign
+rspamc -f 200 -w 15 fuzzy_add spam_campaign_sample.eml
+
+# All subsequent emails from campaign will match via HTML
+```
+
+### Best Practices
+
+**1. Use appropriate min_html_tags:**
+
+- **Low (5-10)**: More matches, higher FP risk, useful for spam campaigns
+- **Medium (10-15)**: Balanced, recommended for general use
+- **High (20+)**: Fewer matches, low FP, best for brand protection
+
+**2. Adjust html_weight based on use case:**
+
+- **Phishing detection**: `1.2-1.5` (prioritize structure)
+- **Spam campaigns**: `1.0` (equal to text)
+- **Newsletter grouping**: `0.8-1.0` (structure important but not critical)
+
+**3. Separate flags for different purposes:**
+
+```hcl
+fuzzy_map = {
+  FUZZY_LEGIT_TEMPLATES { flag = 1; max_score = -10.0; }  # Whitelist
+  FUZZY_SPAM_TEMPLATES { flag = 2; max_score = 15.0; }    # Spam
+  FUZZY_PHISHING_TEMPLATES { flag = 3; max_score = 25.0; } # Phishing
+}
+```
+
+**4. Monitor false positives:**
+
+Check logs for `html` type matches and verify:
+- CTA domains are correct
+- Structure genuinely matches
+- No legitimate templates mis-flagged
+
+**5. Combine with text fuzzy:**
+
+Enable both for comprehensive coverage:
+```hcl
+text_shingles = true;   # Catch text-based spam
+html_shingles = true;   # Catch structure-based spam/phishing
+```
+
+### Limitations
+
+- **Only for HTML parts**: Plain text emails not processed
+- **Requires complex HTML**: Simple HTML (<10 tags) skipped
+- **CTA detection heuristic**: May miss non-standard button implementations
+- **Memory**: Additional ~300 bytes per HTML part
+- **Storage**: Separate cache key per rule to avoid conflicts
+
+### Troubleshooting
+
+**HTML hashes not generated:**
+
+Check debug logs for:
+```
+HTML part has X tags, less than minimum Y
+HTML part has only 1 links, too few for reliable matching
+HTML part has depth 2, too shallow for reliable matching
+```
+
+Adjust `min_html_tags` or verify HTML complexity.
+
+**Unwanted matches (false positives):**
+
+- Increase `min_html_tags` (reduce generic matches)
+- Check if tracking classes causing instability
+- Verify CTA domains are being captured correctly
+
+**Phishing not detected:**
+
+- Verify legitimate templates are learned (`flag = 1`)
+- Check CTA domains are different in phishing
+- Ensure `html_weight >= 1.0` for structure priority
+- Review similarity calculation in logs
 
 ### Condition scripts for the learning
 
