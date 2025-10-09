@@ -440,7 +440,7 @@ You can use `rspamadm configdump -m` to check or `rspamadm configwizard` to chec
 
 ### How to change score for some symbol
 
-Unfortunately, it's not a straightforward question. If you are using the [WebUI](../webui/), it redefines all scores and action thresholds. Once you set a symbol's score in WebUI, changing it through other means becomes challenging (you can achieve it by modifying or removing the file `$DBDIR/rspamd_dynamic`, typically located at `/var/lib/rspamd_dynamic` or `/var/db/rspamd_dynamic` depending on your OS).
+Unfortunately, it's not a straightforward question. If you are using the WebUI, it redefines all scores and action thresholds. Once you set a symbol's score in WebUI, changing it through other means becomes challenging (you can achieve it by modifying or removing the file `$DBDIR/rspamd_dynamic`, typically located at `/var/lib/rspamd_dynamic` or `/var/db/rspamd_dynamic` depending on your OS).
 
 If you intend to modify a symbol's score in the configuration, you should do it in the `local.d/groups.conf` file. This can be accomplished using the following syntax:
 

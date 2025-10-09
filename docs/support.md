@@ -5,7 +5,7 @@ description: Support options for Rspamd users
 
 # Support Options
 
-Rspamd is free and open source software. The developers are mostly volunteers who provide user support in their free time. Before asking for help, please check our [Documentation](./index) first, especially the [Rspamd Quick Start](./tutorials/quickstart) and [Frequently Asked Questions](./faq).
+Rspamd is free and open source software. The developers are mostly volunteers who provide user support in their free time. Before asking for help, please check our [Documentation](/) first, especially the [Rspamd Quick Start](./tutorials/quickstart) and [Frequently Asked Questions](./faq).
 
 ## Reporting Bugs and Feature Requests
 
