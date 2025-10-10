@@ -183,6 +183,7 @@ const sidebars = {
       "items": [
         "developers/architecture",
         "developers/protocol",
+        "developers/encryption",
         "developers/sync_async",
         "developers/writing_rules",
         "developers/writing_tests",
