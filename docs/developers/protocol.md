@@ -62,7 +62,7 @@ To minimize redundant processing, Rspamd enables an MTA to transmit pre-processe
 | `IP`         | Defines IP from which this message is received. |
 | `Helo`       | Defines SMTP helo |
 | `Hostname`   | Defines resolved hostname |
-| `Flags`      | Supported from version 2.0: Defines output flags as a commas separated list: {::nomarkdown}<ul><li><code>pass_all</code>: pass all filters</li><li><code>groups</code>: return symbols groups</li><li><code>zstd</code>: compressed input/output</li><li><code>no_log</code>: do not log task</li><li><code>milter</code>: apply milter protocol related hacks</li><li><code>profile</code>: profile performance for this task</li><li><code>body_block</code>: accept rewritten body as a separate part of reply</li><li><code>ext_urls</code>: extended urls information</li><li><code>skip</code>: skip all filters processing</li><li><code>skip_process</code>: skip mime parsing/processing</li></ul>{:/}
+| `Flags`      | Supported from version 2.0: Defines output flags as a commas separated list: {::nomarkdown}<ul><li><code>pass_all</code>: pass all filters</li><li><code>groups</code>: return symbols groups</li><li><code>zstd</code>: compressed input/output</li><li><code>no_log</code>: do not log task</li><li><code>milter</code>: apply milter protocol related hacks</li><li><code>profile</code>: profile performance for this task</li><li><code>body_block</code>: accept rewritten body as a separate part of reply (see <a href="#body-block-rewritten-message">Body block section</a>)</li><li><code>ext_urls</code>: extended urls information</li><li><code>skip</code>: skip all filters processing</li><li><code>skip_process</code>: skip mime parsing/processing</li></ul>{:/}
 | `From`       | Defines SMTP mail from command data |
 | `Queue-Id`   | Defines SMTP queue id for message (can be used instead of message id in logging). |
 | `Raw`        | If set to `yes`, then Rspamd assumes that the content is not MIME and treat it as raw data. |
@@ -166,6 +166,14 @@ Additional keys that could be in the reply include:
 * `message-id` - ID of message (useful for logging)
 * `messages` - object containing optional messages added by Rspamd filters (such as `SPF`) - The value of the `smtp_message` key is intended to be returned as SMTP response text by the MTA
 
+### Response headers
+
+In addition to the JSON body, Rspamd may include special HTTP headers in the response:
+
+* `Message-Offset` - When the `body_block` flag is set and the message was modified, this header contains the byte offset where the JSON response ends and the rewritten message body begins. See [Body block section](#body-block-rewritten-message) for details.
+* `Compression` - Indicates the compression algorithm used (e.g., `zstd`)
+* `Content-Encoding` - Mirror of the compression header for standard HTTP clients
+
 ## Milter headers
 
 This section of the response is utilized to manipulate headers and the SMTP session. It is located under the `milter` key in the response. Here are the potential elements within this object:
@@ -226,6 +234,109 @@ Where `<header_name>` represents header's name, and the value is the order of th
         }
     }
 }
+```
+
+## Body block (rewritten message)
+
+When a message is modified by Rspamd (for example, by Lua plugins via `task:set_message()` or ARC signing), the client can request that the modified message body be included in the response. This is controlled by the `body_block` flag.
+
+### How it works
+
+1. **Request**: The client includes `body_block` in the `Flags` header (e.g., `Flags: body_block` or `Flags: milter,body_block`)
+
+2. **Response**: If the message was modified (indicated by the internal `MESSAGE_REWRITE` flag), the response contains:
+   - A `Message-Offset` header indicating the byte position where the rewritten body begins
+   - The standard JSON response up to the offset
+   - The rewritten message body after the offset
+
+3. **Message format**:
+   - **For milter protocol** (`milter` flag present): Only the message body is included (without headers)
+   - **For standard protocol**: The complete modified message is included (headers + body)
+
+### Example with body block
+
+Request:
+```
+POST /checkv2 HTTP/1.1
+Content-Length: 1500
+Flags: body_block
+From: sender@example.com
+Rcpt: recipient@example.com
+
+[message content]
+```
+
+Response when message was modified:
+```
+HTTP/1.1 200 OK
+Content-Type: application/json
+Message-Offset: 523
+Content-Length: 2100
+
+{"action":"no action","score":0.5,"required_score":15.0,"symbols":{...},"message-id":"test@example.com"}
+[rewritten message body starts here at byte 523]
+From: sender@example.com
+To: recipient@example.com
+Subject: Test message
+DKIM-Signature: v=1; a=rsa-sha256; ...
+
+Modified message body content...
+```
+
+In this example:
+- The JSON response ends at byte position 523
+- The `Message-Offset` header tells the client where to split the response
+- Everything after byte 523 is the rewritten message
+
+### Parsing the response
+
+To parse a response with body block:
+
+1. Read the `Message-Offset` header value (e.g., `523`)
+2. Parse bytes 0 to offset-1 as JSON (e.g., bytes 0-522)
+3. Use bytes from offset to end as the rewritten message body (e.g., bytes 523-2099)
+
+### Use cases
+
+This feature is primarily used in:
+- **Rspamd proxy worker** with milter protocol for message modifications
+- **MTA integrations** that need to apply message modifications (DKIM signing, ARC sealing, header modifications)
+- **Custom processing pipelines** where message rewriting is performed by Lua modules
+
+### When is a message considered "rewritten"?
+
+A message is marked as rewritten when:
+- A Lua plugin calls `task:set_message()` with new content
+- A Lua plugin calls `task:set_flag('message_rewrite')` explicitly
+- Internal modules modify the message structure (e.g., ARC module adding signatures)
+
+### Client-side implementation
+
+Example Python code to parse a body block response:
+
+```python
+import requests
+import json
+
+response = requests.post('http://localhost:11333/checkv2',
+                        headers={'Flags': 'body_block'},
+                        data=message_content)
+
+message_offset = response.headers.get('Message-Offset')
+if message_offset:
+    offset = int(message_offset)
+    json_part = response.content[:offset]
+    body_part = response.content[offset:]
+    
+    result = json.loads(json_part)
+    modified_message = body_part.decode('utf-8')
+    
+    print(f"Scan result: {result}")
+    print(f"Modified message: {modified_message}")
+else:
+    # No message modification, response is pure JSON
+    result = response.json()
+    print(f"Scan result: {result}")
 ```
 
 ## Curl example
