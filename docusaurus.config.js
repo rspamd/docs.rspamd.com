@@ -38,6 +38,36 @@ const config = {
   organizationName: 'rspamd',
   projectName: 'docs.rspamd.com',
 
+  headTags: [
+    {
+      tagName: 'link',
+      attributes: {
+        rel: 'alternate',
+        type: 'application/rss+xml',
+        title: 'Rspamd Changelog RSS',
+        href: '/rss/changelog.xml',
+      },
+    },
+    {
+      tagName: 'link',
+      attributes: {
+        rel: 'alternate',
+        type: 'application/rss+xml',
+        title: 'Rspamd Blog RSS',
+        href: '/blog/rss.xml',
+      },
+    },
+    {
+      tagName: 'link',
+      attributes: {
+        rel: 'alternate',
+        type: 'application/atom+xml',
+        title: 'Rspamd Blog Atom',
+        href: '/blog/atom.xml',
+      },
+    },
+  ],
+
   i18n: {
     defaultLocale: 'en',
     locales: ['en', 'ru'],
@@ -65,6 +95,20 @@ const config = {
           blogTitle: 'Rspamd Blog',
           blogDescription: 'News and updates from the Rspamd project',
           postsPerPage: 5,
+          feedOptions: {
+            type: ['rss', 'atom'],
+            title: 'Rspamd Blog',
+            description: 'News and updates from the Rspamd project',
+            copyright: `Copyright © ${new Date().getFullYear()} Rspamd Project`,
+            language: 'en',
+            createFeedItems: async (params) => {
+              const {blogPosts, defaultCreateFeedItems, ...rest} = params;
+              return defaultCreateFeedItems({
+                blogPosts: blogPosts.filter((item, index) => index < 20), // limit to 20 most recent posts
+                ...rest,
+              });
+            },
+          },
         },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
@@ -244,6 +288,23 @@ const config = {
               {
                 label: 'Blog',
                 to: '/blog',
+              },
+            ],
+          },
+          {
+            title: 'Subscribe',
+            items: [
+              {
+                label: 'Changelog RSS',
+                href: '/rss/changelog.xml',
+              },
+              {
+                label: 'Blog RSS',
+                href: '/blog/rss.xml',
+              },
+              {
+                label: 'Blog Atom',
+                href: '/blog/atom.xml',
               },
             ],
           },

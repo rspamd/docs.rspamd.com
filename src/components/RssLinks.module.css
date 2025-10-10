@@ -1,0 +1,46 @@
+.rssLinks {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.rssLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.75rem;
+  background: var(--ifm-color-emphasis-100);
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 6px;
+  color: var(--ifm-color-primary);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.rssLink:hover {
+  background: var(--ifm-color-primary);
+  color: white;
+  text-decoration: none;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.rssIcon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Dark mode adjustments */
+[data-theme='dark'] .rssLink {
+  background: var(--ifm-background-surface-color);
+  border-color: var(--ifm-color-emphasis-500);
+}
+
+[data-theme='dark'] .rssLink:hover {
+  background: var(--ifm-color-primary);
+  color: white;
+}
+

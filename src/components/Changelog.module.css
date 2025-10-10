@@ -26,6 +26,14 @@
   margin: 0;
 }
 
+.rssSection {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--ifm-color-emphasis-200);
+  display: flex;
+  justify-content: center;
+}
+
 .filters {
   display: flex;
   justify-content: center;

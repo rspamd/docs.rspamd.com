@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import ChangelogEntry from './ChangelogEntry';
+import RssLinks from './RssLinks';
 import styles from './Changelog.module.css';
 import { changelogData } from '../data/changelogData';
 
@@ -66,6 +67,9 @@ export default function Changelog() {
         <p className={styles.subtitle}>
           All notable changes to this project are documented here.
         </p>
+        <div className={styles.rssSection}>
+          <RssLinks />
+        </div>
       </div>
 
       <div className={styles.filters}>
