@@ -29,10 +29,10 @@ Rspamd configuration follows a **layered approach**:
 ### Specific Configuration Tasks?
 **Recommended path**: Find your task → Apply → Validate
 
-- **[Spam Filtering Tuning](spam-tuning)** - Adjust thresholds and scores
-- **[Performance Optimization](performance)** - Speed up Rspamd operation  
+- **[Spam Filtering Tuning](/configuration/metrics)** - Adjust thresholds and scores
+- **[Performance Optimization](/about/performance)** - Speed up Rspamd operation
 - **[Custom Rules](custom-rules)** - Create rules for your specific needs
-- **[Integration Configuration](integration)** - Connect with MTAs and other systems
+- **[Integration Configuration](/tutorials/integration)** - Connect with MTAs and other systems
 
 ## Configuration Areas
 
@@ -41,18 +41,18 @@ These are the essential areas most users need to understand:
 
 | Area | Purpose | Typical Changes | Impact Level |
 |------|---------|-----------------|--------------|
-| **[Actions & Thresholds](actions)** | What to do at different spam scores | Almost everyone adjusts | 🔥 High |
-| **[Module Settings](modules)** | Which tests to run and how | Common for customization | 🔶 Medium |
-| **[Worker Configuration](workers)** | Process behavior and integration | MTA integration required | 🔶 Medium |
+| **[Actions & Thresholds](/configuration/metrics)** | What to do at different spam scores | Almost everyone adjusts | 🔥 High |
+| **[Module Settings](/modules)** | Which tests to run and how | Common for customization | 🔶 Medium |
+| **[Worker Configuration](/workers)** | Process behavior and integration | MTA integration required | 🔶 Medium |
 
 ### Advanced Configuration  
 These areas require deeper understanding but offer powerful customization:
 
 | Area | Purpose | When to Modify | Impact Level |
 |------|---------|----------------|--------------|
-| **[Symbol Scores](scoring)** | Fine-tune individual test weights | Performance optimization | 🔥 High |
-| **[Custom Rules](custom-rules)** | Business-specific detection logic | Unique requirements | 🔶 Medium |
-| **[System Options](system-options)** | DNS, timeouts, resource limits | Infrastructure adaptation | 🔵 Low |
+| **[Symbol Scores](/configuration/metrics)** | Fine-tune individual test weights | Performance optimization | 🔥 High |
+| **[Custom Rules](/developers/writing_rules)** | Business-specific detection logic | Unique requirements | 🔶 Medium |
+| **[System Options](/configuration/options)** | DNS, timeouts, resource limits | Infrastructure adaptation | 🔵 Low |
 
 ## Configuration by Scenario
 

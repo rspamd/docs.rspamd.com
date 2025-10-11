@@ -14,7 +14,7 @@ The Rspamd GPT Plugin, introduced in Rspamd 3.9, integrates OpenAI's GPT API to 
 
 The last two points reduce the GPT workload for something that is already known, where GPT cannot add any value in the evaluation. We also use GPT as one of the classifiers, meaning that we do not rely solely on GPT evaluation.
 
-For detailed information about this plugin, refer to the [blog post](/misc/2024/07/03/gpt.html).
+
 
 ## Configuration Options
 

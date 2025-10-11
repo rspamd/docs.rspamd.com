@@ -183,7 +183,7 @@ Now that you understand Rspamd's architecture and configuration model:
 
 1. **[Choose your installation method](/getting-started/installation)** based on your scenario
 2. **[Complete the first success experience](/getting-started/first-setup)** to get working spam filtering
-3. **[Learn configuration fundamentals](/configuration/fundamentals)** to customize for your needs
+3. **[Learn configuration fundamentals](/guides/configuration/fundamentals)** to customize for your needs
 
 ## Key Takeaways
 

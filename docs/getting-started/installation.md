@@ -522,7 +522,7 @@ Version note: Rspamd 3.13+ supports resolving hostnames in `dns.nameserver`. Old
 After successful installation:
 
 1. **[Complete first setup](/getting-started/first-setup)** - Configure basic spam filtering
-2. **[Learn configuration fundamentals](/configuration/fundamentals)** - Understand what to customize
+2. **[Learn configuration fundamentals](/guides/configuration/fundamentals)** - Understand what to customize
 3. **[Choose your scenario](/scenarios/)** - Find guides specific to your use case
 
 ## Getting Help
