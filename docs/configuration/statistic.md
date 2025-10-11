@@ -73,13 +73,13 @@ classifier "bayes" {
 .include(try=true; priority=10) "$LOCAL_CONFDIR/override.d/statistic.conf"
 ~~~
 
-You are also recommended to use [`bayes_expiry` module](/modules/bayes_expiry) to maintain your statistics database.
+You are also recommended to use the [`bayes_expiry` module](/modules/bayes_expiry) to maintain your statistics database.
 
-Please note that `classifier-bayes.conf` is include config of `statistic.conf` which created for user's simplicity.
+Please note that `statistic.conf` includes the configuration from `classifier-bayes.conf` for your convenience.
 
-For most of setups where there is only one classifier is used - `classifier-bayes.conf` is suffient and `statistic.conf` should be leaved unmodified.
+In most setups (where a single classifier is used) you can tune the bayes classifier in `local.d/classifier-bayes.conf`, and `statistic.conf` can remain unmodified.
 
-If you need describe multiply different classifiers - then you need create `local.d/statistic.conf`, that should describe classifier sections, each classifier **must** have own `name` and have all options from default config, as there will be no fallback. Common usecase for such case is when first classifier is `per_user` and second is not.
+However, if you need to define multiple classifiers, you should create a `local.d/statistic.conf` file. There you must describe each classifier section explicitly: each classifier **must** have its own `name` and define **all options** of the default configuration as no fallback will be applied. A common use case for this setup is when one classifier is configured as `per_user` and another is not.
 
 ## Multi-class Bayes (3.13+)
 
