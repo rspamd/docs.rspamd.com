@@ -21,18 +21,18 @@ Rspamd configuration follows a **layered approach**:
 ### New to Rspamd Configuration?
 **Recommended path**: Foundation → Practical → Advanced
 
-1. **[Configuration Fundamentals](fundamentals)** - What to configure and how
-2. **[Tool Selection Guide](tool-selection)** - Choose the right approach for your task
+1. **[Configuration Fundamentals](/guides/configuration/fundamentals)** - What to configure and how
+2. **[Tool Selection Guide](/guides/configuration/tool-selection)** - Choose the right approach for your task
 3. **[Common Patterns](common-patterns)** - Proven configuration approaches
 4. **[Testing and Validation](testing)** - Ensure your changes work correctly
 
 ### Specific Configuration Tasks?
 **Recommended path**: Find your task → Apply → Validate
 
-- **[Spam Filtering Tuning](spam-tuning)** - Adjust thresholds and scores
-- **[Performance Optimization](performance)** - Speed up Rspamd operation  
-- **[Custom Rules](custom-rules)** - Create rules for your specific needs
-- **[Integration Configuration](integration)** - Connect with MTAs and other systems
+- **[Spam Filtering Tuning](/configuration/metrics)** - Adjust thresholds and scores
+- **[Performance Optimization](/about/performance)** - Speed up Rspamd operation  
+- **[Custom Rules](/developers/writing_rules)** - Create rules for your specific needs
+- **[Integration Configuration](/tutorials/integration)** - Connect with MTAs and other systems
 
 ## Configuration Areas
 
@@ -41,18 +41,18 @@ These are the essential areas most users need to understand:
 
 | Area | Purpose | Typical Changes | Impact Level |
 |------|---------|-----------------|--------------|
-| **[Actions & Thresholds](actions)** | What to do at different spam scores | Almost everyone adjusts | 🔥 High |
-| **[Module Settings](modules)** | Which tests to run and how | Common for customization | 🔶 Medium |
-| **[Worker Configuration](workers)** | Process behavior and integration | MTA integration required | 🔶 Medium |
+| **[Actions & Thresholds](/configuration/metrics)** | What to do at different spam scores | Almost everyone adjusts | 🔥 High |
+| **[Module Settings](/modules)** | Which tests to run and how | Common for customization | 🔶 Medium |
+| **[Worker Configuration](/workers)** | Process behavior and integration | MTA integration required | 🔶 Medium |
 
 ### Advanced Configuration  
 These areas require deeper understanding but offer powerful customization:
 
 | Area | Purpose | When to Modify | Impact Level |
 |------|---------|----------------|--------------|
-| **[Symbol Scores](scoring)** | Fine-tune individual test weights | Performance optimization | 🔥 High |
+| **[Symbol Scores](/configuration/metrics)** | Fine-tune individual test weights | Performance optimization | 🔥 High |
 | **[Custom Rules](custom-rules)** | Business-specific detection logic | Unique requirements | 🔶 Medium |
-| **[System Options](system-options)** | DNS, timeouts, resource limits | Infrastructure adaptation | 🔵 Low |
+| **[System Options](/configuration/options)** | DNS, timeouts, resource limits | Infrastructure adaptation | 🔵 Low |
 
 ## Configuration by Scenario
 
@@ -187,8 +187,8 @@ dns {
 
 Choose your path based on your current needs:
 
-- **Just getting started?** → [Configuration Fundamentals](fundamentals)
-- **Need to solve a specific problem?** → [Tool Selection Guide](tool-selection)  
+- **Just getting started?** → [Configuration Fundamentals](/guides/configuration/fundamentals)
+- **Need to solve a specific problem?** → [Tool Selection Guide](/guides/configuration/tool-selection)
 - **Want to optimize performance?** → [Performance Configuration](performance)
 - **Ready for advanced features?** → [Custom Rules and Advanced Configuration](advanced)
 

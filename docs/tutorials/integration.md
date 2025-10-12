@@ -126,7 +126,7 @@ When using HTTP integration, always implement HTTPS encryption using either:
 - **VPN or private networks** for additional network security
 :::
 
-In addition to the primary integration methods, [LDA mode](tutorials/integration#lda-mode) provides a versatile solution that can be employed by virtually any MTA for message processing.
+In addition to the primary integration methods, [LDA mode](#lda-mode) provides a versatile solution that can be employed by virtually any MTA for message processing.
 
 ## Using Rspamd with Postfix MTA
 
