@@ -312,11 +312,13 @@ Run after all rules complete:
 
 #### 4. Idempotent Filters
 
-Special filters that can run at any time:
+Special filters that run after all other processing:
 
 - **Purpose**: Generate metadata, extract information
+- **Execution order**: Run strictly after all filters, post-filters, and composites
 - **Examples**: Email extraction, URL extraction
 - **Behavior**: Never modify results, pure data extraction
+- **Use case**: Safe to call at any point in code, but actual execution is deferred until the end
 
 ### Async Session Management
 
@@ -510,10 +512,10 @@ rspamd_config:register_symbol({
 Symbols can depend on other symbols:
 
 ```lua
-rspamd_config:register_dependency('DMARC_POLICY_ALLOW', 'DKIM_VALID')
+rspamd_config:register_dependency('DMARC_POLICY_ALLOW', 'R_DKIM_ALLOW')
 ```
 
-This ensures `DKIM_VALID` runs before `DMARC_POLICY_ALLOW`.
+This ensures `R_DKIM_ALLOW` runs before `DMARC_POLICY_ALLOW`.
 
 ### Score Calculation
 
@@ -985,7 +987,7 @@ rspamd_config:register_symbol({name = 'SYM', callback = callback})
 -- Post-filter: runs after all rules
 rspamd_config:register_post_filter(callback)
 
--- Idempotent: can run anytime
+-- Idempotent: runs after all other processing (filters, post-filters, composites)
 rspamd_config:register_symbol({name = 'SYM', type = 'idempotent', callback = callback})
 ```
 
@@ -1096,10 +1098,11 @@ Multi-machine deployment patterns:
                      ▼
               ┌──────────────┐
               │ Rspamd Proxy │
+              │  (mirror: Y) │
               └──────┬───────┘
                      │
          ┏━━━━━━━━━━━┻━━━━━━━━━━━┓
-         ▼                        ▼
+         ▼ (master)              ▼ (mirror)
   ┌─────────────┐          ┌─────────────┐
   │  Rspamd 1   │          │  Rspamd 2   │
   │  (normal)   │          │  (normal)   │
@@ -1111,6 +1114,10 @@ Multi-machine deployment patterns:
            │    Redis    │
            └─────────────┘
 ```
+
+**Note:** Proxy can be configured for load balancing or mirroring:
+- **Load balancing**: Distributes requests (default)
+- **Mirroring**: Sends requests to all backends, uses first response
 
 **Pros:**
 - Simple setup
