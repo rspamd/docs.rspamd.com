@@ -30,7 +30,9 @@ For added flexibility, chunked encoding can be utilized, streamlining data trans
 
 ## Rspamd protocol encryption
 
-Rspamd supports encryption by means of lightweight protocol called HTTPCrypt. You can find comprehensive details about this protocol in the following [paper](https://highsecure.ru/httpcrypt.pdf){:target="&#95;blank"}. To enable encryption, you need to generate keypair and push it in the corresponding worker's section (e.g. `worker-controller.inc` or `worker-normal.inc` or, even, in `worker-proxy.inc`):
+Rspamd supports encryption by means of lightweight protocol called HTTPCrypt. For comprehensive technical details about the cryptographic primitives, key exchange, and protocol implementation, see the [Encryption Documentation](encryption.md). You can also find the original protocol specification in this [paper](https://highsecure.ru/httpcrypt.pdf).
+
+To enable encryption, you need to generate a keypair and configure it in the corresponding worker's section (e.g. `worker-controller.inc` or `worker-normal.inc` or, even, in `worker-proxy.inc`):
 
 ```
 $ rspamadm keypair
@@ -62,7 +64,7 @@ To minimize redundant processing, Rspamd enables an MTA to transmit pre-processe
 | `IP`         | Defines IP from which this message is received. |
 | `Helo`       | Defines SMTP helo |
 | `Hostname`   | Defines resolved hostname |
-| `Flags`      | Supported from version 2.0: Defines output flags as a commas separated list: {::nomarkdown}<ul><li><code>pass_all</code>: pass all filters</li><li><code>groups</code>: return symbols groups</li><li><code>zstd</code>: compressed input/output</li><li><code>no_log</code>: do not log task</li><li><code>milter</code>: apply milter protocol related hacks</li><li><code>profile</code>: profile performance for this task</li><li><code>body_block</code>: accept rewritten body as a separate part of reply (see <a href="#body-block-rewritten-message">Body block section</a>)</li><li><code>ext_urls</code>: extended urls information</li><li><code>skip</code>: skip all filters processing</li><li><code>skip_process</code>: skip mime parsing/processing</li></ul>{:/}
+| `Flags`      | Supported from version 2.0: Defines output flags as a commas separated list: `pass_all` (pass all filters), `groups` (return symbols groups), `zstd` (compressed input/output), `no_log` (do not log task), `milter` (apply milter protocol related hacks), `profile` (profile performance for this task), `body_block` (accept rewritten body as a separate part of reply, see [Body block section](#body-block-rewritten-message)), `ext_urls` (extended urls information), `skip` (skip all filters processing), `skip_process` (skip mime parsing/processing) |
 | `From`       | Defines SMTP mail from command data |
 | `Queue-Id`   | Defines SMTP queue id for message (can be used instead of message id in logging). |
 | `Raw`        | If set to `yes`, then Rspamd assumes that the content is not MIME and treat it as raw data. |
@@ -139,7 +141,7 @@ The response from Rspamd is encoded in `JSON` format. Here's an example of a typ
 }
 ~~~
 
-For convenience, the reply is LINTed using [JSONLint](https://jsonlint.com){:target="&#95;blank"}. The actual response is compressed for efficiency.
+For convenience, the reply is LINTed using [JSONLint](https://jsonlint.com). The actual response is compressed for efficiency.
 
 Each response contains the following fields:
 
