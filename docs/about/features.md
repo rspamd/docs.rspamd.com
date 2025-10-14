@@ -45,12 +45,10 @@ Rspamd uses a master-worker architecture inspired by nginx:
 Over 60 built-in modules can be enabled/disabled/configured independently:
 
 ```hcl
-# Example: Enable and configure SPF module
+# Example: Configure SPF module
 # /etc/rspamd/local.d/spf.conf
-spf {
-  external_relay = ["192.168.1.0/24"];  # Skip SPF for internal relays
-  whitelist = ["example.com"];          # Whitelist trusted domains
-}
+external_relay = ["192.168.1.0/24"];  # Skip SPF for internal relays
+whitelist = ["example.com"];          # Whitelist trusted domains
 ```
 
 **Module categories:**
@@ -65,7 +63,7 @@ See [Modules documentation](/modules/) for complete list.
 
 ### Flexible Configuration System
 
-Rspamd uses [UCL (Universal Configuration Language)](/configuration/ucl) - a JSON-compatible format with includes, macros, and inheritance:
+Rspamd uses [UCL (Universal Configuration Language)](/configuration/ucl) - a JSON-compatible format with includes and macros:
 
 ```hcl
 # Base configuration
@@ -73,11 +71,6 @@ reject = 15;
 
 # Include external file
 .include(try=true) "/etc/rspamd/custom-thresholds.conf"
-
-# Conditional configuration
-.if env.hostname =~ "mx[0-9]+" {
-  workers = 8;  # More workers on MX servers
-}
 
 # Macros
 .define MY_NETWORK "192.168.1.0/24"
@@ -262,12 +255,10 @@ See [RBL module](/modules/rbl), [ASN module](/modules/asn), [IP Score module](/m
 
 ```hcl
 # /etc/rspamd/local.d/greylist.conf
-greylist {
-  expire = 86400;      # 24 hours
-  timeout = 300;       # 5 minutes delay
-  whitelist_ip = [];   # IPs to skip greylisting
-  whitelist_rcpt = []; # Recipients to skip greylisting
-}
+expire = 86400;      # 24 hours
+timeout = 300;       # 5 minutes delay
+whitelist_ip = [];   # IPs to skip greylisting
+whitelist_rcpt = []; # Recipients to skip greylisting
 ```
 
 **Rate Limiting:**
@@ -529,9 +520,11 @@ See [Encryption documentation](/developers/encryption) for cryptographic details
 Write custom plugins in Lua with full access to Rspamd internals:
 
 ```lua
--- /etc/rspamd/plugins.d/my_custom_check.lua
+-- /etc/rspamd/plugins.d/sender_reputation.lua
+local lua_redis = require "lua_redis"
 local rspamd_logger = require "rspamd_logger"
 
+-- Callback for checking sender reputation
 local function check_sender_reputation(task)
   local from = task:get_from('smtp')
   if not from or not from[1] then
@@ -540,39 +533,71 @@ local function check_sender_reputation(task)
 
   local sender = from[1].addr:lower()
 
-  -- Check Redis for sender reputation
+  -- Async Redis callback
   local function redis_cb(err, data)
-    if err or not data then
+    if err then
+      rspamd_logger.warnx(task, 'Redis error: %s', err)
       return
     end
 
-    local score = tonumber(data)
-    if score and score > 10 then
-      task:insert_result('SENDER_BAD_REPUTATION', 1.0, tostring(score))
+    if data then
+      local score = tonumber(data)
+      if score and score > 10 then
+        -- Insert result symbol with score
+        task:insert_result('SENDER_BAD_REPUTATION', 1.0, string.format('score=%s', score))
+      end
     end
   end
 
-  local redis_params = rspamd_parse_redis_server('my_redis_db')
-  rspamd_redis.make_request(task, redis_params, sender,
-    'GET', {'sender_rep:' .. sender}, redis_cb)
+  -- Make async Redis request
+  local redis_params = lua_redis.parse_redis_server('reputation')
+  if redis_params then
+    local ret = lua_redis.redis_make_request(task,
+      redis_params,
+      sender,
+      false, -- is write
+      redis_cb,
+      'GET',
+      {'sender_rep:' .. sender}
+    )
+    if not ret then
+      rspamd_logger.warnx(task, 'Cannot make redis request')
+    end
+  end
 
-  return true  -- Indicate async operation
+  return false  -- Do not insert symbol here; will be inserted in callback
 end
 
+-- Register callback symbol (virtual, no score)
 rspamd_config:register_symbol({
-  name = 'SENDER_BAD_REPUTATION',
+  name = 'SENDER_REPUTATION_CHECK',
   type = 'normal',
   callback = check_sender_reputation,
+  flags = 'nice', -- Execute even if message is already spam
+  priority = 5
+})
+
+-- Register result symbol (this gets the score)
+rspamd_config:register_symbol({
+  name = 'SENDER_BAD_REPUTATION',
+  type = 'virtual',
+  parent = 'SENDER_REPUTATION_CHECK',
   score = 5.0,
-  group = 'custom',
+  group = 'reputation',
   description = 'Sender has bad reputation in our database'
 })
 ```
 
+**Key concepts for async operations:**
+- Main callback registers a check symbol (virtual, no score)
+- Async operations (Redis, DNS, HTTP) use callbacks to insert results
+- Result symbols use `parent` to link to check symbol
+- Main callback returns `false` (result inserted asynchronously via `task:insert_result()`)
+
 **Lua API features:**
 - Full message access (headers, body, attachments, MIME structure)
 - Async operations (Redis, HTTP, DNS)
-- Task manipulation (add/modify symbols, headers)
+- Task manipulation (insert symbols, add/modify headers)
 - Configuration access
 - Logging and debugging
 
