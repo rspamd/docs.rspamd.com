@@ -632,23 +632,26 @@ See [External services module](/modules/external_services), [Antivirus module](/
 
 ### SpamAssassin Compatibility
 
-**Score and rule mapping:**
-- Built-in SpamAssassin rule converter
-- Compatible scoring system
-- SA rule syntax support (limited)
-
-```bash
-# Convert SpamAssassin scores to Rspamd
-rspamadm configwizard --spam-assassin /etc/spamassassin/local.cf
-```
+**Migration approach:**
+- Rspamd can work alongside SpamAssassin during transition
+- Compatible scoring system and similar rule concepts
+- SpamAssassin module can import scores from SA configuration
 
 **Differences from SpamAssassin:**
 - Much faster (10-100x depending on ruleset)
-- Better handling of modern spam techniques
-- Statistical learning requires training (not compatible with SA databases)
-- Different plugin architecture
+- Event-driven architecture vs process-per-message
+- Better handling of modern spam techniques (DMARC, ARC, neural networks)
+- Statistical learning requires retraining (Bayes databases are not compatible)
+- Different plugin architecture (Lua vs Perl)
 
-See [SpamAssassin migration guide](/tutorials/migrate_sa).
+**Migration strategy:**
+1. Install Rspamd alongside SpamAssassin
+2. Configure both to add headers (not reject) for testing
+3. Compare results over several days
+4. Retrain Bayesian classifier with your mail corpus
+5. Gradually transition to Rspamd once confident
+
+See [SpamAssassin migration guide](/tutorials/migrate_sa) for detailed migration steps.
 
 ## Comparison with Other Solutions
 
