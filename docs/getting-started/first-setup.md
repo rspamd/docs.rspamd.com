@@ -123,7 +123,7 @@ Before restarting, verify your configuration is valid:
 
 ```bash
 # Check configuration syntax
-sudo rspamd -t
+sudo rspamadm configtest
 ```
 
 Expected output:
@@ -135,6 +135,7 @@ If you see errors, fix them before proceeding. Common issues:
 - Missing semicolons at end of lines
 - Unmatched braces `{}`
 - Invalid parameter names
+- Typos in option names
 
 ### Restart Rspamd
 
@@ -536,7 +537,7 @@ sudo lsof -i :11332
 
 1. **Proxy worker not started**: Check `/etc/rspamd/local.d/worker-proxy.inc` exists and has valid configuration
    ```bash
-   sudo rspamd -t  # Validate config syntax
+   sudo rspamadm configtest  # Validate config syntax
    sudo systemctl restart rspamd
    ```
 
@@ -715,7 +716,7 @@ curl -I http://localhost:11334/
 # Should return HTTP headers, not connection refused
 
 # Check configuration syntax
-sudo rspamd -t
+sudo rspamadm configtest
 ```
 
 **Possible causes and fixes:**
