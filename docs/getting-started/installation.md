@@ -14,18 +14,16 @@ Use this decision tree to find your recommended installation approach:
 ```mermaid
 flowchart TD
     Start[I need to install Rspamd] --> Purpose{What's your purpose?}
-    
+
     Purpose -->|Testing & Learning| Docker[Docker Installation]
     Purpose -->|Production Deployment| ProdType{What type of production?}
     Purpose -->|Migration from SpamAssassin| Migration[Migration-Focused Install]
-    
+
     ProdType -->|Standard business email| Package[Package Installation]
-    ProdType -->|High-volume/custom needs| Source[Source Compilation]
     ProdType -->|Cloud/containerized| Container[Container Deployment]
-    
+
     Docker --> DockerSteps[15 minutes setup<br/>Easy testing<br/>No system changes]
     Package --> PackageSteps[1-2 hour setup<br/>Production ready<br/>Automatic updates]
-    Source --> SourceSteps[3-4 hour setup<br/>Full customization<br/>Latest features]
     Container --> ContainerSteps[30 minutes - 2 hours<br/>Scalable deployment<br/>Infrastructure as code]
     Migration --> MigrationSteps[2-3 hour process<br/>Parallel testing<br/>Gradual transition]
 ```
@@ -36,7 +34,6 @@ flowchart TD
 |--------|--------------|----------|------|------|
 | **Docker** | 15 minutes | Testing, learning, development | Quick setup, isolated, easy cleanup | Not for production, resource overhead |
 | **Package Installation** | 1-2 hours | Most production deployments | Stable, updates, system integration | Less customization, distribution dependent |
-| **Source Compilation** | 3-4 hours | High-volume, custom requirements | Latest features, full control, optimization | Complex, manual updates, more maintenance |
 | **Container (K8s/Docker Compose)** | 30min - 2 hours | Cloud-native, scalable deployments | Scalable, reproducible, version controlled | Infrastructure complexity, orchestration knowledge |
 
 ## Quick Start: Docker Installation
@@ -137,7 +134,6 @@ Open http://localhost:11334 and log in with your password.
 | **CentOS/RHEL 8+** | ✅ Full support | Official repository |
 | **Rocky Linux** | ✅ Full support | Official repository |
 | **FreeBSD** | ✅ Full support | Ports collection |
-| **Other Linux** | ⚠️ Community support | Source compilation |
 
 ### Ubuntu/Debian Installation
 
@@ -191,119 +187,30 @@ sudo service rspamd start
 sudo service redis start
 ```
 
-**✅ Success Criteria**: 
+**✅ Success Criteria**:
 ```bash
 sudo systemctl status rspamd
 # Should show "active (running)"
 
 sudo systemctl status redis
 # Should show "active (running)"
+
+# Verify Rspamd is listening on correct ports
+sudo ss -tlnp | grep rspamd
+# Should show:
+# - 127.0.0.1:11333 (normal worker - scanner)
+# - 127.0.0.1:11334 (controller - web interface)
+# - 127.0.0.1:11332 (proxy worker - milter protocol)
 ```
+
+**What was installed:**
+- **Rspamd daemon** (`/usr/bin/rspamd`) - Main executable
+- **Configuration** (`/etc/rspamd/`) - Default configuration files
+- **Data directory** (`/var/lib/rspamd/`) - Statistics, learned data, fuzzy hashes
+- **Log directory** (`/var/log/rspamd/`) - Application logs
+- **Utilities**: `rspamc` (client), `rspamadm` (admin tool)
 
 **Next Steps**: [Complete basic configuration](/getting-started/first-setup)
-
----
-
-## Advanced: Source Compilation
-
-**Best for**: High-volume deployments, custom requirements, latest features
-
-### Prerequisites
-
-Install build dependencies:
-
-**Ubuntu/Debian**:
-```bash
-sudo apt install build-essential cmake libssl-dev libpcre2-dev \
-  zlib1g-dev libluajit-5.1-dev libglib2.0-dev libevent-dev \
-  libsodium-dev libhyperscan-dev ragel libicu-dev libsqlite3-dev
-```
-
-**CentOS/RHEL**:
-```bash
-sudo dnf groupinstall "Development Tools"
-sudo dnf install cmake openssl-devel pcre2-devel zlib-devel \
-  luajit-devel glib2-devel libevent-devel libsodium-devel \
-  hyperscan-devel ragel libicu-devel sqlite-devel
-```
-
-### Compilation Steps
-
-```bash
-# Download latest stable release
-# Replace X.Y.Z with the actual version number from https://github.com/rspamd/rspamd/releases
-wget https://github.com/rspamd/rspamd/archive/X.Y.Z.tar.gz
-tar xzf X.Y.Z.tar.gz
-cd rspamd-X.Y.Z
-
-# Create build directory
-mkdir build
-cd build
-
-# Configure build
-cmake .. \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DCONFDIR=/etc/rspamd \
-  -DRUNDIR=/run/rspamd \
-  -DDBDIR=/var/lib/rspamd \
-  -DLOGDIR=/var/log/rspamd
-
-# Compile (adjust -j based on your CPU cores)
-make -j4
-
-# Install
-sudo make install
-
-# Create system user and group
-sudo groupadd -r _rspamd
-sudo useradd -r -g _rspamd -d /var/lib/rspamd -s /bin/false -c "Rspamd spam filtering system" _rspamd
-
-# Create directories
-sudo mkdir -p /var/lib/rspamd /var/log/rspamd /run/rspamd
-sudo chown _rspamd:_rspamd /var/lib/rspamd /var/log/rspamd /run/rspamd
-```
-
-### Create Systemd Service
-
-Create `/etc/systemd/system/rspamd.service`:
-
-```ini
-[Unit]
-Description=rapid spam filtering system
-After=nss-lookup.target network-online.target redis.service
-Documentation=https://rspamd.com/doc/
-# Note: Redis is optional. If Redis is not installed, systemd will ignore redis.service
-
-[Service]
-LimitNOFILE=1048576
-NonBlocking=true
-ExecStart=/usr/local/bin/rspamd -c /etc/rspamd/rspamd.conf -f
-ExecReload=/bin/kill -HUP $MAINPID
-User=_rspamd
-Group=_rspamd
-RuntimeDirectory=rspamd
-RuntimeDirectoryMode=0755
-Restart=always
-
-[Install]
-WantedBy=multi-user.target
-```
-
-```bash
-# Enable and start service
-sudo systemctl daemon-reload
-sudo systemctl enable rspamd
-sudo systemctl start rspamd
-```
-
-**✅ Success Criteria**: 
-```bash
-sudo systemctl status rspamd
-# Should show "active (running)"
-
-rspamd --version
-# Should show version and build information
-```
 
 ---
 
@@ -364,6 +271,14 @@ docker-compose up -d
 ### Kubernetes Deployment
 
 Basic Kubernetes manifests available in our [examples repository](https://github.com/rspamd/rspamd-k8s-examples).
+
+**Production considerations:**
+- Use persistent volumes for `/var/lib/rspamd` (statistics, learned data)
+- Configure resource limits (CPU: 1-2 cores, Memory: 512MB-1GB per worker)
+- Set up proper health checks (liveness: `/ping`, readiness: `/stat`)
+- Use Redis cluster or sentinel for high availability
+- Consider [HTTPCrypt encryption](/developers/encryption) for inter-pod communication
+- Deploy local DNS resolver (Unbound, CoreDNS with recursion) as sidecar or daemonset
 
 ---
 
@@ -517,6 +432,43 @@ Checklist:
 
 Version note: Rspamd 3.13+ supports resolving hostnames in `dns.nameserver`. Older versions only accept IP addresses or `/etc/resolv.conf`.
 
+## Post-Installation Security Checklist
+
+Before going live, ensure:
+
+1. **Controller access**: Bind to localhost or firewall port 11334
+   ```nginx
+   # /etc/rspamd/local.d/worker-controller.inc
+   bind_socket = "localhost:11334";  # Not 0.0.0.0!
+   password = "$2$...";  # Always set strong password
+   ```
+
+2. **File permissions**: Verify ownership
+   ```bash
+   sudo ls -la /etc/rspamd/local.d/
+   # Should be readable by _rspamd user
+
+   sudo ls -la /var/lib/rspamd/
+   # Should be owned by _rspamd:_rspamd
+   ```
+
+3. **Firewall rules**: Block external access to Rspamd ports
+   ```bash
+   # Allow only from MTA (example with ufw)
+   sudo ufw allow from <mta-ip> to any port 11332 proto tcp
+   sudo ufw deny 11332/tcp  # Block from elsewhere
+   sudo ufw deny 11334/tcp  # Block WebUI from outside
+   ```
+
+4. **SELinux/AppArmor**: Configure if enabled
+   ```bash
+   # For SELinux
+   sudo setsebool -P antivirus_can_scan_system 1
+   sudo setsebool -P antivirus_use_jit 1
+   ```
+
+5. **Encryption**: For multi-server setups, configure [HTTPCrypt](/developers/encryption)
+
 ## What's Next?
 
 After successful installation:
@@ -524,6 +476,7 @@ After successful installation:
 1. **[Complete first setup](/getting-started/first-setup)** - Configure basic spam filtering
 2. **[Learn configuration fundamentals](/guides/configuration/fundamentals)** - Understand what to customize
 3. **[Choose your scenario](/scenarios/)** - Find guides specific to your use case
+4. **[Architecture details](/developers/architecture)** - Understand how Rspamd works internally
 
 ## Getting Help
 
