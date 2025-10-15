@@ -5,114 +5,329 @@ sidebar_position: 1
 
 # Getting Started with Rspamd
 
-Welcome to your Rspamd journey! This section is designed to get you from complete beginner to effectively filtering spam in real-world scenarios.
+Welcome to Rspamd! This guide will take you from complete beginner to running a production spam filtering system. Whether you're setting up a small business mail server or migrating from SpamAssassin, you'll find a clear path forward.
 
-## Choose Your Path
+## The Quick Path (2-3 Hours)
 
-Different users have different needs and starting points. Choose the path that matches your situation:
+If you're starting fresh, follow these three steps in order:
 
-### 🆕 I'm New to Rspamd
-**Recommended path**: Understand → Install → Configure → Test
+### 1. [Understanding Rspamd](understanding-rspamd)
 
-1. **[Understanding Rspamd](understanding-rspamd)** - Build the mental model first
-2. **[Installation Guide](installation)** - Choose the right installation method  
-3. **[First Success Setup](first-setup)** - Get working spam filtering in 30 minutes
-4. **[Configuration Fundamentals](/guides/configuration/fundamentals)** - Learn what to configure
+**Time: 30 minutes reading**
 
-**Time investment**: 2-3 hours for basic working setup
+Build the right mental model before installing anything:
+- How Rspamd processes messages (processing pipeline)
+- What symbols, scores, and actions mean
+- Why statistical learning matters
+- How modules work together
 
-### 🔄 I'm Migrating from Another Solution
-**Recommended path**: Compare → Plan → Migrate → Optimize
+**Why start here?** Understanding Rspamd's design prevents common configuration mistakes. You'll know *why* to configure things a certain way, not just *what* to configure.
 
-1. **[Migration Planning](migration-planning)** - Understand differences and plan your migration
-2. **[SpamAssassin Migration](/tutorials/migrate_sa)** - Specific migration guide
-3. **[Configuration Mapping](configuration-mapping)** - Map your existing rules
-4. **[Testing and Validation](testing-migration)** - Ensure everything works
+### 2. [Installation Guide](installation)
 
-**Time investment**: 4-6 hours for complete migration
+**Time: 30-60 minutes**
 
-### ⚡ I Need Quick Fixes
-**Recommended path**: Diagnose → Apply → Verify
+Choose your installation method and get Rspamd running:
+- **Package installation** (recommended for production) - Ubuntu/Debian, CentOS/RHEL, FreeBSD
+- **Docker** (testing and development) - Quick setup with web interface
+- **Kubernetes** (cloud-native deployments) - Scalable production deployment
 
-1. **[Common Problems](/troubleshooting/common-problems)** - Quick solutions to frequent issues
-2. **[Emergency Fixes](/troubleshooting/emergency-fixes)** - Stop spam floods immediately  
-3. **[Performance Issues](/troubleshooting/performance)** - Speed up slow Rspamd
-4. **[Configuration Recovery](/troubleshooting/recovery)** - Fix broken configurations
+**Includes**: Repository setup, Redis installation, service verification, security checklist
 
-**Time investment**: 30 minutes to 2 hours per issue
+### 3. [First Setup](first-setup)
 
-### 🚀 I Want to Optimize
-**Recommended path**: Analyze → Tune → Monitor → Iterate
+**Time: 30-45 minutes**
 
-1. **[Performance Analysis](/optimization/analysis)** - Understand your current performance
-2. **[Effectiveness Tuning](/optimization/effectiveness)** - Improve spam catch rates
-3. **[Resource Optimization](/optimization/resources)** - Reduce CPU and memory usage
-4. **[Advanced Configuration](/optimization/advanced)** - Custom rules and complex setups
+Configure working spam filtering:
+- Set action thresholds (reject, add header, greylist)
+- Connect to Redis for statistics
+- Configure web interface password
+- Integrate with your MTA (Postfix, Exim, Sendmail)
+- Test with real messages
+- Optional: Enable Bayesian learning
 
-**Time investment**: Ongoing optimization process
+**Result**: A functioning spam filter that you can monitor via web interface
 
-## What You'll Learn
+After completing these three guides, continue with [Configuration Fundamentals](/guides/configuration/fundamentals) to learn what else you can customize.
 
-By following this getting started section, you'll understand:
+## Alternative Starting Points
 
-### Core Concepts
-- ✅ How Rspamd analyzes emails and makes decisions
-- ✅ What you can configure and why it matters
-- ✅ The relationship between modules, symbols, scores, and actions
-- ✅ How to choose the right tools for your specific tasks
+### 🔄 Migrating from SpamAssassin
 
-### Practical Skills  
-- ✅ Install and configure Rspamd for your environment
-- ✅ Integrate with your mail server (Postfix, Exim, etc.)
-- ✅ Set appropriate spam filtering thresholds
-- ✅ Test and validate your configuration
-- ✅ Monitor and maintain your spam filtering system
+If you're currently using SpamAssassin, follow this migration path:
 
-### Real-World Application
-- ✅ Configure for small business vs. enterprise scenarios
-- ✅ Handle migration from existing spam filtering solutions
-- ✅ Troubleshoot common problems quickly
-- ✅ Optimize for both effectiveness and performance
+**1. Understand the differences** (Read [Understanding Rspamd](understanding-rspamd) first)
+- Event-driven vs process-per-message architecture
+- Different Bayes implementation (databases not compatible)
+- DMARC/ARC support not in SA
+- 10-100x faster processing
+- Different scoring system
+
+**2. Parallel deployment** (Follow [Installation](installation) + [First Setup](first-setup))
+- Install Rspamd alongside SpamAssassin
+- Configure both to add headers (not reject) for testing
+- Compare results for several days
+
+**3. Migration steps** (See [SpamAssassin Migration Guide](/tutorials/migrate_sa))
+- Retrain Bayesian classifier with your mail corpus
+- Import custom SA rules if needed (spamassassin module)
+- Adjust thresholds based on comparison
+- Gradually transition traffic to Rspamd
+- Monitor false positives/negatives
+
+**4. Cutover**
+- Switch MTA to Rspamd
+- Keep SA available for emergency rollback
+- Monitor for 1-2 weeks before removing SA
+
+**Time investment**: 4-6 hours for complete migration + monitoring period
+
+### 📦 Specific MTA Integration
+
+If you already understand spam filtering and just need to integrate Rspamd:
+
+**Quick integration paths**:
+
+**Postfix** (most common):
+```nginx
+# /etc/postfix/main.cf
+smtpd_milters = inet:localhost:11332
+non_smtpd_milters = inet:localhost:11332
+milter_default_action = accept
+milter_protocol = 6
+```
+
+**Exim**:
+```perl
+# ACL check
+warn
+  spam = nobody:true
+  add_header = X-Spam-Score: $spam_score
+```
+
+**Sendmail**: Use milter configuration (same as Postfix)
+
+**Full instructions**: See [Integration Tutorial](/tutorials/integration) for complete setup with all MTAs
+
+### 🐳 Docker/Kubernetes Deployment
+
+If you're deploying to containers:
+
+**Docker quick start**:
+```bash
+docker run -d --name rspamd \
+  -p 11334:11334 -p 11332:11332 \
+  -v $(pwd)/config:/etc/rspamd/local.d \
+  -v $(pwd)/data:/var/lib/rspamd \
+  rspamd/rspamd:latest
+```
+
+**Important for production**:
+- Mount `/etc/rspamd/local.d/` for persistent configuration
+- Mount `/var/lib/rspamd/` for statistics data
+- Deploy Redis container or external Redis service
+- Use local recursive DNS resolver (not 8.8.8.8)
+- Configure resource limits (CPU: 1-2 cores, RAM: 512MB-1GB)
+- Set up health checks: liveness `/ping`, readiness `/stat`
+
+**Kubernetes**: See [Installation Guide](installation#cloudcontainer-deployment) for manifests and production considerations
+
+## What You'll Achieve
+
+By the end of the Getting Started section, you will have:
+
+### ✅ Working System
+- Rspamd installed and running
+- Integrated with your MTA
+- Redis connected for statistics
+- Web interface accessible
+- Messages being scanned and scored
+
+### ✅ Core Understanding
+- How Rspamd processes email
+- Relationship between modules, symbols, scores, actions
+- Why Redis is critical
+- How authentication (SPF/DKIM/DMARC) works
+- What statistical learning does
+
+### ✅ Operational Skills
+- Configure action thresholds
+- Train Bayesian classifier
+- Monitor via web interface
+- Test message scanning
+- Basic troubleshooting
+
+### ✅ Foundation for Advanced Topics
+- Ready to configure specific modules
+- Prepared to write custom rules
+- Able to optimize performance
+- Understanding for scaling deployment
 
 ## Prerequisites
 
 Before starting, ensure you have:
 
-- **Basic Linux administration skills** - comfort with command line, file editing
-- **Email system understanding** - familiarity with MTAs, SMTP, email headers
-- **Root access** to your mail server (or appropriate sudo permissions)
-- **Time to test** - don't deploy directly to production without testing
+### Technical Requirements
+- **Linux system** - Ubuntu 20.04+, Debian 11+, CentOS/RHEL 8+, or FreeBSD
+- **Root/sudo access** - To install packages and modify configuration
+- **Redis server** - For statistics (can install during setup)
+- **Mail Transfer Agent** - Postfix, Exim, Sendmail, or other MTA
+- **Disk space** - ~500MB for software, 1-5GB for statistics/logs
+
+### Knowledge Requirements
+- **Linux command line** - Basic file editing, systemd/service management
+- **Email fundamentals** - SMTP, message headers, MTA concepts
+- **Network basics** - DNS, ports, localhost vs remote access
+- **Text editing** - Vim, nano, or any editor for configuration files
+
+### Recommended (Not Required)
+- **Redis knowledge** - Understanding of key-value stores helpful
+- **Regular expressions** - For writing custom content rules
+- **Lua basics** - For advanced custom rules (can learn later)
 
 ## Learning Philosophy
 
-Our documentation follows a **progressive disclosure** approach:
+This guide follows a specific approach:
 
-1. **Start with concepts** - Understand before implementing
-2. **Build incrementally** - Working system first, optimization later
-3. **Learn by doing** - Practical examples with real configurations
-4. **Connect to reference** - Link to detailed technical documentation when needed
+### 1. Concepts Before Commands
+We explain *why* Rspamd works a certain way before showing *how* to configure it. This prevents cargo-cult configuration where you copy settings without understanding them.
+
+### 2. Working System First
+Get a basic but functional system running, then incrementally add features. Don't try to configure everything perfectly on first attempt.
+
+### 3. Real Examples
+All configuration examples are tested and production-ready. No simplified "toy" examples that won't work in real environments.
+
+### 4. Progressive Depth
+- **Getting Started**: Broad understanding, working system
+- **Configuration Guides**: Specific tasks and decisions
+- **Module Documentation**: Complete parameter reference
+- **Developer Docs**: Internal architecture and APIs
+
+## Common Questions
+
+### "How long does this take?"
+- **Basic working setup**: 2-3 hours
+- **Production-ready with testing**: 4-6 hours
+- **Optimized for your environment**: Ongoing process
+
+### "Do I need to understand everything before starting?"
+No. Start with [Understanding Rspamd](understanding-rspamd) to get the big picture, then follow the practical guides. You'll learn details as you go.
+
+### "Can I skip Understanding Rspamd and go straight to installation?"
+You *can*, but you'll likely make configuration mistakes that waste more time than reading would take. The understanding guide is 30 minutes that saves hours of troubleshooting.
+
+### "What if I get stuck?"
+- Check the [FAQ](/faq) for common questions
+- Review the specific module documentation for detailed parameters
+- Ask in community channels (Discord, Telegram, GitHub Discussions)
+- Search GitHub issues for similar problems
+
+### "Do I need to know Lua?"
+Not for basic setup. Lua is only needed for:
+- Writing complex custom rules
+- Developing plugins
+- Advanced integrations
+
+Most users never write Lua code and just configure built-in modules.
+
+### "Is Redis really required?"
+Yes, for production use. Redis stores:
+- Bayesian statistics (tokens, probabilities)
+- Rate limiting counters
+- Greylisting triplets
+- Neural network weights
+- DMARC report data
+- Fuzzy hash checksums
+
+Without Redis, statistical learning doesn't work, which significantly reduces spam detection accuracy.
+
+### "Can I use Rspamd without statistics/learning?"
+Yes. Rspamd will still check:
+- SPF/DKIM/DMARC/ARC authentication
+- RBL/SURBL blacklists
+- Content regex rules
+- MIME structure
+- URL analysis
+
+But you won't have:
+- Bayesian classification
+- Neural networks
+- Fuzzy hash matching
+- Rate limiting
+- Greylisting
+
+Static rules catch ~70-80% of spam. Adding statistics improves to ~95-98%.
+
+## After Getting Started
+
+Once you complete the Getting Started guides, explore:
+
+### Configuration Guides
+- **[Configuration Fundamentals](/guides/configuration/fundamentals)** - Understand the configuration system
+- **[Tool Selection](/guides/configuration/tool-selection)** - Choose multimap vs regexp vs Lua vs selectors
+- **[Multimap Guide](/tutorials/multimap_guide)** - Powerful pattern matching
+- **[Settings Guide](/tutorials/settings_guide)** - Per-domain/per-user configuration
+- **[DKIM Signing](/tutorials/dkim_signing_guide)** - Cryptographically sign outbound mail
+
+### Module Documentation
+- **[Modules Overview](/modules/)** - Complete list of 60+ modules
+- **[SPF](/modules/spf)**, **[DKIM](/modules/dkim)**, **[DMARC](/modules/dmarc)**, **[ARC](/modules/arc)** - Authentication
+- **[Bayes Statistics](/configuration/statistic)** - Statistical learning
+- **[RBL Module](/modules/rbl)** - Real-time blacklists
+- **[Greylisting](/modules/greylisting)**, **[Rate Limit](/modules/ratelimit)** - Anti-abuse
+
+### Advanced Topics
+- **[Architecture](/developers/architecture)** - How Rspamd works internally
+- **[Writing Rules](/developers/writing_rules)** - Custom detection logic
+- **[Protocol](/developers/protocol)** - HTTP API and Milter protocol
+- **[Lua API](/lua/)** - Programming interface
+
+### Scaling and Operations
+- High availability setups
+- Horizontal scaling patterns
+- Performance optimization
+- Monitoring and alerting
+- Backup and disaster recovery
 
 ## Support and Community
 
-As you work through these guides:
+### Community Help
+- **[Discord](https://discord.gg/RsBM5KXtgX)** - Real-time chat for quick questions
+- **[Telegram](https://t.me/rspamd)** - Alternative community chat
+- **[GitHub Discussions](https://github.com/rspamd/rspamd/discussions)** - Long-form Q&A
+- **[Mailing Lists](https://lists.rspamd.com)** - Traditional email-based discussion
 
-- **Join our community** - Get help from other users and developers
-- **Report issues** - Help us improve the documentation
-- **Share your experience** - Contribute scenarios and solutions
-- **Stay updated** - Follow changes and new features
+### Bug Reports and Features
+- **[GitHub Issues](https://github.com/rspamd/rspamd/issues)** - Bug reports and feature requests
+- **[Pull Requests](https://github.com/rspamd/rspamd/pulls)** - Code contributions
 
-## What's Different About This Guide?
+### Commercial Support
+Professional support available from Rspamd developers and certified partners. See [Support page](/support).
 
-Traditional Rspamd documentation has been reference-focused. This new structure:
+### Security Issues
+Report security vulnerabilities privately to: security@rspamd.com
 
-- **Answers "how to accomplish X"** instead of just "what parameter Y does"
-- **Provides decision frameworks** to help you choose the right approach
-- **Includes real-world scenarios** beyond basic setup examples
-- **Connects related concepts** so you understand how pieces fit together
-- **Offers multiple learning paths** for different user needs
+Do **not** open public GitHub issues for security problems.
+
+## Documentation Improvements
+
+Found a problem in the documentation?
+- **Typos/errors**: Open a [documentation issue](https://github.com/rspamd/rspamd/issues)
+- **Missing information**: Suggest what should be added
+- **Confusing explanations**: Tell us what's unclear
+- **Want to contribute**: Pull requests welcome for documentation improvements
+
+Good documentation helps everyone. Your feedback makes it better.
+
+---
 
 ## Ready to Start?
 
-Choose your path above, or if you're unsure, start with **[Understanding Rspamd](understanding-rspamd)** to build the foundation you'll need for everything else.
+**New users**: Begin with [Understanding Rspamd →](understanding-rspamd)
 
-Remember: **effective spam filtering is a journey, not a destination**. Start with the basics, get a working system, then iterate and improve based on your actual email patterns and requirements.
+**SpamAssassin users**: Read [Understanding Rspamd](understanding-rspamd), then [SpamAssassin Migration Guide](/tutorials/migrate_sa)
+
+**Quick integration**: Jump to [Installation →](installation) if you already understand spam filtering
+
+**Remember**: Start simple, get it working, then optimize. Don't try to configure everything perfectly on day one.
