@@ -675,7 +675,7 @@ See [Comparison page](/about/comparison) for detailed analysis.
 - **Community support**: [Support channels](/support) (Matrix, mailing list, GitHub)
 - **Professional support**: Available from Rspamd developers and partners
 - **Active development**: Regular releases, security updates, new features
-- **Open source**: BSD license, source code on [GitHub](https://github.com/rspamd/rspamd)
+- **Open source**: Apache 2.0 license, source code on [GitHub](https://github.com/rspamd/rspamd)
 
 ---
 
