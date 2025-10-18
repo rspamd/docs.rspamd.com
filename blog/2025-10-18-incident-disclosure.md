@@ -16,7 +16,7 @@ On Saturday, October 18th, 2025, the public Rspamd DNSBL RBL feed and what's mor
 - Our monitoring detected service degradation early Saturday, followed by Hetzner's notification that our server would be blocked due to "suspected port scan attacks."
 - Rspamd's service responds to legitimate external requests on port 11335 as part of its normal operation—the traffic flagged was fully expected and non-malicious.
 - Despite prior communications clarifying this issue (with Hetzner support involved on three separate occasions), our server was nevertheless blocked following a provider-side false positive.
-- Although Hetzner's support eventually agreed that the block was in error and restored service, we received further claims that network activity from our side (including connections to resolvable, legitimate mail service IPs like `gateway.pc5.atmailcloud.com` and `ap02psmtp.brightspace.com`) was improper, citing "unrouted addresses" — a claim contradicted by publicly available DNS records and usage reports.
+- Although Hetzner's support eventually agreed that the block was in error and restored service, we received further claims that network activity from our side (including connections to resolvable, legitimate mail service IPs) was improper, citing "unrouted addresses" — a claim contradicted by publicly available DNS records and usage reports.
 
 ## Why This Matters
 
