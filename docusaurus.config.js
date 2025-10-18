@@ -134,6 +134,14 @@ const config = {
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
+      announcementBar: {
+        id: 'incident_2025_10_18',
+        content:
+          '⚠️ <strong>URGENT: Service Disruption Notice</strong> - Rspamd public fuzzy service and DNSBL RBL feed were temporarily suspended on Oct 18, 2025 due to hosting provider issues. <a href="/blog/2025/10/18/incident-disclosure" style="text-decoration: underline;">Read full incident disclosure</a>',
+        backgroundColor: '#fee2e2',
+        textColor: '#991b1b',
+        isCloseable: true,
+      },
       docs: {
         sidebar: {
           hideable: true,
