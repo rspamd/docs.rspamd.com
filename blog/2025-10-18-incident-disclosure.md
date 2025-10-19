@@ -28,6 +28,10 @@ On Saturday, October 18th, 2025, the public Rspamd DNSBL RBL feed and what's mor
 - We are reviewing our hosting provider relationship and will migrate to a more robust and responsive provider to avoid future interruptions.
 - Public access to some Rspamd services will remain suspended until a solution that meets both our standards and availability requirements is fully in place.
 
+## ✅ Positive Update
+
+Due to the generous support from many companies and individuals who are eager to support the project, we expect the **public fuzzy service to be back online in approximately one week**. We are grateful for the community's overwhelming response and commitment to keeping Rspamd services available.
+
 ## Conclusion
 
 This episode highlights the critical importance of technical nuance and responsive incident handling in the infrastructure supporting public open source projects.

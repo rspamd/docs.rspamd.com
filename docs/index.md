@@ -16,9 +16,9 @@ On Saturday, October 18th, 2025, the public Rspamd DNSBL RBL feed and what's mor
 - Service was blocked due to false positive detection by hosting provider
 - Despite multiple communications and clarifications, the block occurred
 - Services are currently being reviewed and will be migrated to a more robust provider
-- Public access to some Rspamd services will remain suspended until a proper solution is in place
+- **✅ Positive Update:** Due to generous community support, we expect the public fuzzy service to be back online in approximately one week
 
-We regret the inconvenience and are working to ensure this doesn't happen again.
+We regret the inconvenience and are grateful for the overwhelming support from the community.
 
 :::
 
