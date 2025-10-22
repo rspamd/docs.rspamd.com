@@ -130,7 +130,7 @@ In addition to the primary integration methods, [LDA mode](#lda-mode) provides a
 
 ## Using Rspamd with Postfix MTA
 
-Starting with version 1.6, for integrating Rspamd with Postfix, it is recommended to utilize the Rspamd proxy worker in Milter mode, as described in [rspamd proxy worker](workers/rspamd_proxy). 
+Starting with version 1.6, for integrating Rspamd with Postfix, it is recommended to utilize the Rspamd proxy worker in Milter mode, as described in [rspamd proxy worker](../workers/rspamd_proxy).
 
 ### Configuring Postfix
 
@@ -290,7 +290,7 @@ For further information, please refer to the James' extensions for Rspamd docume
 
 ## Integration with Stalwart Mail Server
 
-Rspamd can easily be integrated with Stalwart Mail Server using the `milter` protocol. In order to enable Milter support in rspamd, follow the instructions in the [proxy worker](workers/rspamd_proxy) chapter. 
+Rspamd can easily be integrated with Stalwart Mail Server using the `milter` protocol. In order to enable Milter support in rspamd, follow the instructions in the [proxy worker](../workers/rspamd_proxy) chapter.
 
 After setting up the proxy worker to handle milter requests, configure Stalwart Mail Server to use rspamd via milter by adding the following entries to the `etc/config.toml` configuration file:
 
