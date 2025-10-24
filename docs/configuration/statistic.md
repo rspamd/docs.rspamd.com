@@ -55,14 +55,23 @@ classifier "bayes" {
     symbol = "BAYES_SPAM";
     spam = true;
   }
-  learn_condition = 'return require("lua_bayes_learn").can_learn';
+  # Reuse the shared Bayes helper introduced in 3.14+
+  learn_condition = "return require('lua_bayes_learn').can_learn";
 
   # Autolearn sample
   # autolearn {
-  #  spam_threshold = 6.0; # When to learn spam (score >= threshold)
-  #  ham_threshold = -0.5; # When to learn ham (score <= threshold)
-  #  check_balance = true; # Check spam and ham balance
-  #  min_balance = 0.9; # Keep diff for spam/ham learns for at least this value
+  #  spam_threshold = 6.0; # Learn spam when score >= threshold (3.14+)
+  #  junk_threshold = 4.0; # Learn spam from junk verdicts (3.14+)
+  #  ham_threshold = -0.5; # Learn ham when score <= threshold
+  #  check_balance = true; # Keep spam/ham learns roughly balanced
+  #  min_balance = 0.9; # Allow at most 1/min_balance ratio difference
+  #  options { # Optional fine grained overrides merged into defaults (3.14+)
+  #    probability_check {
+  #      spam_min = 0.9; # Treat P>=0.9 as already spam
+  #      ham_max = 0.1; # Treat P<=0.1 as already ham
+  #    }
+  #    logging { enabled = true; } # Disable if quieter logs are required
+  #  }
   #}
 
   .include(try=true; priority=1) "$LOCAL_CONFDIR/local.d/classifier-bayes.conf"
@@ -71,6 +80,39 @@ classifier "bayes" {
 
 .include(try=true; priority=1) "$LOCAL_CONFDIR/local.d/statistic.conf"
 .include(try=true; priority=10) "$LOCAL_CONFDIR/override.d/statistic.conf"
+~~~
+
+### Autolearn configuration reference (3.14+)
+
+Rspamd 3.14 refreshes the shared Bayes helper (`lua_bayes_learn`) so that automatic learning can be adjusted from configuration files.  The `autolearn {}` block accepts the following keys:
+
+- **`spam_threshold`** *(float, optional)* – learn spam when a message score is greater than or equal to this value.
+- **`junk_threshold`** *(float, optional, 3.14+)* – treat verdict `junk` as spam if the score is above this value. Leave unset to ignore junk.
+- **`ham_threshold`** *(float, optional)* – learn ham when the score is less than or equal to this value.
+- **`check_balance`** *(boolean, default `true`)* – enable the balance guard that prevents one class from overwhelming the other.
+- **`min_balance`** *(float, default `0.9`)* – minimum acceptable ratio between ham and spam learns. With the default value Rspamd skips learning when one side grows ~11 % larger (`1 / 0.9`).
+- **`options { ... }`** *(table, 3.14+)* – advanced overrides that are merged with the helper defaults. Common fields include:
+  - `probability_check { spam_min = 0.95; ham_max = 0.05; }` to adjust the “already in class” guard.
+  - `logging { enabled = false; }` to silence the informational autolearn log line.
+  - `balance { enabled = false; }` to disable the balance guard entirely.
+
+Example (`local.d/classifier-bayes.conf`):
+
+~~~hcl
+autolearn {
+  spam_threshold = 6.0;
+  junk_threshold = 4.0;
+  ham_threshold = -0.5;
+  check_balance = true;
+  min_balance = 0.9;
+  options {
+    probability_check {
+      spam_min = 0.92;
+      ham_max = 0.08;
+    }
+    logging { enabled = false; }
+  }
+}
 ~~~
 
 You are also recommended to use the [`bayes_expiry` module](/modules/bayes_expiry) to maintain your statistics database.
@@ -199,13 +241,53 @@ Supported parameters for the Redis backend are:
 
 Starting from version 1.1, Rspamd introduces autolearning functionality for statfiles. Autolearning occurs after all rules, including statistics, have been processed. However, it only applies if the same symbol has not already been added. For example, if `BAYES_SPAM` is already present in the checking results, the message will not be learned as spam.
 
-There are three options available for specifying autolearning:
+In Rspamd **3.14 and newer** we recommend configuring autolearning via the dedicated `autolearn {}` block (see [Autolearn configuration reference](#autolearn-configuration-reference-314)).  For legacy configurations, or when you need full control from Lua, you can still use the classic forms supported by older releases:
 
-* `autolearn = true`: autolearning is performing as spam if a message has `reject` action and as ham if a message has **negative** score
-* `autolearn = [-5, 5]`: autolearn as ham if the score is less than `-5` and as spam if the score is more than `5`
-* `autolearn = "return function(task) ... end"`: use the following Lua function to detect if autolearn is needed (function should return 'ham' if learn as ham is needed and string 'spam' if learn as spam is needed, if no learning is needed then a function can return anything including `nil`)
+* `autolearn = true`: learn spam if the final action is `reject`, learn ham if the score is negative.
+* `autolearn = [-5, 5]`: learn ham when the score is below `-5`, learn spam when the score is above `5`.
+* `autolearn = "return function(task) ... end"`: provide a Lua function that returns `'ham'` or `'spam'` when learning should happen. Any other return value (including `nil`) cancels learning.
 
 Redis backend is highly recommended for autolearning purposes due to its ability to handle high concurrency levels when multiple writers are synchronized properly. Using Redis as the backend ensures efficient and reliable autolearning functionality.
+
+### Extending the helper in Lua (3.14+)
+
+The shared helper `lua_bayes_learn` exposes hook points that let you add site-specific logic without copying the whole module.  Guards fire for **every** learn attempt (manual or automatic) and can veto or allow learning.
+
+```lua
+-- local.d/lua/bayes_overrides.lua
+local lua_bayes_learn = require "lua_bayes_learn"
+
+-- Globally tighten the probability guard
+lua_bayes_learn.configure_can_learn({
+  probability_check = {
+    spam_min = 0.97,
+    ham_max = 0.03,
+  },
+})
+
+-- Skip autolearn for messages larger than 2 MiB
+lua_bayes_learn.register_autolearn_guard("skip_large_messages", function(ctx)
+  local size = ctx.task:get_size()
+  if size > 2 * 1024 * 1024 then
+    return {
+      ok = false,
+      reason = string.format("message too large for autolearn (%d bytes)", size),
+    }
+  end
+  return true
+end)
+
+-- Prevent learning for specific QA mailboxes
+lua_bayes_learn.register_can_learn_guard("qa_opt_out", function(ctx)
+  local rcpt = ctx.task:get_recipients('smtp')
+  if rcpt and rcpt[1] and rcpt[1].user == 'qa@example.com' then
+    return { ok = false, reason = 'learning disabled for QA inbox' }
+  end
+  return true
+end)
+```
+
+Each guard receives a context table with the `task`, the computed options, and a mutable `result`.  Return `true` to continue, or `{ ok = false, reason = '...' }` to block learning with a human-readable explanation.  Adding `stop = true` lets a guard short-circuit the remaining checks when a decision is final.
 
 ### Per-user statistics
 
