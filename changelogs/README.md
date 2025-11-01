@@ -79,3 +79,4 @@ The system automatically categorizes releases based on semantic versioning:
 - 📖 **Expandable Entries**: Click to expand/collapse release details
 - 🏷️ **Semantic Versioning**: Automatic release type detection
 - 🎭 **Dark Mode**: Respects Docusaurus theme settings 
+

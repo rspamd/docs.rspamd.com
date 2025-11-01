@@ -155,6 +155,14 @@ result = structure_similarity × 0.3  (heavy penalty)
   - `<1.0`: reduce HTML match impact
   - `>1.0`: increase HTML match importance (e.g., for phishing detection)
 
+- **`checks`**: object (default: `null`)
+  - Structured configuration for content hashing routines. The following sections are recognised:
+    - `text` – controls text hashing; supports `enabled`, `no_subject`, `short_text_direct_hash`, `text_multiplier`, `min_length`
+    - `html` – controls HTML structure hashing; supports `enabled`, `min_html_tags`, `html_weight` (alias `weight`)
+    - `image`/`images` – controls image hashing; supports `enabled`, `min_height`, `min_width`
+    - `archive`/`archives` – controls archive hashing; supports `enabled`
+  - Legacy boolean flags (`text_hashes`, `html_shingles`, `skip_images`, `scan_archives`, etc.) remain supported and are merged with the structured configuration for backward compatibility.
+
 #### Example configurations:
 
 **Phishing detection (prioritize structure):**
@@ -183,9 +191,14 @@ rule "PHISHING_DETECT" {
 **Spam campaigns (balanced):**
 ```hcl
 rule "SPAM_CAMPAIGNS" {
-  html_shingles = true;
-  min_html_tags = 15;
-  html_weight = 1.0;  # Equal to text
+  checks = {
+    html {
+      enabled = true;
+      min_html_tags = 15;
+      html_weight = 1.0;  # Equal to text
+    }
+    text { enabled = true; }
+  }
   
   fuzzy_map = {
     FUZZY_SPAM_TEMPLATES {
@@ -199,11 +212,16 @@ rule "SPAM_CAMPAIGNS" {
 **Combined text+HTML:**
 ```hcl
 rule "COMBINED" {
-  text_shingles = true;
-  html_shingles = true;
-  
-  min_length = 32;      # Text: min words
-  min_html_tags = 10;   # HTML: min tags
+  checks = {
+    text {
+      enabled = true;
+      min_length = 32;      # Text: min words
+    }
+    html {
+      enabled = true;
+      min_html_tags = 10;   # HTML: min tags
+    }
+  }
   
   # Both use same storage/flags
   fuzzy_map = {
@@ -323,6 +341,42 @@ for _, part in ipairs(text_parts) do
 end
 ```
 
+## Structured checks configuration
+
+Starting with Rspamd 3.14, the preferred way to configure per-rule hashing behaviour is via the `checks` object. The `text`, `html`, `image(s)` and `archive(s)` sections transparently map to the legacy options listed above. Example:
+
+```hcl
+rule "FUZZY_CUSTOM" {
+  servers = "127.0.0.1:11335";
+
+  checks = {
+    text {
+      enabled = true;
+      min_length = 64;
+      text_multiplier = 4.0;
+      short_text_direct_hash = true;
+    }
+    html {
+      enabled = true;
+      min_html_tags = 15;
+      html_weight = 1.2;
+    }
+    image {
+      enabled = false; # keep legacy skip_images semantics
+    }
+  }
+
+  fuzzy_map = {
+    FUZZY_DENIED {
+      flag = 1;
+      max_score = 20.0;
+    }
+  }
+}
+```
+
+Legacy boolean knobs (`text_hashes`, `html_shingles`, `skip_images`, `scan_archives`, etc.) continue to work and are merged with the structured configuration, but the `checks` block makes the rule definition clearer and avoids an ever-growing list of top-level flags.
+
 ## Module outline
 ~~~hcl
 # local.d/fuzzy_check.conf
@@ -352,6 +406,7 @@ fuzzy_check
         headers = "..."; //array: Headers that are used to make a separate hash
         learn_condition = "..."; //string: Lua script that returns boolean function to check whether this task should be considered when training fuzzy storage
         max_score = ...; //int: Max value for fuzzy hash when weight of symbol is exactly 1.0 (if value is higher, then the score is still 1.0)
+        checks = { ... }; //object: Structured hashing configuration (text/html/images/archives)
         mime_types = "..."; //array: Set of mime types (in form type/subtype, or type/*, or *) to check with fuzzy
         min_bytes = ...; //int: Override module default min bytes for this rule
         read_only = ...; //boolean: If true then never try to train this fuzzy storage
@@ -438,19 +493,25 @@ rule "FUZZY_CUSTOM" {
   algorithm = "mumhash";
   # This is used for binary parts and for text parts (size in bytes)
   min_bytes = 1024;
-  # Text parts only: minimum number of words
-  min_length = 64;
-  # Divide min_bytes by 4 for texts
-  text_multiplier = 4.0,
 
-  # Minimum dimensions for images (in pixels)
-  min_height = 500;
-  min_width = 500;
-
-  # Scan all archives mime parts (e.g. zip attachments)
-  scan_archives = true;
-  # If part has num words < min_length, use direct hash instead of fuzzy
-  short_text_direct_hash = true;
+  checks = {
+    text {
+      enabled = true;
+      min_length = 64;      # Text parts only: minimum number of words
+      text_multiplier = 4.0;# Divide min_bytes by 4 for texts
+      short_text_direct_hash = true; # If part has num words < min_length, use direct hash
+    }
+    html {
+      enabled = true;
+      min_html_tags = 10;
+    }
+    image {
+      enabled = false;      # Equivalent to skip_images = true
+    }
+    archives {
+      enabled = true;       # Equivalent to scan_archives = true
+    }
+  }
 
   # Apply fuzzy logic for text parts
   text_shingles = true;
