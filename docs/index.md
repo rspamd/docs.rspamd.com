@@ -4,24 +4,6 @@ title: About Rspamd
 
 # About Rspamd
 
-:::danger URGENT: Service Disruption Notice
-
-**Incident Disclosure: Rspamd Public Service Temporary Suspension Due to Hosting Provider Actions**
-
-On Saturday, October 18th, 2025, the public Rspamd DNSBL RBL feed and what's more important **public fuzzy** service was disrupted due to an unexpected server block by our hosting provider, Hetzner. This interruption affected hundreds of thousands of users and likely led to increased volumes of spam for many legitimate email services worldwide.
-
-**[Read the full incident disclosure](/blog/2025/10/18/incident-disclosure)**
-
-**Summary:**
-- Service was blocked due to false positive detection by hosting provider
-- Despite multiple communications and clarifications, the block occurred
-- Services are currently being reviewed and will be migrated to a more robust provider
-- **✅ Positive Update:** Due to generous community support, we expect the public fuzzy service to be back online in approximately one week
-
-We regret the inconvenience and are grateful for the overwhelming support from the community.
-
-:::
-
 ## Introduction
 
 **Rspamd** is a high-performance email processing framework designed as an independent layer between your Mail Transfer Agent (MTA) and the internet. Operating outside MTA internal flows, Rspamd provides security isolation while delivering comprehensive message analysis, spam filtering, and policy enforcement.
