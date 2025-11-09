@@ -1,8 +1,8 @@
 ---
-title: About Rspamd
+title: Overview
 ---
 
-# About Rspamd
+# Overview
 
 ## Introduction
 

@@ -157,7 +157,7 @@ This comparison helps you understand the key differences between Rspamd and Spam
       <tr>
         <td>Language detection</td>
         <td><span class="fa-solid fa-lg fa-check icon-green"></span> <strong>60+ languages</strong><br/>UTF-8 normalization, CJK support</td>
-        <td><span class="fa-solid fa-lg fa-xmark icon-red"></span> ASCII-only (lowercase)</td>
+        <td><span class="fa-solid fa-lg fa-check icon-green"></span> UTF-8 support (v4+)<br/>Limited language detection</td>
       </tr>
       <tr>
         <td>HTML parsing</td>
@@ -206,7 +206,7 @@ This comparison helps you understand the key differences between Rspamd and Spam
       </tr>
       <tr>
         <td>Bayes classifier</td>
-        <td><span class="fa-solid fa-lg fa-check icon-green"></span> <strong>5-word window</strong><br/>Better context awareness</td>
+        <td><span class="fa-solid fa-lg fa-check icon-green"></span> <strong>2-word window</strong><br/>Better context awareness</td>
         <td><span class="fa-solid fa-lg fa-check icon-green"></span> 1-word (unigram)</td>
       </tr>
       <tr>
@@ -356,7 +356,7 @@ This comparison helps you understand the key differences between Rspamd and Spam
       </tr>
       <tr>
         <td>Community</td>
-        <td>Matrix, GitHub, mailing lists</td>
+        <td>Discord, Telegram, mailing lists</td>
         <td>Mailing lists, IRC, GitHub</td>
       </tr>
       <tr>
