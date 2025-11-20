@@ -193,9 +193,27 @@ const sidebars = {
     },
     {
       "type": "category",
+      "label": "Administration Tools",
+      "link": {
+        "type": "doc",
+        "id": "administration/rspamadm/index"
+      },
+      "items": [
+        "administration/rspamadm/email-analysis",
+        "administration/rspamadm/email-manipulation",
+        "administration/rspamadm/dns-tools",
+        "administration/rspamadm/dkim-management",
+        "administration/rspamadm/cryptography",
+        "administration/rspamadm/statistics-ml",
+        "administration/rspamadm/operations",
+        "administration/rspamadm/configuration",
+        "administration/rspamadm/development"
+      ]
+    },
+    {
+      "type": "category",
       "label": "Other",
       "items": [
-        "other/rspamadm",
         "other/gtube_patterns",
         "other/usage_policy"
       ]
