@@ -9,6 +9,8 @@ tags: [incident, announcement, service disruption]
 
 On Saturday, October 18th, 2025, the public Rspamd DNSBL RBL feed and what's more important **public fuzzy** service was disrupted due to an unexpected server block by our hosting provider, Hetzner. This interruption affected hundreds of thousands of users and likely led to increased volumes of spam for many legitimate email services worldwide.
 
+**Edit**: as of October 27th, 2025, public fuzzy service has been relocated to Ionos and is now fully operational again.  There is no need to change Rspamd configuration to use the new server.
+
 <!--truncate-->
 
 ## What Happened
