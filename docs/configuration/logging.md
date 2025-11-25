@@ -44,45 +44,237 @@ Here is a summary of the logging parameters, each of which can be redefined or d
 | `type` | Defines logging type (file, console or syslog). For some types mandatory attributes may be required.
 | `filename` | Path to log file for file logging (required for **file** type)
 | `facility` | Logging facility for **syslog** type (required if this type is used)
-| `level` | Defines logging level (error, warning, info or debug).
+| `level` | Defines logging level (error, warning, notice, info, silent, or debug).
 | `log_buffered` | Flag that controls whether logging is buffered.
 | `log_buf_size` | For file and console logging defines buffer size that will be used for logging output.
 | `log_urls` | Flag that defines whether all URLs in message should be logged. Useful for testing. Default: `false`.
 | `log_re_cache` | Output regular expressions statistics after each message. Default: `true`.
-| `debug_ip` | List that contains IP addresses for which debugging should be turned on.
-| `color` | Turn on coloring for log messages. Default: `false`.
+| `debug_ip` | List that contains IP addresses for which debugging should be turned on. Can be specified as a map.
+| `color` | Turn on coloring for log messages (console logging only). Default: `false`.
 | `systemd` | If `true` timestamps aren't prepended to log messages. Default: `false`.
 | `debug_modules` | A list of modules that are enabled for debugging.
 | `log_usec` | Log microseconds (e.g. `11:43:16.68071`). Default: `false`.
 | `log_severity` (2.8+) | Log severity explicitly (e.g. `[info]` or `[error]`). Default: `false`.
-| `log_json` (3.8+) | If `true` logs are emitted in JSON format (implies `log_severity=true` and `systemd=false`). Default: `false`.
+| `log_json` (3.8+) | If `true` logs are emitted in JSON format (implies `log_severity=true` and `systemd=false`). Default: `false`. Works with all log types including syslog.
+| `encryption_key` | Public key used to encrypt sensitive information in logs. Uses NaCl cryptobox encryption.
+| `error_elts` | Size of circular buffer for storing last errors. Default: `10`.
+| `error_maxlen` | Maximum size of each element in error log buffer. Default: `1000`.
+| `task_max_elts` | Maximum number of elements in task logging output. Default: `7`.
+| `max_tag_len` (3.10+) | Maximum length of log tag displayed in log messages. Can be 1-32. Default: `6`.
+| `tag_strip_policy` (3.10+) | Policy for stripping long log tags: `right` (cut right part), `left` (keep last characters), `middle` (keep start and end). Default: `right`.
 
+
+### JSON logging format
+
+When `log_json` is enabled (version 3.8+), log messages are emitted in JSON format. This works with all logging types including file, console, and syslog. Each log entry contains the following fields:
+
+```json
+{
+  "ts": 1699123456.789,
+  "pid": 12345,
+  "severity": "info",
+  "worker_type": "normal",
+  "id": "abc123",
+  "module": "task",
+  "function": "process_message",
+  "message": "Message processed successfully"
+}
+```
+
+The JSON output is useful for log aggregation systems like Elasticsearch, Loki, or Splunk. Special characters in messages are properly escaped.
 
 ### Defined debug modules
 
-Here is a list of C debug modules defined in Rspamd (this list is usually incomplete):
+Here is a list of C debug modules defined in Rspamd:
 
 | Module          | Description                       |
 | :-------------- | :-------------------------------- |
+| `archive` | messages from archive processing
 | `bayes` | messages from Bayes classifier
-| `cfg` | configuration messages
+| `chartable` | messages from chartable plugin
 | `composites` | debug composite symbols
-| `dkim` | messages from dkim module
-| `dns` | messages from DNS resolver
-| `fuzzy_backend` | messages from fuzzy backend
-| `langdet` | messages from language detector
-| `logger` | messages from the logger itself
-| `main` | messages from the main process
+| `config` | configuration messages
+| `control` | control interface messages
+| `controller` | controller worker messages
+| `css` | CSS parsing messages
+| `dkim` | messages from DKIM module
+| `events` | async events/session messages
+| `expression` | expression parsing and evaluation
+| `fuzzy_check` | fuzzy check plugin messages
+| `fuzzy_redis` | fuzzy Redis backend messages
+| `fuzzy_sqlite` | fuzzy SQLite backend messages
+| `fuzzy_storage` | fuzzy storage worker messages
+| `html` | HTML parsing messages
+| `http_context` | HTTP context messages
+| `hyperscan` | Hyperscan/Vectorscan engine messages
+| `images` | image processing messages
+| `langdet` | language detector messages
+| `lua_redis` | Lua Redis module messages
+| `lua_tcp` | Lua TCP module messages
+| `lua_threads` | Lua thread pool messages
+| `lua_udp` | Lua UDP module messages
+| `luacl` | Lua classifier messages
 | `map` | messages from maps in Rspamd
-| `milter` | debug milter interface
-| `protocol` | debug protocol details
-| `proxy` | messages from proxy
-| `spf` | messages from spf module
-| `stat_redis` | messages from redis statistics
-| `symcache` | messages from symbols cache
-| `task` | task messages
+| `metric` | scan result/metric messages
+| `milter` | milter interface messages
+| `mime` | MIME parsing messages
+| `monitored` | monitored objects messages
+| `protocol` | protocol processing messages
+| `proxy` | proxy worker messages
+| `radix` | radix tree messages
+| `re_cache` | regular expressions cache messages
+| `redis_pool` | Redis connection pool messages
+| `rrd` | RRD (round-robin database) messages
+| `spf` | SPF module messages
+| `ssl` | SSL/TLS messages
+| `stat_http` | HTTP statistics backend messages
+| `stat_redis` | Redis statistics backend messages
+| `symcache` | symbols cache messages
+| `task` | task processing messages
+| `tokenizer` | tokenizer messages
+| `upstream` | upstream selection messages
+| `xmlrpc` | XML-RPC messages
  
-Any Lua module can also be added to `debug_modules` as they are using somehow a similar naming semantics. E.g. you can use `dkim_signing` or `multimap` or `lua_tcp` to debug the corresponding modules.
+Any Lua module can also be added to `debug_modules` as they use similar naming semantics. For example, you can use `dkim_signing`, `multimap`, `rbl`, `arc`, or `spf` to debug the corresponding Lua modules.
+
+### Log tag configuration
+
+Starting from version 3.10, Rspamd allows customization of log tag display. The log tag is the unique identifier shown in angle brackets (e.g., `<abc123>`) that helps trace related log messages for a specific task or operation.
+
+By default, log tags are truncated to 6 characters. You can increase this up to 32 characters using `max_tag_len`. When a tag exceeds the maximum length, it is stripped according to `tag_strip_policy`:
+
+- `right` (default): Keeps the beginning of the tag (e.g., `abcdef...` → `abcdef`)
+- `left`: Keeps the end of the tag (e.g., `...uvwxyz` → `uvwxyz`)
+- `middle`: Keeps both start and end (e.g., `abc...xyz`)
+
+### Log tag propagation in proxy mode
+
+When running Rspamd in proxy mode (especially with milter protocol), the log tag can be propagated from the MTA through the entire processing chain. This enables correlation of log messages across different components using the same identifier (typically the MTA's Queue-ID).
+
+The `rspamd_proxy` worker supports the `log_tag_type` option that controls how log tags are passed to backend workers:
+
+| Value | Description |
+| :---- | :---------- |
+| `session` | Use proxy session's internal tag (default) |
+| `queue_id` | Use Queue-ID from the client (MTA) if available |
+| `none` | Don't pass log tag to backend |
+
+Here's an ASCII diagram showing log tag flow in milter proxy mode:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              POSTFIX MTA                                    │
+│                         Queue-ID: ABC123DEF                                 │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    │ milter protocol
+                                    │ sends {i} macro = "ABC123DEF"
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           RSPAMD PROXY                                      │
+│                         (milter = true)                                     │
+│                                                                             │
+│  1. Receives Queue-ID via milter macro {i}                                  │
+│  2. Creates HTTP request to backend                                         │
+│  3. Adds header based on log_tag_type:                                      │
+│     - session:  Log-Tag: <proxy_session_uid>                                │
+│     - queue_id: Log-Tag: ABC123DEF         ◄── uses MTA's Queue-ID          │
+│     - none:     (no Log-Tag header)                                         │
+│                                                                             │
+│  Proxy logs: <xyz789>  (own session tag)                                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    │ HTTP protocol
+                                    │ Queue-ID: ABC123DEF
+                                    │ Log-Tag: ABC123DEF (if log_tag_type = queue_id)
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          RSPAMD WORKER                                      │
+│                                                                             │
+│  Receives Log-Tag header → uses as task log tag                             │
+│  Worker logs: <ABC123D> (truncated to max_tag_len)                          │
+│                                                                             │
+│  Now MTA logs and Rspamd logs share the same identifier!                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+Configuration example for proxy worker:
+
+```
+worker "rspamd_proxy" {
+    bind_socket = "localhost:11332";
+    milter = true;
+    
+    upstream "local" {
+        self_scan = true;
+        # Use MTA's Queue-ID for log correlation
+        log_tag_type = "queue_id";
+    }
+}
+```
+
+With this configuration, you can correlate Postfix mail.log entries with Rspamd log entries using the same Queue-ID:
+
+```
+# Postfix mail.log
+Nov 25 10:15:30 mail postfix/smtpd[1234]: ABC123DEF: client=example.com[1.2.3.4]
+Nov 25 10:15:31 mail postfix/cleanup[1235]: ABC123DEF: message-id=<msg@example.com>
+
+# Rspamd log (with max_tag_len = 8)
+Nov 25 10:15:31 #5678(normal) <ABC123DE>; task; ... message processed
+```
+
+### Error log buffer
+
+Rspamd maintains a circular buffer of recent error messages that can be accessed via the controller's `/errors` endpoint. This is useful for monitoring and debugging without parsing log files. Configure it with:
+
+- `error_elts`: Number of error entries to keep (default: 10)
+- `error_maxlen`: Maximum length of each error message (default: 1000)
+
+### Configuration example
+
+Here is a comprehensive example of logging configuration:
+
+```
+logging {
+    type = "file";
+    filename = "/var/log/rspamd/rspamd.log";
+    level = "info";
+    
+    # Enable severity and microseconds for detailed logging
+    log_severity = true;
+    log_usec = true;
+    
+    # Buffer settings for performance
+    log_buffered = true;
+    log_buf_size = 32768;
+    
+    # Error buffer for /errors endpoint
+    error_elts = 100;
+    error_maxlen = 2000;
+    
+    # Extended log tag (useful for high-volume environments)
+    max_tag_len = 12;
+    tag_strip_policy = "middle";
+    
+    # Debug specific modules
+    debug_modules = ["dkim", "spf", "dkim_signing"];
+    
+    # Debug only for specific IPs
+    debug_ip = "192.168.1.0/24";
+}
+```
+
+For JSON logging to a log aggregation system:
+
+```
+logging {
+    type = "file";
+    filename = "/var/log/rspamd/rspamd.json";
+    level = "info";
+    log_json = true;
+}
+```
 
 ## Log format
 
