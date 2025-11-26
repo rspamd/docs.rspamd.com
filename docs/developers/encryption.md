@@ -86,11 +86,11 @@ keypair {
 
 **Key Components:**
 
-- **privkey**: Server's private key (32 bytes, base32-encoded)
-- **pubkey**: Server's public key (32 bytes, base32-encoded)
+- **privkey**: Server's private key (32 bytes, zbase32-encoded)
+- **pubkey**: Server's public key (32 bytes, zbase32-encoded)
 - **id**: Full key identifier derived from the public key
 - **algorithm**: Always `curve25519` for HTTPCrypt
-- **encoding**: Always `base32` (RFC 4648 base32 without padding)
+- **encoding**: Always `base32` in the config file, but the actual encoding is **zbase32** (alphabet: `ybndrfg8ejkmcpqxot1uwisza345h769`)
 
 ### Ephemeral Client Keys
 
@@ -113,8 +113,8 @@ Key: <short_key_id>=<client_ephemeral_pubkey>
 
 Where:
 
-- **short_key_id**: First 5 bytes of Blake2b hash of server's public key, base32-encoded
-- **client_ephemeral_pubkey**: Client's ephemeral public key, base32-encoded
+- **short_key_id**: First 5 bytes of Blake2b hash of server's public key, zbase32-encoded
+- **client_ephemeral_pubkey**: Client's ephemeral public key, zbase32-encoded
 
 **Example:**
 
@@ -344,8 +344,8 @@ Key: kbr3m=k4nz984k36xmcynm1hr9kdbn6jhcxf4ggbrb1quay7f88rpm9kay
 ```
 
 The `Key` header contains:
-- Short ID of server's public key (5 bytes, base32)
-- Client's ephemeral public key (32 bytes, base32)
+- Short ID of server's public key (5 bytes, zbase32)
+- Client's ephemeral public key (32 bytes, zbase32)
 
 ### Server Response Decryption
 
@@ -451,12 +451,32 @@ Content-Length: 556
 
 ### Key Encoding
 
-All keys use RFC 4648 base32 encoding without padding:
+All keys use a **modified zbase32** encoding with non-standard bit ordering:
 
-- Alphabet: `abcdefghijklmnopqrstuvwxyz234567`
+- Alphabet: `ybndrfg8ejkmcpqxot1uwisza345h769`
+- Designed to be human-friendly (avoids visually similar characters like 0/O, 1/l)
 - Case insensitive for decoding
-- No padding characters (=)
+- No padding characters
 - Compact representation (32 bytes → 52 characters)
+
+**IMPORTANT - Non-standard bit ordering:** Rspamd's zbase32 implementation uses **inverted bit order** compared to standard base32 implementations. This is a historical artifact from when the implementation was created before any RFCs or test vectors existed. Standard zbase32 libraries will **NOT** produce correct results!
+
+**Test vectors for verification:**
+
+| Input | Rspamd zbase32 output |
+|-------|----------------------|
+| `hello` | `em3ags7p` |
+| `test123` | `wm3g84fg13cy` |
+| `a` | `bd` |
+| `aaaaa` | `bmansofc` |
+
+Compare with RFC 4648 base32 (different!):
+| Input | RFC 4648 output |
+|-------|-----------------|
+| `hello` | `NBSWY3DP` |
+| `a` | `ME` |
+
+**Strongly recommended:** Use the official implementations from [rspamd_base32](https://github.com/vstakhov/rust-base32) (Rust) or the Go equivalent in rspamdclient-go rather than implementing your own.
 
 ### Memory Safety
 
@@ -482,7 +502,7 @@ Critical errors that must be handled:
 1. **Authentication Failure**: Never proceed with decryption if MAC verification fails
 2. **Invalid Key Length**: Reject keys that aren't exactly 32 bytes
 3. **Malformed Messages**: Check minimum message length (24 + 16 bytes) before parsing
-4. **Base32 Decode Errors**: Handle invalid base32 encoding gracefully
+4. **zbase32 Decode Errors**: Handle invalid zbase32 encoding gracefully (invalid characters, wrong length)
 
 ### Performance Considerations
 
@@ -520,6 +540,233 @@ HTTPCrypt is implemented in:
 - **rspamdclient-go** (Go): Full client library
 
 All implementations use the same wire format and are fully interoperable.
+
+## Client Developer Guide
+
+This section provides practical guidance for developers implementing HTTPCrypt clients in various programming languages.
+
+### Quick Start Checklist
+
+To implement an HTTPCrypt client, you need:
+
+1. **X25519 library** for elliptic curve Diffie-Hellman key exchange
+2. **XChaCha20 implementation** for encryption/decryption
+3. **Poly1305 implementation** for message authentication
+4. **HChaCha20 function** for key derivation (often included in XChaCha20 libraries)
+5. **Rspamd's modified zbase32** - uses inverted bit order; standard zbase32 libraries won't work!
+
+**Warning:** Due to the non-standard zbase32 encoding and custom HChaCha20 key derivation, we **strongly recommend** using or porting the official client implementations rather than building from scratch:
+- **Rust**: [rspamdclient-rs](https://github.com/rspamd/rspamdclient-rs) with [rspamd_base32](https://github.com/vstakhov/rust-base32)
+- **Go**: [rspamdclient-go](https://github.com/rspamd/rspamdclient-go)
+
+### Recommended Libraries by Language
+
+| Language | Recommended Libraries |
+|----------|----------------------|
+| **Rust** | `crypto_box`, `chacha20poly1305`, `x25519-dalek` |
+| **Go** | `golang.org/x/crypto/chacha20poly1305`, `golang.org/x/crypto/curve25519` |
+| **Python** | `pynacl`, `cryptography` (requires custom HChaCha20 wrapper) |
+| **JavaScript/Node.js** | `tweetnacl`, `@stablelib/xchacha20poly1305` |
+| **C/C++** | `libsodium`, `monocypher` |
+| **Java** | `Tink`, `BouncyCastle` (requires custom implementation) |
+
+### Step-by-Step Implementation
+
+#### Step 1: Parse Server's Public Key
+
+The server's public key is provided in Rspamd's modified zbase32 format. 
+
+**Important:** Rspamd uses a non-standard zbase32 with inverted bit ordering. Standard zbase32 implementations will produce incorrect results. You must use:
+- The [rspamd_base32](https://github.com/vstakhov/rust-base32) Rust crate
+- The Go implementation from [rspamdclient-go](https://github.com/rspamd/rspamdclient-go)
+- Or port the bit-inverted algorithm from these implementations
+
+```rust
+// Using rspamd_base32 crate (Rust)
+use rspamd_base32::decode;
+
+let server_pubkey = decode("fg8uwtce9sta43sdwzddb11iez5thcskiufj4ug8esyfniqq5iiy")
+    .expect("Invalid zbase32");
+```
+
+Test your implementation against these vectors:
+- `"hello"` → `"em3ags7p"` (encoding)
+- `"em3ags7p"` → `"hello"` (decoding)
+
+#### Step 2: Generate Key ID
+
+Calculate the short key ID from the server's public key using Blake2b hash and zbase32 encoding:
+
+```rust
+// Using rspamd_base32 crate (Rust)
+use blake2::{Blake2b, Digest};
+use rspamd_base32::encode;
+
+fn calculate_key_id(pubkey: &[u8]) -> String {
+    let mut hasher = Blake2b::new();
+    hasher.update(pubkey);
+    let hash = hasher.finalize();
+    // Take first 5 bytes and encode with Rspamd's zbase32
+    encode(&hash[..5])
+}
+
+let key_id = calculate_key_id(&server_pubkey);  // e.g., "kbr3m"
+```
+
+#### Step 3: Generate Ephemeral Keypair
+
+For each request, generate a new ephemeral keypair:
+
+```python
+from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
+
+ephemeral_private = X25519PrivateKey.generate()
+ephemeral_public = ephemeral_private.public_key()
+```
+
+#### Step 4: Perform ECDH and Derive Shared Secret
+
+```python
+from cryptography.hazmat.primitives import serialization
+
+# Standard X25519 ECDH
+shared_point = ephemeral_private.exchange(server_pubkey_obj)
+
+# HTTPCrypt-specific: Apply HChaCha20 with zero nonce
+# This step differs from standard X25519 usage!
+def hchacha20(key: bytes, nonce: bytes) -> bytes:
+    """HChaCha20 key derivation - custom implementation needed"""
+    # See implementation details in the main documentation
+    pass
+
+zero_nonce = bytes(16)
+shared_secret = hchacha20(shared_point, zero_nonce)
+```
+
+**Important:** The HChaCha20 step is non-standard. Most X25519 libraries don't include this. You may need to:
+- Use a library that exposes HChaCha20 (like libsodium's `crypto_core_hchacha20`)
+- Implement HChaCha20 yourself (it's the ChaCha20 quarter-round applied 20 times)
+- Use a reference implementation from rspamdclient-rs or rspamdclient-go
+
+#### Step 5: Build the Key Header
+
+```rust
+use rspamd_base32::encode;
+
+let ephemeral_pub_bytes = ephemeral_public.as_bytes();
+let key_header = format!("{}={}", key_id, encode(ephemeral_pub_bytes));
+```
+
+#### Step 6: Encrypt the Request
+
+```python
+import os
+
+def encrypt_request(shared_secret: bytes, plaintext: bytes) -> bytes:
+    # Generate random 24-byte nonce
+    nonce = os.urandom(24)
+    
+    # Initialize XChaCha20 with shared_secret and nonce
+    # Derive MAC key: encrypt 64 zero bytes, take first 32 as Poly1305 key
+    # Encrypt plaintext (cipher is now at offset 64)
+    # Compute Poly1305 tag over ciphertext
+    
+    # Return: nonce (24) + tag (16) + ciphertext
+    return nonce + tag + ciphertext
+```
+
+#### Step 7: Send the Request
+
+```python
+import requests
+
+inner_request = b"POST /checkv2 HTTP/1.1\r\nContent-Length: 100\r\n\r\n<message>"
+encrypted_body = encrypt_request(shared_secret, inner_request)
+
+response = requests.post(
+    'http://rspamd-server:11333/checkv2',
+    headers={
+        'Key': key_header,
+        'Content-Type': 'application/octet-stream',
+    },
+    data=encrypted_body
+)
+```
+
+#### Step 8: Decrypt the Response
+
+```python
+def decrypt_response(shared_secret: bytes, encrypted: bytes) -> bytes:
+    nonce = encrypted[:24]
+    tag = encrypted[24:40]
+    ciphertext = encrypted[40:]
+    
+    # Re-derive MAC key with same nonce
+    # Verify Poly1305 tag - FAIL if mismatch!
+    # Decrypt ciphertext
+    
+    return plaintext
+```
+
+### Why You Should Use Official Implementations
+
+Due to HTTPCrypt's non-standard components, implementing a client from scratch is error-prone:
+
+1. **Modified zbase32**: Rspamd uses inverted bit ordering that differs from any standard zbase32 implementation
+2. **Custom HChaCha20 key derivation**: The ECDH shared secret is processed through HChaCha20 with a zero nonce
+3. **Non-standard MAC key derivation**: Uses 64 zero bytes instead of RFC's 32 bytes
+
+**For production use, we strongly recommend:**
+
+- **Rust**: Use [rspamdclient-rs](https://github.com/rspamd/rspamdclient-rs) directly, or port its encryption module
+- **Go**: Use [rspamdclient-go](https://github.com/rspamd/rspamdclient-go) directly, or port its encryption module
+- **Other languages**: Port the Rust or Go implementation, using the test vectors to verify correctness
+
+### Verifying Your Implementation
+
+Use these test vectors to verify your zbase32 and encryption implementations:
+
+**zbase32 encoding (with Rspamd's inverted bit order):**
+```
+Input: "hello"     -> Output: "em3ags7p"
+Input: "test123"   -> Output: "wm3g84fg13cy"  
+Input: "a"         -> Output: "bd"
+Input: "aaaaa"     -> Output: "bmansofc"
+```
+
+**Full encryption test:**
+The best way to verify your implementation is to:
+1. Run `rspamc --key=<server_pubkey> message.eml` and capture the wire format
+2. Compare your implementation's output byte-by-byte
+3. Verify the server can decrypt your encrypted requests
+
+### Reference Implementations
+
+For production use, we recommend using or adapting these official client implementations:
+
+- **Rust**: [rspamdclient-rs](https://github.com/rspamd/rspamdclient-rs) - Full-featured client with complete HTTPCrypt support
+- **Go**: [rspamdclient-go](https://github.com/rspamd/rspamdclient-go) - Idiomatic Go client with encryption support
+
+Both implementations handle all the edge cases and provide well-tested, production-ready code.
+
+### Testing Your Implementation
+
+To verify your HTTPCrypt implementation:
+
+1. **Test against rspamd server** with encryption enabled
+2. **Compare with rspamc output**: Use `rspamc --key=<pubkey>` and compare wire format
+3. **Use test vectors**: Generate known test cases with reference implementations
+4. **Verify interoperability**: Ensure your client can decrypt responses from rspamd
+
+### Common Pitfalls
+
+1. **Forgetting HChaCha20 step**: Standard X25519 + XChaCha20-Poly1305 won't work without the custom key derivation
+2. **Using any standard base32/zbase32 library**: Rspamd uses a **modified zbase32 with inverted bit ordering**. Even libraries that use the correct alphabet (`ybndrfg8ejkmcpqxot1uwisza345h769`) will fail because they process bits in the wrong order. You **must** use [rspamd_base32](https://github.com/vstakhov/rust-base32) or port its algorithm.
+3. **Incorrect MAC key derivation**: Must use 64 zero bytes through cipher, not 32
+4. **Not using constant-time comparison**: MAC verification must use constant-time comparison
+5. **Reusing nonces**: Each encryption must use a fresh random nonce
+
+**Test your zbase32 implementation:** If encoding `"hello"` doesn't produce `"em3ags7p"`, your implementation is wrong.
 
 ## Code References
 

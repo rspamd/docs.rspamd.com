@@ -151,6 +151,21 @@ By default, log tags are truncated to 6 characters. You can increase this up to 
 
 When running Rspamd in proxy mode (especially with milter protocol), the log tag can be propagated from the MTA through the entire processing chain. This enables correlation of log messages across different components using the same identifier (typically the MTA's Queue-ID).
 
+#### Log-Tag HTTP header
+
+Rspamd supports the `Log-Tag` HTTP header that allows clients to specify a custom log tag for the task. When this header is present, Rspamd uses its value as the log tag instead of generating a random one. This is particularly useful for:
+
+- Correlating Rspamd logs with MTA logs using the same Queue-ID
+- Tracing messages through multiple systems
+- Custom integrations that need consistent identifiers
+
+Example usage with curl:
+```bash
+curl --data-binary @message.eml \
+  -H "Log-Tag: POSTFIX_QUEUE_ID_123" \
+  http://localhost:11333/checkv2
+```
+
 The `rspamd_proxy` worker supports the `log_tag_type` option that controls how log tags are passed to backend workers:
 
 | Value | Description |

@@ -82,6 +82,12 @@ To minimize redundant processing, Rspamd enables an MTA to transmit pre-processe
 | `TLS-Cert-Issuer` | Defines Cert issuer, can be used in conjunction with `client_ca_name` in [proxy worker](/workers/rspamd_proxy). |
 | `URL-Format` | Supported from version 1.9: return all URLs and email if this header is `extended`. |
 | `Filename` | Hint for filename if used with some file. |
+| `Log` | If set to `no` or `false`, disables logging for this task (equivalent to `no_log` flag). |
+| `Log-Tag` | Sets custom log tag for the task. Useful for correlating logs across different systems (e.g., using MTA's Queue-ID). See [logging documentation](/configuration/logging#log-tag-propagation-in-proxy-mode). |
+| `Milter` | If set to `yes`, enables milter-specific processing behaviors. |
+| `Mailer` | Defines the mailer software name (received from MTA via milter `{rcpt_mailer}` macro). |
+| `Compression` | Specifies input compression algorithm (e.g., `zstd`). Used with compressed message content. |
+| `Profile` | If set to `yes`, enables performance profiling for this task. |
 
 Controller also defines certain headers, which you can find detailed information about [here](#controller-http-endpoints).
 
@@ -341,10 +347,128 @@ else:
     print(f"Scan result: {result}")
 ```
 
+## Compression
+
+Rspamd supports Zstandard (zstd) compression for both requests and responses. Compression can significantly reduce bandwidth usage, especially for large messages or high-volume deployments.
+
+### Requesting Compressed Responses
+
+There are two ways to request compressed responses from Rspamd:
+
+**Method 1: Using the Flags header**
+
+```http
+POST /checkv2 HTTP/1.1
+Flags: zstd
+Content-Length: 1500
+
+<message content>
+```
+
+**Method 2: Using standard Accept-Encoding header**
+
+```http
+POST /checkv2 HTTP/1.1
+Accept-Encoding: zstd
+Content-Length: 1500
+
+<message content>
+```
+
+### Sending Compressed Requests
+
+To send a compressed message body, include the `Compression` header:
+
+```http
+POST /checkv2 HTTP/1.1
+Compression: zstd
+Content-Encoding: zstd
+Content-Length: 850
+
+<zstd-compressed message content>
+```
+
+Rspamd automatically detects zstd-compressed content by checking the magic bytes (`0x28 0xb5 0x2f 0xfd`) at the start of the body, but it's recommended to always include the `Compression` header for clarity.
+
+### Response with Compression
+
+When compression is enabled, the response includes compression headers:
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+Compression: zstd
+Content-Encoding: zstd
+Content-Length: 245
+
+<zstd-compressed JSON response>
+```
+
+### Client Implementation Example
+
+**Python example using zstandard library:**
+
+```python
+import requests
+import zstandard as zstd
+import json
+
+# Compress request
+cctx = zstd.ZstdCompressor()
+message = open('message.eml', 'rb').read()
+compressed_message = cctx.compress(message)
+
+# Send compressed request, request compressed response
+response = requests.post(
+    'http://localhost:11333/checkv2',
+    headers={
+        'Compression': 'zstd',
+        'Content-Encoding': 'zstd',
+        'Accept-Encoding': 'zstd',
+    },
+    data=compressed_message
+)
+
+# Decompress response if compressed
+if response.headers.get('Content-Encoding') == 'zstd':
+    dctx = zstd.ZstdDecompressor()
+    result = json.loads(dctx.decompress(response.content))
+else:
+    result = response.json()
+
+print(result)
+```
+
+**Using rspamc with compression:**
+
+```bash
+rspamc -z message.eml  # Enable zstd compression
+```
+
+### Compression with Dictionaries
+
+Rspamd supports zstd dictionary compression for even better compression ratios on typical email content. Dictionary IDs are communicated via the `Dictionary` header. This is primarily used internally by the rspamd proxy when communicating with backend workers.
+
+### Performance Considerations
+
+- Compression adds CPU overhead but reduces network I/O
+- Recommended for remote Rspamd servers or high-latency connections
+- For local Unix socket connections, compression overhead may outweigh benefits
+- Typical compression ratios for email messages: 3:1 to 10:1
+- JSON responses typically compress very well (5:1 to 20:1)
+
 ## Curl example
 
 To check a message without rspamc:
 `curl --data-binary @- http://localhost:11333/symbols < file.eml`
+
+To check with compression (requires zstd command-line tool):
+```bash
+zstd -c message.eml | curl --data-binary @- \
+  -H "Compression: zstd" \
+  -H "Content-Encoding: zstd" \
+  http://localhost:11333/checkv2
+```
 
 ## Normal worker HTTP endpoints
 
