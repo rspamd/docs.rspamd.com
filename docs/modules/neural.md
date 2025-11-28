@@ -2,45 +2,155 @@
 title: Neural network module
 ---
 
-
 # Neural network module
 
-Neural network module is an experimental module that allows to perform post-classification of messages based on their current symbols and some training corpus obtained from the previous learns.
+The neural network module performs post-classification of messages using a small neural network trained on features extracted from messages. It learns patterns from spam and ham samples and adjusts its scoring based on observed symbol combinations and message metadata.
 
-To use this module in versions prior to Rspamd 2.0, ranging from Rspamd 1.7 up to version 2.0, you must build Rspamd with `libfann` support. Although it is typically enabled when using pre-built packages, you may specify it using `-DENABLE_FANN=ON` with the `cmake` command during the building process.
+Since Rspamd 2.0, the module uses [kann](https://github.com/attractivechaos/kann), a lightweight neural network library compiled into Rspamd. Earlier versions (1.7-2.0) used `libfann`, which is no longer supported.
 
-Since Rspamd 2.0, the `libfann` module has been replaced with [kann](https://github.com/attractivechaos/kann) to provide more powerful neural network processing, making it the preferred option for all new installations.
+## Architecture overview
 
-The Neural Network learns by classifying messages as spam or ham, and adjusting its parameters accordingly. Several heuristics are employed to achieve this, so it is not solely based on a plain score. You can also use your own criteria for learning.
+The neural module operates as a distributed system where multiple Rspamd instances share neural network data through Redis:
 
-The training occurs in the background, and once a certain amount of training is complete, the Neural Network is updated and stored in a Redis server. This allows scanners to load and update their own data.
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│  Scanner Worker │     │  Scanner Worker │     │ Primary Controller │
+│  (inference)    │     │  (inference)    │     │ (training)         │
+└────────┬────────┘     └────────┬────────┘     └─────────┬──────────┘
+         │                       │                        │
+         │  load ANN             │  load ANN              │ train ANN
+         │  store vectors        │  store vectors         │ cleanup old ANNs
+         │                       │                        │
+         └───────────────────────┴────────────────────────┘
+                                 │
+                          ┌──────┴──────┐
+                          │    Redis    │
+                          │  (storage)  │
+                          └─────────────┘
+```
 
-After a set number of training iterations (by default, `10`), the training process removes the old Neural Network and begins training a new one. This ensures that old data does not influence the current processing. Once the Neural Network is trained, its data is saved into Redis, where all Rspamd scanners share their learning data. Additionally, intermediate training vectors are stored in Redis. The ANN and training data are compressed using the `zstd` compressor before being saved in Redis.
+**Scanner workers** periodically check Redis for updated neural networks and load them for inference. They also store training vectors when messages meet training criteria.
 
-## Configuration
+**Primary controller worker** periodically checks if enough training vectors have accumulated and spawns training processes. It also cleans up old ANN profiles.
 
-By default, this module is explicitly **disabled**, so you will need to enable it either in the local or override configuration.
+## Feature extraction
 
-Ensure that at least one Redis server is [specified](/configuration/redis) in the common `redis` section. Alternatively, you can define the Redis server in the module configuration:
+The neural network input is a numeric vector constructed from two sources:
+
+### 1. Symbol scores
+
+Each symbol in the current Rspamd configuration produces one input value. The value is typically the symbol's score normalized to a 0-1 range. Symbols marked with `nostat`, `idempotent`, `skip`, or `composite` flags are excluded, as are any symbols listed in `blacklisted_symbols`.
+
+### 2. Metatokens
+
+Metatokens are 39+ numeric features extracted from message structure and content:
+
+| Category | Features |
+|----------|----------|
+| **Size** | Message size (bucketed) |
+| **Images** | Total count, PNG ratio, JPEG ratio, large images, small images |
+| **Parts** | Text parts ratio, attachments ratio |
+| **Encoding** | UTF-8 parts ratio, ASCII parts ratio |
+| **Recipients** | MIME recipients count, SMTP recipients count |
+| **Received** | Header count, invalid headers, time skew, secure relays |
+| **URLs** | URL count |
+| **Words** | Average length, short words, spaces rate, double spaces, non-spaces, ASCII rate, non-ASCII rate, capitals rate, numerics rate |
+| **HTML links** | Link count, HTTP ratio, query ratio, same eTLD+1 ratio, domains per link, max links per domain |
+| **HTML forms** | Form count, unaffiliated POST ratio, affiliated POST ratio |
+| **CTA** | Affiliated flag, weight, affiliated links ratio, trackerish ratio |
+| **Visibility** | Hidden text ratio, transparent ratio, hidden blocks, transparent blocks, offscreen blocks, meta refresh count |
+
+The metatoken schema has a version number (currently 3) that is included in the ANN key prefix. When metatokens change, new ANNs are automatically created.
+
+## Dimensionality reduction with PCA
+
+When `max_inputs` is configured, the module uses Principal Component Analysis (PCA) to reduce the input vector size. This is useful for large symbol configurations where the full vector would be too large for efficient training.
+
+PCA is computed during training by:
+1. Building a scatter matrix from all training vectors
+2. Computing eigenvalues and eigenvectors
+3. Selecting the top `max_inputs` eigenvectors as the projection matrix
+
+The PCA matrix is stored alongside the ANN in Redis and applied during both training and inference.
+
+**Note**: PCA requires Rspamd to be compiled with BLAS support. Check with `rspamd --version`.
+
+## Feature providers
+
+Starting from recent versions, the neural module supports pluggable feature providers that can supply additional input features beyond symbols and metatokens.
+
+### Built-in providers
+
+| Provider | Description |
+|----------|-------------|
+| `symbols` | Traditional symbols + metatokens vector (default) |
+| `metatokens` | Metatokens only, without symbol scores |
+| `llm` | LLM-based embeddings from OpenAI or Ollama APIs |
+
+### LLM provider
+
+The LLM provider requests text embeddings from an external API:
 
 ~~~hcl
 # local.d/neural.conf
-servers = "localhost";
-enabled = true; # Important after 1.7
+rules {
+  default {
+    providers = [
+      {
+        type = "llm";
+        llm_type = "openai";  # or "ollama"
+        model = "text-embedding-3-small";
+        url = "https://api.openai.com/v1/embeddings";
+        api_key = "sk-...";
+        weight = 1.0;
+        cache_ttl = 86400;  # Cache embeddings for 1 day
+      }
+    ];
+    # When using LLM, autotrain is disabled; use manual training
+    train {
+      autotrain = false;
+    }
+  }
+}
 ~~~
 
-It is also necessary to **define the scores** for symbols added by this module, as they are set to zero by default. To accomplish this, you must edit the `local.d/neural_group.conf` file:
+When LLM providers are configured, automatic training is suppressed unless manual training is explicitly requested via the `ANN-Train` header.
+
+### Fusion options
+
+When multiple providers are used, their outputs are concatenated into a single vector:
+
+~~~hcl
+fusion {
+  normalization = "zscore";  # none, unit, or zscore
+  include_meta = true;       # Include metatokens provider
+  meta_weight = 1.0;         # Weight for metatokens
+}
+~~~
+
+## Configuration
+
+### Basic setup
+
+The module requires Redis and is disabled by default:
+
+~~~hcl
+# local.d/neural.conf
+servers = "127.0.0.1:6379";
+enabled = true;
+~~~
+
+Define symbol scores in `local.d/neural_group.conf`:
 
 ~~~hcl
 # local.d/neural_group.conf
-
 symbols = {
   "NEURAL_SPAM" {
-    weight = 3.0; # sample weight
+    weight = 3.0;
     description = "Neural network spam";
   }
   "NEURAL_HAM" {
-    weight = -3.0; # sample weight
+    weight = -3.0;
     description = "Neural network ham";
   }
 }
@@ -48,38 +158,77 @@ symbols = {
 
 ### Configuration options
 
-The neural networks module supports various configuration options for setting up different neural networks. Starting from version 1.7, it supports multiple rules with both automatic and non-automatic neural networks. However, this configuration is usually too advanced for general usage.
+#### Training options (`train` section)
 
-By default, you can use the old configuration style, such as:
+| Option | Default | Description |
+|--------|---------|-------------|
+| `max_trains` | 1000 | Number of spam+ham samples needed to start training |
+| `max_usages` | 10 | How many times an ANN can be retrained before creating new one |
+| `max_iterations` | 25 | Maximum training epochs |
+| `learning_rate` | 0.01 | Neural network learning rate |
+| `max_epoch` | 1000 | Alternative name for max_iterations |
+| `mse` | 0.001 | Target mean squared error |
+| `autotrain` | true | Enable automatic training based on verdicts |
+| `train_prob` | 1.0 | Probability of storing a training sample (0-1) |
+| `learn_threads` | 1 | Training threads (currently unused) |
+| `learn_mode` | "balanced" | Training mode: `balanced` or `proportional` |
+| `classes_bias` | 0.0 | Allowed class imbalance in balanced mode (0-1) |
+| `spam_skip_prob` | 0.0 | Spam skip probability in proportional mode |
+| `ham_skip_prob` | 0.0 | Ham skip probability in proportional mode |
+| `spam_score` | nil | Score threshold for spam (overrides verdict) |
+| `ham_score` | nil | Score threshold for ham (overrides verdict) |
+| `store_pool_only` | false | Store vectors without training (for external training) |
 
-~~~hcl
-# local.d/neural.conf
+#### Network architecture options
 
-servers = "127.0.0.1:6379";
+| Option | Default | Description |
+|--------|---------|-------------|
+| `hidden_layer_mult` | 1.5 | Hidden layer size = inputs × this multiplier |
+| `max_inputs` | nil | Enable PCA to reduce inputs to this size |
 
-train {
-  max_trains = 1k; # Number ham/spam samples needed to start train
-  max_usages = 20; # Number of learn iterations while ANN data is valid
-  learning_rate = 0.01; # Rate of learning
-  max_iterations = 25; # Maximum iterations of learning (better preciseness but also lower speed of learning)
-}
+#### Scoring options
 
-ann_expire = 2d; # For how long ANN should be preserved in Redis
-~~~
+| Option | Default | Description |
+|--------|---------|-------------|
+| `symbol_spam` | "NEURAL_SPAM" | Symbol inserted for spam classification |
+| `symbol_ham` | "NEURAL_HAM" | Symbol inserted for ham classification |
+| `spam_score_threshold` | nil | ANN output threshold for spam (0-1) |
+| `ham_score_threshold` | nil | ANN output threshold for ham (0-1) |
+| `flat_threshold_curve` | false | Use binary 0/1 scores instead of ANN output |
+| `roc_enabled` | false | Compute optimal thresholds using ROC analysis |
+| `roc_misclassification_cost` | 0.5 | Cost weight for ROC threshold computation |
 
-In this code snippet, we define a simple network that automatically learns ham and spam on messages with corresponding actions. Upon creation, it is allowed to undergo additional training for up to 20 more times. Rspamd trains a neural network when `(ham_samples + spam_samples) >= max_trains`. It also automatically maintains equal proportions of spam and ham samples to provide fair training. If you are running a small email system, then you can increase `max_usages` to preserve trained networks for a longer time (you may also adjust `ann_expire` accordingly).
+#### Storage options
 
-Rspamd can use the same neural network from multiple processes running on multiple hosts across the network. It is guaranteed that processes with different configuration symbols enabled will use different neural networks (each network has a hash of all symbols defined as a suffix for Redis keys). Furthermore, there is a guarantee that all learning will be done in a single process that atomically updates neural network data after learning.
+| Option | Default | Description |
+|--------|---------|-------------|
+| `ann_expire` | 172800 | ANN expiration time in seconds (2 days) |
+| `watch_interval` | 60.0 | How often to check Redis for updates |
+| `lock_expire` | 600 | Training lock timeout in seconds |
 
-### Settings usage
+#### Other options
 
-Rspamd automatically selects different networks for different sets of [user settings](/configuration/settings) based on their settings ID. The settings ID is appended to the neural network name to identify which network to use. This feature can be useful for splitting neural networks for inbound and outbound users identified by settings.
+| Option | Default | Description |
+|--------|---------|-------------|
+| `blacklisted_symbols` | [] | Symbols to exclude from input vector |
+| `allowed_settings` | nil | Settings IDs that can train this rule |
+| `profile` | {} | Static symbol profiles per settings |
 
-To set which rules in `neural.conf` apply to different settings IDs, you can either set `allowed_settings = "all";` in the rules section to allow messages with all possible settings IDs to train the rule, or `allowed_settings = [ "settings-id1", "settings-id2" ];` to allow only messages with specific settings IDs to do so.
+### Training modes
 
-### Multiple networks
+#### Balanced mode (default)
 
-Starting from version 1.7, Rspamd offers support for multiple neural networks that can be defined in the configuration. This feature can be useful when setting up long or short neural networks, where one network has a high `max_usages` and a large `max_trains`, while the other reacts quickly to newly detected patterns. However, in practice, this setup is not usually more effective, so it is recommended to use a single network instead.
+Maintains equal proportions of spam and ham samples. The `classes_bias` parameter allows some imbalance:
+- `classes_bias = 0.0`: Strict 1:1 ratio
+- `classes_bias = 0.25`: Allows up to 75%/25% imbalance
+
+#### Proportional mode
+
+Uses `spam_skip_prob` and `ham_skip_prob` to probabilistically skip samples, allowing natural class distribution.
+
+### Multiple rules
+
+You can define multiple neural networks with different training parameters:
 
 ~~~hcl
 # local.d/neural.conf
@@ -88,76 +237,174 @@ rules {
     train {
       max_trains = 5000;
       max_usages = 200;
-      max_iterations = 25;
-      learning_rate = 0.01,
     }
     symbol_spam = "NEURAL_SPAM_LONG";
     symbol_ham = "NEURAL_HAM_LONG";
-    ann_expire = 100d;
+    ann_expire = 8640000;  # 100 days
   }
   "SHORT" {
     train {
       max_trains = 100;
       max_usages = 2;
-      max_iterations = 25;
-      learning_rate = 0.01,
     }
     symbol_spam = "NEURAL_SPAM_SHORT";
     symbol_ham = "NEURAL_HAM_SHORT";
-    ann_expire = 1d;
+    ann_expire = 86400;  # 1 day
   }
 }
 ~~~
+
+### Settings integration
+
+The module automatically creates separate ANNs for different [settings](/configuration/settings) IDs:
 
 ~~~hcl
-# local.d/neural_group.conf
-
-symbols = {
-  "NEURAL_SPAM_LONG" {
-    weight = 3.0; # sample weight
-    description = "Neural network spam (long)";
-  }
-  "NEURAL_HAM_LONG" {
-    weight = -3.0; # sample weight
-    description = "Neural network ham (long)";
-  }
-  "NEURAL_SPAM_SHORT" {
-    weight = 2.0; # sample weight
-    description = "Neural network spam (short)";
-  }
-  "NEURAL_HAM_SHORT" {
-    weight = -1.0; # sample weight
-    description = "Neural network ham (short)";
+rules {
+  default {
+    allowed_settings = ["inbound", "outbound"];
+    # or: allowed_settings = "all";
   }
 }
 ~~~
 
+Messages with different settings IDs train and use separate neural networks, which is useful for separating inbound and outbound mail processing.
 
-### Manual learning
+## Manual training
 
-*This is a work-in-progress*.
+### Via HTTP header
 
-If you set `store_pool_only = true` in the `train` options, the neural module will store training vectors in MessagePack format and a profile digest in the task cache instead of performing online learning. These can then be saved to, for example, ClickHouse and used at a later time.
+Add `ANN-Train: spam` or `ANN-Train: ham` header to force training:
 
-The configuration snippet below shows how to save these to ClickHouse:
+```bash
+rspamc --header "ANN-Train: spam" < spam_message.eml
+rspamc --header "ANN-Train: ham" < ham_message.eml
+```
 
+### Via controller endpoint
+
+The `/plugins/neural/learn` endpoint accepts JSON POST:
+
+```bash
+curl -X POST http://localhost:11334/plugins/neural/learn \
+  -H "Content-Type: application/json" \
+  -d '{
+    "rule": "default",
+    "spam_vec": [[0.1, 0.2, ...], [0.3, 0.4, ...]],
+    "ham_vec": [[0.5, 0.6, ...], [0.7, 0.8, ...]]
+  }'
+```
+
+### Store pool only mode
+
+For external training pipelines, enable `store_pool_only`:
+
+~~~hcl
+train {
+  store_pool_only = true;
+}
 ~~~
+
+This stores training vectors in the task cache as MessagePack, which can be exported to ClickHouse:
+
+~~~hcl
 # local.d/clickhouse.conf
 extra_columns = {
-	Neural_Vec = {
-		selector = "task_cache('neural_vec_mpack')";
-		type = "String";
-		comment = "Training vector for neural";
-        }
-	Neural_Digest = {
-		selector = "task_cache('neural_profile_digest')";
-		type = "String";
-		comment = "Digest of neural profile";
-        }
+  Neural_Vec = {
+    selector = "task_cache('neural_vec_mpack')";
+    type = "String";
+    comment = "Training vector for neural";
+  }
+  Neural_Digest = {
+    selector = "task_cache('neural_profile_digest')";
+    type = "String";
+    comment = "Digest of neural profile";
+  }
 }
 ~~~
 
-The controller endpoint `/plugins/neural/learn` facilitates manual training of neural networks & accepts a JSON POST with the following keys:
+## Redis key structure
 
- * `spam_vec` and `ham_vec`: are lists of lists of numbers containing training information
- * `rule` is an optional name of the rule to perform training for
+The neural module uses several Redis key patterns:
+
+### Profile index (Sorted Set)
+
+**Key**: `rn{plugin_ver}_{rule_prefix}_{metatoken_ver}_{settings_name}`
+
+**Example**: `rn3_default_3_default`
+
+Stores JSON-serialized profiles ranked by timestamp. Each profile contains:
+- `digest`: Symbol configuration hash
+- `symbols`: Array of symbol names
+- `version`: Profile version number
+- `redis_key`: Key where ANN data is stored
+- `providers_digest`: Hash of provider configuration (if providers used)
+
+### ANN storage (Hash)
+
+**Key**: `{prefix}_{rule}_{settings}_{digest}_{version}`
+
+**Example**: `rn_default_default_a1b2c3d4_1`
+
+Hash fields:
+| Field | Type | Description |
+|-------|------|-------------|
+| `ann` | string | Zstd-compressed neural network data |
+| `pca` | string | Zstd-compressed PCA matrix (if `max_inputs` set) |
+| `roc_thresholds` | JSON | Spam and ham thresholds from ROC analysis |
+| `providers_meta` | JSON | Provider metadata (dimensions, weights) |
+| `norm_stats` | JSON | Normalization statistics (mean, std for zscore) |
+| `lock` | string | Unix timestamp when training lock was acquired |
+| `hostname` | string | Hostname holding the training lock |
+
+### Training sets (Sets)
+
+**Keys**:
+- `{ann_key}_spam_set` - Set of zstd-compressed spam training vectors
+- `{ann_key}_ham_set` - Set of zstd-compressed ham training vectors
+
+Each vector is semicolon-separated numeric values, compressed with zstd.
+
+## Troubleshooting
+
+### Check ANN status
+
+```bash
+redis-cli ZRANGE "rn3_default_3_default" 0 -1 WITHSCORES
+```
+
+### Check training vector counts
+
+```bash
+redis-cli SCARD "rn_default_default_a1b2c3d4_1_spam_set"
+redis-cli SCARD "rn_default_default_a1b2c3d4_1_ham_set"
+```
+
+### Debug logging
+
+~~~hcl
+# local.d/logging.inc
+debug_modules = ["neural"];
+~~~
+
+### Common issues
+
+1. **ANN not loading**: Check that symbols digest matches between workers. Different plugin configurations create incompatible ANNs.
+
+2. **Training not starting**: Verify both spam and ham sets have enough samples (`max_trains`). Check for training locks.
+
+3. **Poor accuracy**: Ensure balanced training data. Consider adjusting `classes_bias` or using `roc_enabled` for automatic threshold tuning.
+
+4. **High memory usage**: Use `max_inputs` with PCA to reduce vector size for large symbol configurations.
+
+## Symbol registration
+
+The module registers the following symbols:
+
+| Symbol | Type | Description |
+|--------|------|-------------|
+| `NEURAL_CHECK` | postfilter | Main scoring callback |
+| `NEURAL_LEARN` | idempotent | Training vector storage callback |
+| `NEURAL_SPAM` | virtual | Inserted when ANN classifies as spam |
+| `NEURAL_HAM` | virtual | Inserted when ANN classifies as ham |
+
+Custom symbol names can be configured per rule using `symbol_spam` and `symbol_ham` options.

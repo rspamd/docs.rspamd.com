@@ -5,7 +5,7 @@
     <link>https://rspamd.com/changelog</link>
     <description>Release notes and changelog for Rspamd spam filtering system</description>
     <language>en</language>
-    <lastBuildDate>Fri, 28 Nov 2025 09:03:58 GMT</lastBuildDate>
+    <lastBuildDate>Fri, 28 Nov 2025 09:19:48 GMT</lastBuildDate>
     <atom:link href="https://rspamd.com/rss/changelog.xml" rel="self" type="application/rss+xml"/>
     <item>
       <title>Rspamd 3.14.0 - Major Release with HTML Fuzzy Hashing, TCP Fuzzy Protocol, and Enhanced URL Processing</title>
