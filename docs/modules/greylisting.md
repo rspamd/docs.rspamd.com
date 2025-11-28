@@ -14,8 +14,8 @@ The purpose of this module is to delay messages that have a spam score above the
 
 When the Greylisting module is enabled, two hashes are saved for each message in Redis:
 
-* **meta** hash is based on triplet `from`:`to`:`ip`
-* **data** hash is taken from the message's body if it has enough length for it
+* **meta** hash is based on SMTP envelope `from`, all sorted SMTP `recipients`, and masked sender `IP`
+* **data** hash is based on the message body (up to `max_data_len`), `subject`, all sorted SMTP `recipients`, and MIME `From` address
 
 IP address is stored with certain mask applied: it is `/19` for IPv4 and `/64` for IPv6 accordingly. Each hash has its own timestamp and Rspamd checks for the following times:
 
@@ -33,17 +33,22 @@ The greylisting module triggers a `soft reject` action, which is intended to be 
 To use the greylisting module, you must first set up a Redis server to store hashes. You can find detailed instructions on how to do this in the [following document](/configuration/redis). Once the Redis server is set up, you can modify a few specific options for the greylisting module. It is recommended that you define these options in `local.d/greylist.conf`:
 
 * **`expire`**: setup hashes expire time (1 day by default)
-* **`greylist_min_score`**: messages with scores below this threshold are not greylisted (default unset)
+* **`timeout`**: defines greylisting timeout (5 min by default)
+* **`greylist_min_score`**: messages with scores below this threshold are not greylisted; if unset, falls back to the `greylist` action threshold from metrics
 * **`ipv4_mask`**: mask to apply for IPv4 addresses (19 by default)
 * **`ipv6_mask`**: mask to apply for IPv6 addresses (64 by default)
 * **`key_prefix`**: prefix for hashes to store in Redis (`rg` by default)
 * **`max_data_len`**: maximum length of data to be used for body hash (10kB by default)
 * **`message`**: a message for temporary rejection reason (`Try again later` by default)
-* **`timeout`**: defines greylisting timeout (5 min by default)
+* **`message_func`**: Lua function to generate custom rejection message; receives `task` and `end_time` as arguments
+* **`symbol`**: symbol name to insert on greylisting (`GREYLIST` by default)
+* **`action`**: action to apply when greylisting (`soft reject` by default; use `greylist` for Exim)
 * **`whitelisted_ip`**: map of IP addresses and/or subnets to skip greylisting for
 * **`whitelist_domains_url`**: map of hostnames and/or eSLDs of hostnames to skip greylisting for
-* **`report_time`**: tell when greylisting is expired (appended to `message`)
 * **`whitelist_symbols`**: skip greylisting when specific symbols have been found (from 1.9.1)
+* **`report_time`**: tell when greylisting is expired (appended to `message`); `false` by default
+* **`check_local`**: greylist messages from local networks (`false` by default)
+* **`check_authed`**: greylist messages from authenticated users (`false` by default)
 
 If you want to skip greylisting based on other conditions, you can simply disable the `GREYLIST_CHECK` and `GREYLIST_SAVE` symbols using the [settings module](/configuration/settings).
 

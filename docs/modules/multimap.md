@@ -168,6 +168,7 @@ Optional map configuration attributes:
 * `require_symbols` - expression of symbols that have to match for a specific message: [learn more](#conditional-maps)
 * `filter` - match specific part of the input (for example, email domain): [here](#map-filters) is the complete definition of maps filters
 * `extract_from` - attribute extracts values of the sender/recipient from the SMTP dialog or the From/To header. To achieve this, set the value to `smtp`, `mime`, or `both` to match both sources. It's important to note that `extract_from` is solely utilized in conjunction with the `from` or `rcpt` map [type](#map-types).
+* `combinator` - (from version 3.14.1) for selector-type maps, specifies how multiple selector results should be combined. Available values: `string` (default, concatenate with delimiter), `array` (flatten into array), `object` (convert pairs to key-value object). See [Selector Combinators](#selector-combinators) for details.
 
 When using header maps, it is essential to specify the exact `header` by utilizing the header option.
 
@@ -335,6 +336,52 @@ GOOD_RCPTS_SELECTOR {
   score = 1.0;
 }
 ~~~
+
+### Selector Combinators
+
+Starting from version 3.14.1, selector-type multimap rules support a `combinator` option that specifies how multiple selector results should be combined. This is particularly useful when sending structured data to external map services via HTTP.
+
+| Combinator | Description | Output Type |
+|------------|-------------|-------------|
+| `string` | Concatenate results with delimiter (default, existing behavior) | string |
+| `array` | Flatten all results into a flat array | table (array) |
+| `object` | Convert pairs of selectors into key-value object | table (object) |
+
+**Example: Send structured JSON to external API**
+
+~~~hcl
+# local.d/multimap.conf
+MY_EXTERNAL_CHECK {
+  type = "selector";
+  selector = "id('from');from('smtp'):addr;id('ip');ip";
+  combinator = "object";  # produces {"from": "user@example.com", "ip": "1.2.3.4"}
+  map = {
+    external = true;
+    backend = "http://api.example.com/check";
+    method = "body";
+    encode = "json";
+  };
+}
+~~~
+
+**Example: Send array of values**
+
+~~~hcl
+# local.d/multimap.conf
+CHECK_RCPTS {
+  type = "selector";
+  selector = "rcpts:addr";
+  combinator = "array";  # produces ["rcpt1@example.com", "rcpt2@example.com"]
+  map = {
+    external = true;
+    backend = "http://api.example.com/check-recipients";
+    method = "body";
+    encode = "json";
+  };
+}
+~~~
+
+The `combinator` option also works with Redis selector maps (`redis+selector://`).
 
 ## Regexp maps
 
