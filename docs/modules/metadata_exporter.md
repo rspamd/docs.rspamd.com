@@ -99,7 +99,8 @@ The following settings can be defined on any rule:
  - `mime_type`: defines the MIME type of the content sent in the HTTP POST
  - `user` & `password`: if both parameters are set, Basic authentication will be used
  - `gzip` (bool): specifies whether the payload needs to be sent with gzip compression (default: `false`)
- - `keepalived` (bool): specifies whether the connection should use keepalived (default: `false`)
+ - `keepalive` (bool): specifies whether the connection should use keepalive (default: `false`)
+ - `no_ssl_verify` (bool): disable SSL certificate verification (default: `false`)
 
 ### Settings: `redis_pubsub` backend
 
