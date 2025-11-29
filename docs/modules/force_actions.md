@@ -19,6 +19,9 @@ The following elements are valid in the rules of this module:
  - `message`: SMTP message to be used by MTA
  - `require_action`: override action only if metric action in this list
  - `subject`: subject to set in metric for `rewrite subject` action
+ - `limit`: minimum expression score required to trigger the action (default: 0)
+ - `least`: if true, use the least significant action when multiple rules match
+ - `process_all`: if true, continue processing other rules even after a match
 
 Only one of `honor_action` or `require_action` should be set on a given rule.
 
