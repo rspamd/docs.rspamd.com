@@ -154,3 +154,48 @@ There are couple of pre-defined selector types, specifically:
 * Generic reputation based on [selectors framework](/configuration/selectors) - `generic` selector
 
 All selector types except for `generic` do not require explicit configuration. The `generic` selector, on the other hand, necessitates the setting of a selector attribute. For more advanced `selector` configurations, you may refer to the module's source code.
+
+### Common selector options
+
+All selectors support the following common options:
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `lower_bound` | 10 | Minimum number of messages before reputation scoring kicks in |
+| `min_score` | nil | Minimum reputation score |
+| `max_score` | nil | Maximum reputation score |
+| `outbound` | true | Apply reputation to outbound messages |
+| `inbound` | true | Apply reputation to inbound messages |
+| `split_symbols` | false | Create separate `_HAM` and `_SPAM` symbols instead of a single symbol |
+| `exclusion_map` | nil | Map of items to exclude from reputation tracking |
+
+### IP selector specific options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `ipv4_mask` | 32 | Mask bits for IPv4 addresses |
+| `ipv6_mask` | 64 | Mask bits for IPv6 addresses |
+| `asn_prefix` | `a:` | Prefix for ASN hashes |
+| `country_prefix` | `c:` | Prefix for country hashes |
+| `ip_prefix` | `i:` | Prefix for IP hashes |
+
+### DKIM selector specific options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `max_accept_adjustment` | 2.0 | Maximum score adjustment for accepted DKIM signatures |
+
+### URL selector specific options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `max_urls` | 10 | Maximum number of URLs to check per message |
+| `check_from` | true | Check URLs from the From domain |
+
+### Generic selector specific options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `selector` | required | Selector expression (see [selectors documentation](/configuration/selectors)) |
+| `delimiter` | `:` | Delimiter for multiple selector results |
+| `whitelist` | nil | Map of whitelisted selector values |
