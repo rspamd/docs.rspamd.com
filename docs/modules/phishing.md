@@ -56,6 +56,20 @@ only if the phished domain is found in the related map.
 
 The maps used in this module can consist of either effective second-level domain parts (eSLD) or whole domain parts of the URLs (FQDN).
 
+### strict_domains
+
+For domains that require stricter phishing detection (e.g., financial institutions), you can configure `strict_domains` which will always trigger the phishing symbol regardless of other checks:
+
+~~~hcl
+phishing {
+    strict_domains = {
+        STRICT_PHISHING = [
+            "$LOCAL_CONFDIR/local.d/strict_phishing_domains.inc",
+        ];
+    }
+}
+~~~
+
 ## Openphish support
 
 Starting from version 1.3, Rspamd provides support for [openphish](https://openphish.com)  This public feed can be loaded as a map in Rspamd using HTTPS and utilized to check URLs in messages against the openphish list. In case of any match, Rspamd adds the symbol `PHISHED_OPENPHISH`.
