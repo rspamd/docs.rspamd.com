@@ -18,18 +18,46 @@ The cache follows the principle of `least recently used` expiration, meaning tha
 
 To configure the SPF module, you have the option to manually specify the cache size and maximum expiration time. Additionally, you can define parameters such as the maximum number of recursive DNS subrequests (including chain length), the maximum count of DNS requests per record, the minimum TTL enforced for all elements in SPF records, and the ability to disable all IPv6 lookups.
 
+## Configuration options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `enabled` | true | Enable or disable the SPF module |
+| `spf_cache_size` | 2048 | Number of elements in the cache of parsed SPF records |
+| `spf_cache_expire` | 1d | Default max expire for an element in this cache |
+| `max_dns_nesting` | 10 | Maximum number of recursive DNS subrequests (include chain length) |
+| `max_dns_requests` | 30 | Maximum count of DNS requests per record |
+| `min_cache_ttl` | 5min | Minimum TTL enforced for all elements in SPF records |
+| `disable_ipv6` | false | Disable all IPv6 lookups |
+| `whitelist` | nil | Map of IP addresses to whitelist from checks |
+
+## Symbols
+
+The module produces the following symbols:
+
+| Symbol | Description |
+|--------|-------------|
+| `R_SPF_ALLOW` | SPF check passed |
+| `R_SPF_FAIL` | SPF check failed (hard fail) |
+| `R_SPF_SOFTFAIL` | SPF check soft failed |
+| `R_SPF_NEUTRAL` | SPF neutral result |
+| `R_SPF_DNSFAIL` | DNS failure during SPF check |
+| `R_SPF_PERMFAIL` | Permanent SPF failure (e.g., invalid record) |
+| `R_SPF_NA` | No SPF record found |
+| `R_SPF_PLUSALL` | SPF record contains +all (accepts all) |
+
 ## Example configuration
 
 ~~~hcl
 # local.d/spf.conf
 
-	spf_cache_size = 1k; # cache up to 1000 of the most recent SPF records
-	spf_cache_expire = 1d; # default max expire for an element in this cache
-	max_dns_nesting = 10; # maximum number of recursive DNS subrequests
-	max_dns_requests = 30; # maximum count of DNS requests per record
-	min_cache_ttl = 5min; # minimum TTL enforced for all elements in SPF records
-	disable_ipv6 = false; # disable all IPv6 lookups
-	whitelist = "/path/to/some/file"; # whitelist IPs from checks
+spf_cache_size = 1k; # cache up to 1000 of the most recent SPF records
+spf_cache_expire = 1d; # default max expire for an element in this cache
+max_dns_nesting = 10; # maximum number of recursive DNS subrequests
+max_dns_requests = 30; # maximum count of DNS requests per record
+min_cache_ttl = 5min; # minimum TTL enforced for all elements in SPF records
+disable_ipv6 = false; # disable all IPv6 lookups
+whitelist = "/path/to/some/file"; # whitelist IPs from checks
 ~~~
 
 ## Using SPF with forwarding
