@@ -46,6 +46,8 @@ symbol_bad_mx = "MX_INVALID";
 symbol_no_mx = "MX_MISSING";
 # symbol yielded if MX is connectable
 symbol_good_mx = "MX_GOOD";
+# symbol yielded if domain is in exclude_domains
+symbol_white_mx = "MX_WHITE";
 # lifetime of redis cache - 1 day by default
 expire = 86400;
 # lifetime of redis cache for no valid MXes - 2 hours by default
@@ -54,6 +56,10 @@ expire_novalid = 7200;
 greylist_invalid = true;
 # prefix used for redis key
 key_prefix = "rmx";
+# maximum number of A records to check per MX request
+max_mx_a_records = 5;
+# wait for SMTP greeting and emit quit command
+wait_for_greeting = false;
 ~~~
 
 Symbols that are registered by the module:
