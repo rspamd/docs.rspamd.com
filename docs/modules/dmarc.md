@@ -23,12 +23,39 @@ This minimal configuration is sufficient to activate the module and enforce DMAR
 
 Symbols that the module adds are listed below:
 
-- `DMARC_BAD_POLICY`: Policy was invalid or multiple policies found in DNS
-- `DMARC_NA`: Domain in From header has no DMARC policy or From header is missing
-- `DMARC_POLICY_ALLOW`: Message was authenticated & allowed by DMARC policy
-- `DMARC_POLICY_REJECT`: Authentication failed- rejection suggested by DMARC policy
-- `DMARC_POLICY_QUARANTINE`: Authentication failed- quarantine suggested by DMARC policy
-- `DMARC_POLICY_SOFTFAIL`: Authentication failed- no action suggested by DMARC policy
+| Symbol | Description |
+|--------|-------------|
+| `DMARC_POLICY_ALLOW` | Message was authenticated and allowed by DMARC policy |
+| `DMARC_POLICY_REJECT` | Authentication failed - rejection suggested by DMARC policy |
+| `DMARC_POLICY_QUARANTINE` | Authentication failed - quarantine suggested by DMARC policy |
+| `DMARC_POLICY_SOFTFAIL` | Authentication failed - no action suggested by DMARC policy |
+| `DMARC_NA` | Domain in From header has no DMARC policy or From header is missing |
+| `DMARC_BAD_POLICY` | Policy was invalid or multiple policies found in DNS |
+| `DMARC_DNSFAIL` | DNS lookup failure during DMARC check |
+
+## Forcing actions
+
+You can configure Rspamd to force specific actions based on DMARC disposition:
+
+~~~hcl
+# local.d/dmarc.conf
+actions {
+  reject = "reject";
+  quarantine = "add header";
+  softfail = "no action";
+}
+~~~
+
+This allows automatic rejection of messages that fail DMARC with a `reject` policy, adding headers for `quarantine`, etc.
+
+## Sampling control
+
+DMARC policies can specify a `pct` (percentage) value to gradually roll out strict policies. Rspamd respects this value by default. You can configure domains that should always apply the full policy regardless of sampling:
+
+~~~hcl
+# local.d/dmarc.conf
+no_sampling_domains = "/etc/rspamd/maps.d/dmarc_no_sampling.map";
+~~~
 
 ## Reporting
 
