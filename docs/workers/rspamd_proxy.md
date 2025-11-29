@@ -17,6 +17,43 @@ This worker provides various functionalities for building multi-layered systems 
 
 The `hosts` option for the `upstream` and `mirror` can specify IP addresses or Unix domain sockets, as described in the [upstreams documentation](/configuration/upstream). If the port number is omitted, port 11333 is assumed.
 
+## Configuration options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `milter` | true | Accept milter connections instead of HTTP |
+| `timeout` | 60s | I/O timeout for connections |
+| `upstream` | - | Configure upstream scanning servers |
+| `mirror` | - | Configure mirror servers for testing |
+| `max_retries` | 5 | Maximum number of retries for upstream connections |
+| `keypair` | - | Server's encryption keypair |
+| `encrypted_only` | false | Allow only encrypted connections |
+| `discard_on_reject` | false | Tell MTA to discard rejected messages silently |
+| `quarantine_on_reject` | false | Tell MTA to quarantine rejected messages |
+| `spam_header` | `X-Spam` | Header name for spam marking |
+| `reject_message` | - | Custom rejection message |
+| `quarantine_message` | - | Custom quarantine message |
+| `tempfail_message` | - | Custom temporary failure message |
+| `client_ca_name` | - | CA name for client certificate authentication |
+| `script` | - | Comparison script for mirror results |
+| `log_tag_type` | `session` | Log tag type: `session`, `queue_id`, or `none` |
+
+### Upstream options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `hosts` | - | Upstream server addresses (round-robin format) |
+| `default` | false | Use this upstream as default |
+| `self_scan` | false | Enable self-scan mode |
+| `key` | - | Public key for encryption |
+| `compression` | false | Enable zstd compression |
+| `settings_id` | - | Apply specific settings from user settings module |
+| `timeout` | - | Override timeout for this upstream |
+| `local` | false | Mark as local upstream |
+| `ssl` | false | Use SSL/TLS for connection |
+| `keepalive` | false | Use HTTP keepalive |
+| `extra_headers` | - | Additional headers to send |
+
 For a full list of options, please refer to `rspamadm confighelp workers.rspamd_proxy`.
 
 ## Default configuration
