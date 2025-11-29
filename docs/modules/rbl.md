@@ -92,8 +92,9 @@ Optional parameters (and their defaults if applicable) are as follows:
 - `enabled` (true) - allow for disabling of RBLs
 - `exclude_local` (true) - do not check messages from private IPs against this RBL (for `received` check: do not check private IPs at all)
 - `exclude_users` (false) - do not check this RBL if sender is an authenticated user
-- `hash` - valid for `helo` and `emails` RBL types - lookup hashes instead of literal strings. Possible values for this parameter are `sha1`, `sha256`, `sha384`, `sha512` and `md5` or any other value for the default hashing algorithm.
+- `hash` - valid for `helo` and `emails` RBL types - lookup hashes instead of literal strings. Possible values for this parameter are `sha1`, `sha256`, `sha384`, `sha512`, `md5`, `blake2`, or any other value for the default hashing algorithm.
 - `hash_format` - encoding to use for hash: `hex`, `base32` or `base64`
+- `hash_len` - truncate the hash to specified number of characters
 - `ignore_whitelist` (false) - allow whitelists to neutralise this RBL
 - `images` (false) - whether image URLs should be checked by `urls` check
 - `ipv4` (true) - if IPv4 addresses should be checked
@@ -111,6 +112,10 @@ Optional parameters (and their defaults if applicable) are as follows:
 - `selector` - one or more selectors producing data to look up in this RBL; see section on selectors for more information
 - `unknown` (false) - yield default symbol if `returncodes` or `returnbits` is specified and RBL returns unrecognised result
 - `whitelist_exception` - for whitelists; list of symbols which will not act as whitelists
+- `ignore_defaults` (false) - ignore default settings for this RBL (useful for custom configurations)
+- `disable_monitoring` (false) - disable monitoring for this RBL
+- `random_monitored` - use random address for monitoring instead of fixed; automatically set based on check type if not specified
+- `process_script` - Lua code string to process the lookup request before sending
 
 Some examples of using RBL:
 
