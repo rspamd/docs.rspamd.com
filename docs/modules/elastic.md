@@ -34,6 +34,9 @@ server = "localhost:9200";
 user = "elastic";
 password = "elastic";
 use_https = true;
+use_gzip = true; # enable compression for requests
+use_keepalive = true; # use HTTP keepalive connections
+allow_local = false; # store data for local/rspamc scans
 periodic_interval = 5.0; # how often try to run background periodic tasks
 timeout = 5.0; # how much wait for reply from elastic
 no_ssl_verify = false;
@@ -49,13 +52,13 @@ version = {
 limits = {
   max_rows = 500; # max logs in one bulk req to elastic and first reason to flush buffer to elastic
   max_interval = 60; # seconds; if the first log in the buffer is older than this interval, flush the buffer
-  max_fail = 10;
+  max_fail = 15; # max consecutive failures before giving up
 };
 index_template = {
   managed = true;
   name = "rspamd";
   priority = 0;
-  pattern = "%Y.%m.%d";
+  pattern = "{service}-%Y.%m.%d"; # {service} is replaced with index_template.name
   shards_count = 3;
   replicas_count = 1;
   refresh_interval = 5; # seconds
@@ -100,10 +103,13 @@ index_policy = {
     after = "30d";
   };
 };
-# extra headers to collect, f.e.:
-# "Precedence";
-# "List-Id";
-extra_collect_headers = [];
+# Default headers collected: From, To, Subject, Date, User-Agent
+# Add extra headers to collect:
+extra_collect_headers = [
+  # "Precedence",
+  # "List-Id",
+  # "X-Mailer",
+];
 geoip = {
   enabled = true;
   managed = true;
