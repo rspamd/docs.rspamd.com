@@ -169,6 +169,10 @@ Optional map configuration attributes:
 * `filter` - match specific part of the input (for example, email domain): [here](#map-filters) is the complete definition of maps filters
 * `extract_from` - attribute extracts values of the sender/recipient from the SMTP dialog or the From/To header. To achieve this, set the value to `smtp`, `mime`, or `both` to match both sources. It's important to note that `extract_from` is solely utilized in conjunction with the `from` or `rcpt` map [type](#map-types).
 * `combinator` - (from version 3.14.1) for selector-type maps, specifies how multiple selector results should be combined. Available values: `string` (default, concatenate with delimiter), `array` (flatten into array), `object` (convert pairs to key-value object). See [Selector Combinators](#selector-combinators) for details.
+* `one_shot` - if set to `true`, only the first match will be scored (useful with `multi` or content maps)
+* `multi` - if set to `true`, match all possible entries in the map rather than stopping at the first match
+* `skip_detected` - for `filename` type maps, skip checking detected file extensions (default: false)
+* `skip_archives` - for `filename` type maps, skip checking files inside archives (default: false)
 
 When using header maps, it is essential to specify the exact `header` by utilizing the header option.
 
