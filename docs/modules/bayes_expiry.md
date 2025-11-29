@@ -2,121 +2,127 @@
 title: Bayes expiry module
 ---
 
-
 # Bayes expiry module
 
-The `Bayes expiry` module provides intelligent expiration of statistical tokens for the `new schema` of Redis statistics storage.
+The `bayes expiry` module provides intelligent expiration of statistical tokens for Redis-based Bayesian classifiers using the `new schema` storage format.
+
+## Overview
+
+The module automatically manages token lifetimes based on their statistical significance:
+- **Significant tokens** (strongly associated with spam or ham) are kept permanently
+- **Common tokens** (appear equally in both classes) have reduced TTL
+- **Infrequent/insignificant tokens** expire according to the configured TTL
+
+This ensures that valuable statistical data is preserved while less useful tokens are eventually purged.
+
+## Classifier configuration
+
+Classifier settings go in `/etc/rspamd/local.d/classifier-bayes.conf`:
+
+```hcl
+# Required: enable new schema (default since 2.0)
+new_schema = true;
+
+# Token expiry time (seconds, or -1 for persistent, or false to disable)
+expire = 8640000;  # ~100 days
+```
+
+### Expire option values
+
+| Value | Behavior |
+|-------|----------|
+| `N` (seconds) | Set TTL to N seconds for non-significant tokens. Max: 2147483647 |
+| `-1` | Make tokens persistent (no expiration) |
+| `false` | Disable bayes expiry for this classifier |
+
+**Note:** Setting `expire = false` does not change existing token TTLs; only newly learned tokens will be persistent.
 
 ## Module configuration
 
-For the `bayes expiry` module, classifier-related configuration settings should be incorporated into the corresponding `classifier` section, such as the `local.d/classifier-bayes.conf` file. Additionally, as the `Bayes expiry` module necessitates the use of the new statistics schema, it is imperative to enable it within the classifier configuration:
+Global module settings go in `/etc/rspamd/local.d/bayes_expiry.conf`:
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `interval` | number | `60` | Seconds between expiry steps |
+| `count` | number | `1000` | Number of keys to check per step |
+| `epsilon_common` | number | `0.01` | Tolerance for classifying tokens as "common" |
+| `common_ttl` | number | `864000` | TTL for common tokens (10 days) |
+| `significant_factor` | number | `0.75` | Threshold for token significance (75%) |
+| `cluster_nodes` | number | `0` | Number of cluster nodes (auto-detected from neighbours) |
 
 ```hcl
-new_schema = true;    # Enabled by default for classifier "bayes" in the stock statistic.conf since 2.0
-```
-
-The following settings are valid:
-- **expire**: sets the TTL (time to live) for tokens. Tokens in the `common` category are not affected. For more information, see the [expiration modes](#expiration-modes) for detail. Supported values are:
-  * time in seconds (time unit suffixes are supported). The maximum possible TTL value in Redis is 2147483647 (int32);
-  * `-1`: make tokens persistent;
-  * `false`: disable `bayes expiry` for the classifier. Note that this does not change the TTLs of existing tokens, but new learned tokens will be persistent.
-- **lazy** (before 2.0): `true` - enable lazy expiration mode (disabled by default). See [expiration modes](#expiration-modes) for detail.
-
-Configuration example:
-```hcl
-new_schema = true;    # Enabled by default for classifier "bayes" in the stock statistic.conf since 2.0
-expire = 8640000;
-#lazy = true;    # Before 2.0
-```
-
-To modify the global settings of the `bayes expiry` module, you can configure them in either the `local.d/bayes_expiry.conf` or `override.d/bayes_expiry.conf` file.
-
-The following settings are valid:
-- **interval**: time interval in seconds between each run of the expiry step on the controller. Default is `60`.
-- **count**: the number of keys to check during each expiry step. The module utilizes a cursor-based iterator to ensure that the next step continues from where the previous one stopped. Default is `1000`. Consider increasing it to a higher value if your Redis instance is overwhelmed with too many persistent keys, suggesting faster learning compared to the module's processing.
-- **epsilon_common**: a comparison tolerance used to determine if a token is considered `common`. Tokens with a difference between spam and ham relative frequencies not greater than this value are classified as `common`. Default is `0.01`.
-- **common_ttl**: the initial TTL for `common` tokens. Default is `10 * 86400`, equivalent to 10 days.
-- **significant_factor**: the threshold for token significance. Tokens with a relative frequency greater than this value are considered `significant`; otherwise, they are `insignificant`. Defaults is `3.0 / 4.0`, which corresponds to 75%.
-
-Configuration example:
-```hcl
+# local.d/bayes_expiry.conf
 interval = 90;
 count = 15000;
 ```
 
+### Cluster configuration
+
+In a clustered setup, the module automatically detects the number of neighbour nodes and adjusts the expiry interval to prevent multiple nodes from performing expiry simultaneously. You can override this with `cluster_nodes`.
+
 ## Principles of operation
 
-The `bayes expiry` module performs an expiry step every minute. During each step, it examines the frequency of approximately 1000 statistical tokens and adjusts their TTLs if needed. The duration of a full iteration varies based on the number of tokens; for example, a full cycle for 10 million tokens takes approximately one week to complete. Once the `bayes expiry` module finishes a full iteration, it starts over again.
+The module runs on the primary controller worker and performs expiry steps at regular intervals (default: every 60 seconds). Each step:
 
-## Tokens classification
+1. Scans approximately 1000 tokens using Redis SCAN
+2. Analyzes each token's occurrence frequency across classes
+3. Adjusts TTLs based on token classification
+4. Continues from where the previous step stopped
 
-The `Bayes expiry` module categorizes tokens into four groups based on their frequency of occurrence in ham and spam classes:
-- **infrequent**: occur too infrequently (the total number of occurrences is very low).
-- **significant**: occur significantly more frequently in one class (ham or spam) than in the other one;
-- **common** (meaningless): occur in both ham and spam classes with approximately the same frequency;
-- **insignificant**: the difference of their occurrences in classes lies somewhere between `significant` and `common` tokens.
+A full iteration through all tokens depends on database size. For 10 million tokens, expect approximately one week per complete cycle.
 
-## Expiration modes
+## Token classification
 
-### Default expiration mode (before 2.0)
-The `default` mode has been removed in Rspamd 2.0 as it offers no benefits compared to the`lazy` mode.
+Tokens are categorized based on their occurrence patterns:
 
-Operation:
-- Extend a `significant` token's lifetime: update token's TTL every time to `expire` value.
-- Do nothing with an `insignificant` or `infrequent` token.
-- Discriminate a `common` token: reset TTL to a low value (10d) if the token has greater TTL.
+| Category | Description | Action |
+|----------|-------------|--------|
+| **Significant** | Strongly associated with one class (>75% of occurrences) | Made persistent |
+| **Common** | Similar frequency in all classes (within epsilon) | TTL reduced to 10 days |
+| **Insignificant** | Between significant and common | TTL set to expire value |
+| **Infrequent** | Very low total occurrences | TTL set to expire value |
 
-Disadvantages:
-- Statistics must not be stored offline for longer than the`expire` time. The Bayes Expiry module must periodically update their TTLs, which means special backup procedures are required. Simply copying the `*.rdb` file will result in its expiration after the `expire` time has passed.
-- If no eviction policy is set in Redis that targets `significant` tokens, constant updating of their TTLs is not necessary.
+## Expiration behavior
 
-### Lazy expiration mode (1.7.4+)
-The `lazy` mode is the only expiration mode since Rspamd 2.0.
+Since Rspamd 2.0, the module operates in "lazy" mode:
 
-This mode ensures that `significant` tokens with a TTL are persistently kept (the module sets significant tokens TTLs to -1, i.e. makes them persistent if they are not), while TTL of `insignificant` or `infrequent` tokens is reduced to the `expire` value if its current TTL exceeds `expire`. `Common` tokens are discriminated by resetting their TTL to a lower value of 10 days, if their TTL exceed this threshold.
+- **Significant tokens**: Set to persistent (TTL = -1) if they have a TTL
+- **Insignificant/infrequent tokens**: TTL reduced to `expire` value if current TTL exceeds it
+- **Common tokens**: TTL reduced to `common_ttl` (10 days) if current TTL exceeds it
 
-The advantages of the "lazy" mode include:
-- The ability to keep statistics offline for an infinite period without the risk of losing `significant` tokens.
-- Minimizing unnecessary TTL updates as much as possible.
+### Advantages
 
-To activate the lazy expiration mode in Rspamd versions prior to 2.0, simply add `lazy = true;` to the classifier configuration.
-
-### Changing expiration mode (before 2.0)
-
-The expiration mode for an existing statistics database can be altered in the configuration at any moment. Token's TTLs will be updated as required during the subsequent expiration cycle.
+- Statistics can be stored offline indefinitely without losing significant tokens
+- Minimizes unnecessary TTL updates
+- Simple backup: just copy the RDB file
 
 ### Changing expire value
 
-When a new `expire` value is set to a lower value than the current one, the TTLs exceeding the new `expire` value will be updated during the next expiration cycle.
+**Decreasing expire**: TTLs exceeding the new value will be updated during the next cycle.
 
-To increase the `expire` value, it is necessary first to make the tokens persistent by setting `expire = -1;` and waiting until at least one expiration cycle is completed. Only then the new `expire` value can be set.
+**Increasing expire**: First set `expire = -1` and wait for one complete cycle to make tokens persistent, then set the new expire value.
 
-## Limiting memory usage to a fixed amount
+## Limiting memory usage
 
-The memory usage of the statistics dataset can be managed using the Redis `maxmemory` directive and `volatile-ttl` eviction policy. If the memory usage exceeds the set "maxmemory" limit, Redis will evict keys with shorter TTLs in accordance with the policy. Additionally, memory usage can be maintained at a nearly constant level by setting the TTL to an extremely high value, causing keys to be evicted instead of expiring.
+Use Redis memory limits with eviction to cap statistics storage:
 
-To ensure that the memory limit and eviction policy only apply to the Bayesian statistics dataset, it should be stored in a separate Redis instance. A comprehensive explanation on configuring multi-instance Redis can be found in the [Redis replication](/tutorials/redis_replication) tutorial.
-
-`local.d/classifier-bayes.conf`:
+### Classifier configuration
 
 ```hcl
-backend = "redis";    # Enabled by default for classifier "bayes" in the stock statistic.conf since 2.0 
+# local.d/classifier-bayes.conf
+backend = "redis";
 servers = "localhost:6378";
-
-new_schema = true;    # Enabled by default for classifier "bayes" in the stock statistic.conf since 2.0
-expire = 2144448000;
-lazy = true;    # Before 2.0
+new_schema = true;
+expire = 2144448000;  # ~68 years (effectively never expires)
 ```
 
-Setting `expire = 2144448000;` sets a very high TTL of 68 years, as there is no need for the actual expiration of keys.
-
-`/usr/local/etc/redis-bayes.conf`:
+### Redis configuration
 
 ```sh
-include /usr/local/etc/redis.conf
+# /etc/redis/redis-bayes.conf
+include /etc/redis/redis.conf
 
 port 6378
-
 pidfile /var/run/redis/bayes.pid
 logfile /var/log/redis/bayes.log
 dbfilename bayes.rdb
@@ -126,4 +132,22 @@ maxmemory 500MB
 maxmemory-policy volatile-ttl
 ```
 
-Where `maxmemory 500MB` sets Redis to use the specified amount of memory for the instance's dataset and `maxmemory-policy volatile-ttl` sets Redis to use the eviction policy when the `maxmemory` limit is reached.
+With `volatile-ttl` eviction policy, Redis evicts keys with shorter TTLs first when memory limit is reached. Since significant tokens are persistent (no TTL), they're never evicted. Less important tokens with TTLs will be evicted as needed.
+
+**Important:** For this to work correctly, store Bayesian statistics in a separate Redis instance. See the [Redis replication](/tutorials/redis_replication) tutorial for multi-instance setup.
+
+## Multi-class support
+
+The module supports classifiers with more than two classes (not just spam/ham). Token significance is evaluated across all configured classes, with tokens being considered significant if they strongly associate with any single class.
+
+## Monitoring
+
+The module logs statistics after each step and complete cycle:
+
+```
+finished expiry step 42: 1000 items checked, 150 significant (5 made persistent), 
+50 insignificant (30 ttls set), 200 common (10 discriminated), 
+600 infrequent (400 ttls set), 3.5 mean, 2.1 std
+```
+
+At the end of each complete cycle, token occurrence distributions are also logged for each class.
