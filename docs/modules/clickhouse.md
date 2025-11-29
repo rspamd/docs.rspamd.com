@@ -2,368 +2,396 @@
 title: Clickhouse module
 ---
 
-
 # Clickhouse module
 
+The Clickhouse module pushes message-related metadata to [ClickHouse](https://clickhouse.com/), an open-source column-oriented database management system optimized for real-time analytics. Collected data includes sender/recipient information, scores, and metadata such as DKIM/DMARC/SPF/Bayes/Fuzzy status, URLs, and attachments.
 
-The Clickhouse module pushes a range of message-related metadata to an instance of [Clickhouse](https://clickhouse.yandex/), an open-source column-oriented database management system for real-time analytics. Information that could be collected includes: senders/recipients/scores of scanned messages and metadata such as DKIM/DMARC/bayes/fuzzy status & information about URLs and attachments.
+This module enables you to build analytical dashboards using tools like [Redash](https://redash.io) or [Grafana](https://grafana.com/).
 
-Additionally, this module enables you to construct your custom analytical dashboard using [Redash](https://redash.io), similar to using Elastic and Kibana.
+## Configuration
 
+Settings go in `/etc/rspamd/local.d/clickhouse.conf`.
 
-
-## Module Configuration
-
-Example configuration shown below, for the minimum working configuration you need to define Clickhouse servers:
+### Basic configuration
 
 ~~~hcl
 # local.d/clickhouse.conf
 
-# Push update when 1000 records are collected (1000 if unset) (until 2.1, see limits section below for >2.1)
-limit = 1000;
-# IP:port of Clickhouse server ("localhost:8123" if unset)
+# ClickHouse server address (required)
 server = "localhost:8123";
-# Timeout to wait for response (5 seconds if unset)
+
+# Connection timeout in seconds
 timeout = 5;
-# How many bits of sending IP to mask in logs for IPv4 (19 if unset)
-ipmask = 19;
-# How many bits of sending IP to mask in logs for IPv6 (48 if unset)
-ipmask6 = 48;
-# Record URL paths? (default false)
-full_urls = false;
-# This parameter points to a map of domain names
-# If a message has a domain in this map in From: header and DKIM signature,
-# record general metadata in a table named after the domain
-#from_tables = "/etc/rspamd/clickhouse_from.map";
-# store digest/hash of email (default false)
-enable_digest = false;
-# store Symbols.Names, Symbols.Scores, Symbols.Options, Groups.Names and Groups.Scores (default false)
-enable_symbols = false;
-# These are symbols of other checks in Rspamd
-# Set these if you use non-default symbol names (unlikely)
-#bayes_spam_symbols = ["BAYES_SPAM"];
-#bayes_ham_symbols = ["BAYES_HAM"];
-#ann_symbols_spam = {'NEURAL_SPAM'},
-#ann_symbols_ham = {'NEURAL_HAM'},
-#fuzzy_symbols = ["FUZZY_DENIED"];
-#whitelist_symbols = ["WHITELIST_DKIM", "WHITELIST_SPF_DKIM", "WHITELIST_DMARC"];
-#dkim_allow_symbols = ["R_DKIM_ALLOW"];
-#dkim_reject_symbols = ["R_DKIM_REJECT"];
-#dkim_dnsfail_symbols = {'R_DKIM_TEMPFAIL', 'R_DKIM_PERMFAIL'},
-#dkim_na_symbols = {'R_DKIM_NA'},
-#dmarc_allow_symbols = {'DMARC_POLICY_ALLOW'},
-#dmarc_reject_symbols = {'DMARC_POLICY_REJECT'},
-#dmarc_quarantine_symbols = {'DMARC_POLICY_QUARANTINE'},
-#dmarc_softfail_symbols = {'DMARC_POLICY_SOFTFAIL'},
-#dmarc_na_symbols = {'DMARC_NA'},
-#spf_allow_symbols = {'R_SPF_ALLOW'},
-#spf_reject_symbols = {'R_SPF_FAIL'},
-#spf_dnsfail_symbols = {'R_SPF_DNSFAIL', 'R_SPF_PERMFAIL'},
-#spf_neutral_symbols = {'R_DKIM_TEMPFAIL', 'R_DKIM_PERMFAIL'},
-#spf_na_symbols = {'R_SPF_NA'},
-# Subject related (from 1.9)
-insert_subject = false; 
-# Privacy is off
-subject_privacy = false; 
-# Default hash-algorithm to obfuscate subject
-subject_privacy_alg = 'blake2';
-# Prefix to show it's obfuscated
-subject_privacy_prefix = 'obf';
-# Cut the length of the hash
-subject_privacy_length = 16;
 
-# Other options
-#database = 'default';
-#use_https = false;
-# Transport compression
-#use_gzip = true;
-# Store data for local scanes
-#allow_local = false;
-# Basic auth
-#user = null;
-#password = null;
-# Disable SSL verification
-#no_ssl_verify = false,
+# Periodic check timeout
+check_timeout = 10.0;
 
-# This section configures how long the data will be stored in ClickHouse
-#retention {
-#  # disabled by default
-#  enable = true;
-#  # drop | detach, please refer to ClickHouse docs for details
-#  # https://clickhouse.com/docs/en/sql-reference/statements/alter/partition
-#  method = "drop";
-#  # how many month the data should be kept in ClickHouse
-#  period_months = 3;
-#  # how often run the cleanup process
-#  run_every = 7d;
-#}
-# This section defines how often Rspamd will send data to Clickhouse (from 2.1)
-#limits {
-#  max_rows = 1000; # How many rows are allowed (0 for disable this)
-#  max_memory = 50mb; # How many memory should be occupied before sending collection
-#  max_interval = 60s; # Maximum collection interval
-#}
+# Database name
+database = "default";
+
+# Authentication (optional)
+# user = "default";
+# password = "secret";
+
+# Use HTTPS
+use_https = false;
+
+# Disable SSL certificate verification
+no_ssl_verify = false;
+
+# Enable gzip compression for data transfer (enabled by default)
+use_gzip = true;
 ~~~
 
-#### Main options
+### Data collection limits
 
-1. `limit = 1000;`: Set the push update limit to 1000 records (default is 1000).
-2. `server = "localhost:8123";`: Set the ClickHouse server's IP and port (default is "localhost:8123").
-3. `timeout = 5;`: Set the timeout for waiting for a response (default is 5 seconds).
-4. `ipmask = 19;`: Set the number of bits to mask in logs for IPv4 sender IPs (default is 19).
-5. `ipmask6 = 48;`: Set the number of bits to mask in logs for IPv6 sender IPs (default is 48).
-6. `full_urls = false;`: Disable recording URL paths (default is false).
-7. `from_tables`: (Commented) Points to a map of domain names to record general metadata in a table named after the domain.
-8. `enable_digest = false;`: Disable storing the email's digest/hash (default is false).
-9. `enable_symbols = false;`: Disable storing Symbols.Names, Symbols.Scores, Symbols.Options, Groups.Names, and Groups.Scores (default is false).
-
-#### Other options:
-1. `database`: Set the ClickHouse database name to be used for storing data (default is 'default').
-2. `use_https`: Set this option to 'true' to enable HTTPS communication with the ClickHouse server (default is 'false').
-3. `use_gzip`: Set this option to 'true' to enable transport compression when sending data to the ClickHouse server (default is 'false').
-4. `allow_local`: Set this option to 'true' to store data for local scans (default is 'false').
-5. `user`: Set the username for basic authentication when connecting to the ClickHouse server (default is 'null', which means no authentication).
-6. `password`: Set the password for basic authentication when connecting to the ClickHouse server (default is 'null', which means no authentication).
-7. `no_ssl_verify`: Set this option to 'true' to disable SSL certificate verification when connecting to the ClickHouse server over HTTPS (default is 'false', which means SSL certificate verification is enabled).
-
-
-#### Limits section (from Rspamd 2.1):
-
-1. `max_rows`: Set the maximum number of rows allowed before sending the collected data to the ClickHouse server. If this limit is reached, the data will be sent immediately. A value of 0 disables this limit (default is not set).
-2. `max_memory`: Set the maximum amount of memory the collected data should occupy before sending it to the ClickHouse server. If this memory limit is reached, the data will be sent immediately. Use a value with a unit like '50mb' or '1gb' (default is not set).
-3. `max_interval`: Set the maximum time interval between sending collected data to the ClickHouse server. After this interval is reached, the data will be sent regardless of the number of rows or the amount of memory occupied. Use a value with a unit like '60s', '5m', or '1h' (default is not set).
-
-These options allow you to control how often Rspamd sends data to the ClickHouse server based on the number of rows, memory usage, and time interval. By configuring these limits, you can optimize the performance and resource usage of your Rspamd and ClickHouse instances.
-
-
-### Clickhouse retention
-
-Privacy is a crucial consideration in many email systems. The Clickhouse dumps may contain sensitive client data. Rspamd supports automatic cleanup of the outdated data using **retention policies**. By default, data is not expired in Clickhouse, but expiration can be set to comply with regulations such as the General Data Protection Regulation (GDPR) as follows:
+Controls when accumulated data is sent to ClickHouse:
 
 ~~~hcl
 # local.d/clickhouse.conf
+
+limits {
+  # Send when this many rows accumulated (0 to disable)
+  max_rows = 1000;
+  
+  # Send when memory usage exceeds this limit
+  max_memory = 50mb;
+  
+  # Maximum time between sends
+  max_interval = 60s;
+}
+
+# Perform garbage collection after sending data
+collect_garbage = false;
+~~~
+
+**Note:** The legacy `limit` option is deprecated; use `limits.max_rows` instead.
+
+### IP masking
+
+~~~hcl
+# local.d/clickhouse.conf
+
+# Bits to mask for IPv4 addresses (default: 19)
+ipmask = 19;
+
+# Bits to mask for IPv6 addresses (default: 48)
+ipmask6 = 48;
+~~~
+
+### Content options
+
+~~~hcl
+# local.d/clickhouse.conf
+
+# Store full URL paths (default: false, stores only hosts)
+full_urls = false;
+
+# Store message digest/hash
+enable_digest = false;
+
+# Store symbols data (Names, Scores, Options, Groups)
+enable_symbols = false;
+
+# Store data for local/controller scans
+allow_local = false;
+~~~
+
+### Subject storage
+
+~~~hcl
+# local.d/clickhouse.conf
+
+# Store email subject (default: false)
+insert_subject = false;
+
+# Obfuscate subject with hash
+subject_privacy = false;
+
+# Hash algorithm for obfuscation
+subject_privacy_alg = "blake2";
+
+# Prefix for obfuscated subjects
+subject_privacy_prefix = "obf";
+
+# Length of hash to use
+subject_privacy_length = 16;
+~~~
+
+### Symbol mapping
+
+Configure which symbols map to the Is* columns:
+
+~~~hcl
+# local.d/clickhouse.conf
+
+# Bayes classification
+bayes_spam_symbols = ["BAYES_SPAM"];
+bayes_ham_symbols = ["BAYES_HAM"];
+
+# Neural network classification
+ann_symbols_spam = ["NEURAL_SPAM"];
+ann_symbols_ham = ["NEURAL_HAM"];
+
+# Fuzzy check
+fuzzy_symbols = ["FUZZY_DENIED"];
+
+# Whitelist (affects IsWhitelist column)
+whitelist_symbols = ["WHITELIST_DKIM", "WHITELIST_SPF_DKIM", "WHITELIST_DMARC"];
+
+# DKIM status
+dkim_allow_symbols = ["R_DKIM_ALLOW"];
+dkim_reject_symbols = ["R_DKIM_REJECT"];
+dkim_dnsfail_symbols = ["R_DKIM_TEMPFAIL", "R_DKIM_PERMFAIL"];
+dkim_na_symbols = ["R_DKIM_NA"];
+
+# DMARC status
+dmarc_allow_symbols = ["DMARC_POLICY_ALLOW"];
+dmarc_reject_symbols = ["DMARC_POLICY_REJECT"];
+dmarc_quarantine_symbols = ["DMARC_POLICY_QUARANTINE"];
+dmarc_softfail_symbols = ["DMARC_POLICY_SOFTFAIL"];
+dmarc_na_symbols = ["DMARC_NA"];
+
+# SPF status
+spf_allow_symbols = ["R_SPF_ALLOW"];
+spf_reject_symbols = ["R_SPF_FAIL"];
+spf_dnsfail_symbols = ["R_SPF_DNSFAIL", "R_SPF_PERMFAIL"];
+spf_neutral_symbols = ["R_SPF_NEUTRAL", "R_SPF_SOFTFAIL"];
+spf_na_symbols = ["R_SPF_NA"];
+~~~
+
+### Filtering
+
+~~~hcl
+# local.d/clickhouse.conf
+
+# Symbols that prevent ClickHouse logging when present
+stop_symbols = [];
+
+# Map expressions to skip certain messages
+# exceptions = {
+#   symbol_options = {
+#     selector = "check_symbol_options";
+#     map = "/etc/rspamd/clickhouse_exceptions.map";
+#   };
+# };
+~~~
+
+### Retention policy
+
+Automatic cleanup of old data for GDPR compliance:
+
+~~~hcl
+# local.d/clickhouse.conf
+
 retention {
+  # Enable retention (default: false)
   enable = true;
-  # drop | detach, please refer to ClickHouse docs for details
-  # https://clickhouse.com/docs/en/sql-reference/statements/alter/partition
+  
+  # Method: "drop" or "detach"
+  # See: https://clickhouse.com/docs/en/sql-reference/statements/alter/partition
   method = "drop";
-  # how many month the data should be kept in ClickHouse
+  
+  # Keep data for this many months
   period_months = 3;
-  # how often run the cleanup process
+  
+  # How often to run cleanup
   run_every = 7d;
 }
 ~~~
 
-To remove data for particular users, you might consider using of the [Clickhouse mutations](https://clickhouse.com/docs/en/sql-reference/statements/alter#mutations)
-
-### Subject privacy
-
-Similarly to previous, from the version 1.9, you can store email subject in Clickhouse (disabled by default). The following settings are available:
-
-~~~hcl
-insert_subject = false; 
-# Privacy is off
-subject_privacy = false; 
-# Default hash-algorithm to obfuscate subject
-subject_privacy_alg = 'blake2';
-# Prefix to show it's obfuscated
-subject_privacy_prefix = 'obf';
-# Cut the length of the hash
-subject_privacy_length = 16;
-~~~
-
-You can use obfuscated subjects to group messages with a same subject for example.
-
-
 ### Extra columns
 
-You can also extract additional data and add it to a set of extra columns. This feature is available from the version Rspamd 2.4 and Clickhouse 19.3.
+Add custom columns using selectors (Rspamd 2.4+, ClickHouse 19.3+):
 
 ~~~hcl
 # local.d/clickhouse.conf
 
 extra_columns = {
-        Mime_From = {
-                selector = "from('mime'):addr";
-                type = "String";
-                # this is the returning answer if the value is null 
-                default_value = "none";
-                comment = "Mime from column";
-        }
-        Mime_Rcpt = {
-                selector = "rcpts('mime'):addr";
-                type = "Array(String)";
-        }
-}
+  Mime_From = {
+    selector = "from('mime'):addr";
+    type = "String";
+    default_value = "";
+    comment = "MIME From address";
+  };
+  Mime_Rcpt = {
+    selector = "rcpts('mime'):addr";
+    type = "Array(String)";
+  };
+};
 ~~~
 
-## Clickhouse usage examples
+Or as an array for strict ordering:
 
-Clickhouse module is extremely useful to perform statistical researches for mail flows. For example, to find top sending domains for spam and ham:
+~~~hcl
+extra_columns = [
+  {
+    name = "Mime_From";
+    selector = "from('mime'):addr";
+    type = "String";
+  },
+  {
+    name = "Mime_Rcpt";
+    selector = "rcpts('mime'):addr";
+    type = "Array(String)";
+  }
+];
+~~~
+
+### Schema additions
+
+Add custom SQL statements executed during schema setup:
+
+~~~hcl
+# local.d/clickhouse.conf
+
+schema_additions = [
+  "CREATE TABLE IF NOT EXISTS rspamd_custom (...) ENGINE = MergeTree() ...",
+];
+~~~
+
+### Custom rules
+
+Define custom tables with their own schemas:
+
+~~~hcl
+# local.d/clickhouse.conf
+
+custom_rules {
+  my_rule {
+    schema = "CREATE TABLE IF NOT EXISTS my_table ...";
+    first_row = "return function() return 'INSERT INTO my_table ...' end";
+    get_row = "return function(task) return {...} end";
+  };
+};
+~~~
+
+## Database schema
+
+The module creates a `rspamd` table with the following columns:
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `Date` | Date | Date (used for partitioning) |
+| `TS` | DateTime | Timestamp (UTC) |
+| `From` | String | Envelope sender domain |
+| `MimeFrom` | String | MIME From domain |
+| `IP` | String | Sender IP (masked) |
+| `Helo` | String | SMTP HELO hostname |
+| `Score` | Float32 | Message score |
+| `NRcpt` | UInt8 | Number of recipients |
+| `Size` | UInt32 | Message size (bytes) |
+| `IsWhitelist` | Enum8 | Whitelist status |
+| `IsBayes` | Enum8 | Bayes classification |
+| `IsFuzzy` | Enum8 | Fuzzy check result |
+| `IsFann` | Enum8 | Neural network result |
+| `IsDkim` | Enum8 | DKIM status |
+| `IsDmarc` | Enum8 | DMARC status |
+| `IsSpf` | Enum8 | SPF status |
+| `NUrls` | Int32 | Number of URLs |
+| `Action` | Enum8 | Rspamd action |
+| `CustomAction` | String | Custom action name |
+| `SMTPRecipients` | Array(String) | Envelope recipients |
+| `MimeRecipients` | Array(String) | MIME recipients |
+| `MessageId` | String | Message-ID |
+| `ListId` | String | List-Id header |
+| `Subject` | String | Subject (if enabled) |
+| `Attachments.*` | Arrays | Attachment info |
+| `Urls.*` | Arrays | URL info |
+| `Emails` | Array(String) | Extracted emails |
+| `ASN` | UInt32 | AS number |
+| `Country` | FixedString(2) | Country code |
+| `Symbols.*` | Arrays | Symbol info (if enabled) |
+| `Groups.*` | Arrays | Group scores (if enabled) |
+| `ScanTimeReal` | UInt32 | Scan time (ms) |
+| `AuthUser` | String | Authenticated user |
+| `SettingsId` | String | Settings profile |
+
+## Query examples
+
+### Top spam sender domains
 
 ~~~sql
-SELECT
-    From,
-    count() AS c
+SELECT From, count() AS c
 FROM rspamd
-WHERE (Date = today()) AND ((Action = 'reject') OR (Action = 'add header'))
+WHERE Date = today() 
+  AND Action IN ('reject', 'add header')
 GROUP BY From
 ORDER BY c DESC
 LIMIT 10
-
-┌─From────────────┬──────c─┐
-│ xxx.com         │ 152931 │
-│ xxx.com         │ 102123 │
-│ gmail.com       │  60865 │
-│ yahoo.com       │  58832 │
-│ xxx.com         │  58082 │
-...
-└─────────────────┴────────┘
 ~~~
 
-Or messages with failed DKIM and DMARC groupped by domain:
+### Failed DKIM by domain and IP
 
 ~~~sql
-SELECT
-    From,
-    IP,
-    count() AS c
+SELECT From, IP, count() AS c
 FROM rspamd
-WHERE (Date = today()) AND (IsDkim = 'reject')
-GROUP BY
-    From,
-    IP
+WHERE Date = today() AND IsDkim = 'reject'
+GROUP BY From, IP
 ORDER BY c DESC
 LIMIT 10
-
-┌─From─────────────────┬─IP─────────────┬─────c─┐
-│ xxx.xxx              │ xx.xx.xx.xx    │ 27542 │
-│ xxx.xxx              │ xx.yy.yy.yy    │ 24958 │
-...
-└──────────────────────┴────────────────┴───────┘
 ~~~
 
-Or perform some attachments analysis (e.g. top attachments types for Spam):
+### Top attachment types in spam
 
 ~~~sql
-SELECT
-    count() AS c,
-    d
+SELECT count() AS c, d
 FROM rspamd
 ARRAY JOIN Attachments.ContentType AS d
-WHERE (Date = today()) AND ((Action = 'reject') OR (Action = 'add header'))
+WHERE Date = today() 
+  AND Action IN ('reject', 'add header')
 GROUP BY d
 ORDER BY c DESC
 LIMIT 5
-
-┌──────c─┬─d────────────────────────┐
-│ ddd    │ image/jpeg               │
-│ ddd    │ image/png                │
-│ ddd    │ application/octet-stream │
-│ ddd    │ image/gif                │
-│ ddd    │ application/msword       │
-└────────┴──────────────────────────┘
 ~~~
 
-Rspamd also provides the capability to send data copies for specific domains to separate tables, making analytics easier.
-
-For mailing lists, Rspamd sends list ids which allows to provide very precise statistics for each particular mailing list:
+### Mailing list statistics
 
 ~~~sql
-SELECT
-    ListId,
-    IP,
-    count() AS c
+SELECT ListId, IP, count() AS c
 FROM rspamd
-WHERE (Date = today()) AND (ListId != '')
-GROUP BY
-    ListId,
-    IP
+WHERE Date = today() AND ListId != ''
+GROUP BY ListId, IP
 ORDER BY c DESC
 LIMIT 10
-
-┌─ListId───────────────────────────────┬─IP──────────────┬──────c─┐
-│ xxx                                  │ xx.xx.xx.xx     │ dddd   │
-...
-└──────────────────────────────────────┴─────────────────┴────────┘
 ~~~
 
-Using extra columns (see [Configuration](/modules/clickhouse#extra-columns))
+## URL flags
+
+Since version 2.8, URLs are stored with flags indicating their source. Use bit operations to filter:
+
+| Bit | Flag | Description |
+|-----|------|-------------|
+| 0 | PHISHED | URL is phished |
+| 1 | NUMERIC | URL has numeric IP |
+| 4 | HTML_DISPLAYED | From HTML display text |
+| 5 | TEXT | From text part |
+| 6 | SUBJECT | From subject |
+| 13 | HAS_PORT | URL has explicit port |
+| 15 | NO_SCHEMA | URL had no schema |
+| 18 | DISPLAY_URL | Display URL |
+| 19 | IMAGE | From img src |
+| 20 | QUERY | Extracted from query string |
+| 21 | CONTENT | From content (PDF) |
+| 22 | NO_TLD | URL has no TLD |
+
+### Filter out image and PDF URLs
 
 ~~~sql
 SELECT
-    From,
-    Mime_From,
-    Mime_Rcpt
+  MessageId,
+  arrayMap(x -> x.1, 
+    arrayFilter(x -> NOT bitTestAny(x.2, 19, 21), 
+      arrayZip(Urls.Url, Urls.Flags))) AS regular_urls
 FROM rspamd
-WHERE (Date = today())
-GROUP BY From
-ORDER BY TS From
-LIMIT 10
-
-┌─From─────────────────┬─Mime_From─────────────┬─────Mime_Rcpt─────────────┐
-│ example@example.com  │ example@example.com   │ ['test@example.com']      │
-│ test@test.com        │ hello@test.com        │ ['no@simple.test.com']    │
-...
-└──────────────────────┴───────────────────────┴───────────────────────────┘
+WHERE Date = today()
 ~~~
 
-## URLs storage
-
-This text has been contributed by [Anton Yuzhaninov](https://github.com/citrin)
-
-From version 2.8, Rspamd stores URLs from all sources, together with the corresponding flags.
-To differentiate different types we've added `Urls.Flags` column which will contain all flags as an integer. 
-
-All currently used bit flags are listed here:
-https://github.com/rspamd/rspamd/blob/master/src/libserver/url.h#L17
-
-For example, to exclude `img_src` and `PDF` URLs and keep all other URLs (old behaviour) one needs to exclude Urls where `bit 19` (img) or `bit 21` (content == pdf) are set: `bitTest(Flags, 19)`. If you don't mind having additional urls in `Urls.Url` column you can continue use it as is.
-
-Here are some examples explained:
-
-* The first line (regular_urls) is what has been logged originally;
-* The second line - urls from html img tag src attribue
-* The third line - urls extracted by content module; currently, it contains only PDF Urls
-
-Numbers `19`, `21`, `22` correspond to flags `RSPAMD_URL_FLAG_IMAGE`, `RSPAMD_URL_FLAG_CONTENT`, `RSPAMD_URL_FLAG_NO_TLD`: https://github.com/rspamd/rspamd/blob/master/src/libserver/url.h#L17
+### Select only image URLs
 
 ~~~sql
-SELECT
-       MessageId,
-       arrayMap(x -> x.1, arrayFilter(x -> NOT bitTestAny(x.2, 19, 21), arrayZip(Urls.Url, Urls.Flags))) AS regular_urls,
-       arrayMap(x -> x.1, arrayFilter(x -> bitTest(x.2, 19), arrayZip(Urls.Url, Urls.Flags))) AS img_src,
-       arrayMap(x -> x.1, arrayFilter(x -> bitTest(x.2, 21), arrayZip(Urls.Url, Urls.Flags))) AS pdf_urls
+SELECT Urls.Url
 FROM rspamd
-WHERE Date = '2021-02-26'
-      AND arrayExists(x -> bitTestAny(x, 19, 21, 22), Urls.Flags)
-LIMIT 250
-~~~
-
-Not all flags are equally interesting, but some are: for example `bitTest(Urls.Flags, 1)` allows much faster select URls with IP than a regexp for `Urls.Url`.
-`Bit 20` allows to select for urls that we extract from query args in other urls (e. g. Rspamd extracts `to.com` in `http://example.com/foo?redirect=http://to.com`):
-
-~~~sql
-SELECT
-       Urls.Tld,
-       bitTest(Urls.Flags, 0) AS phished,
-       bitTest(Urls.Flags, 1) AS numeric,
-       bitTest(Urls.Flags, 4) AS html_disp,
-       bitTest(Urls.Flags, 5) AS txt,
-       bitTest(Urls.Flags, 6) AS subj,
-       bitTest(Urls.Flags, 13) AS has_port,
-       bitTest(Urls.Flags, 15) AS no_schema,
-       bitTest(Urls.Flags, 16) AS not_norm,
-       bitTest(Urls.Flags, 18) AS disp_url,
-       bitTest(Urls.Flags, 19) AS img_src,
-       bitTest(Urls.Flags, 20) AS from_query,
-       bitTest(Urls.Flags, 21) AS pdf,
-       bitTest(Urls.Flags, 22) AS no_tld,
-       Urls.Flags,
-       Urls.Url
-FROM rspamd ARRAY JOIN Urls
-WHERE Date >= today() - 1 AND TS >= subtractHours(now(), 1)
-AND bitTestAny(Urls.Flags, 19, 21)
-ORDER BY TS
-LIMIT 250
+ARRAY JOIN Urls
+WHERE Date = today() AND bitTest(Urls.Flags, 19)
 ~~~
