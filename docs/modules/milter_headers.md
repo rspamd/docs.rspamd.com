@@ -132,6 +132,22 @@ Routines to use- this is the only required setting (may be omitted if using `ext
 use = ["x-spamd-bar", "authentication-results"];
 ~~~
 
+### headers_modify_mode (3.0+)
+
+Mode for modifying headers. Default is `compat` for compatibility with older versions. Set to `override` to replace headers completely.
+
+~~~hcl
+headers_modify_mode = "compat";
+~~~
+
+### default_headers_order
+
+Default order for header insertion. Set to a number to insert at a specific position (e.g., `1` to insert after the first Received header). Default is `nil` (insert at the end).
+
+~~~hcl
+default_headers_order = 1;
+~~~
+
 ## Removing headers
 
 Configuration dealing with removing headers commonly sets a numeric parameter which is typically set to `0`.
@@ -314,6 +330,7 @@ routines {
   x-spamd-result {
     header = 'X-Spamd-Result';
     remove = 0;
+    sort_by = 'score'; # or 'name' to sort symbols alphabetically
   }
 }
 ~~~
