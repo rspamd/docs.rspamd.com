@@ -30,6 +30,8 @@ the value of this option is 'postmaster, mailer-daemon'. Supported entries are:
 - `whitelisted_ip` - a map of ip addresses or networks whitelisted
 - `whitelisted_user` - a map of usernames which are excluded from user ratelimits
 - `expire` - maximum lifetime for any limit bucket (2 days by default)
+- `prefix` - Redis key prefix (default: 'RL')
+- `prefilter` - run in prefilter stage (default: true)
 - `dynamic_rate_limit` (3.9.0+) - enable dynamic ratelimit multipliers (default: false)
 - `ham_factor_rate` - multiplier for rate when a ham message arrives (default: 1.01)
 - `spam_factor_rate` - multiplier for rate when a spam message arrives (default: 0.99)
@@ -53,6 +55,21 @@ This means that you can opt to use either a selector or one of the predefine rat
 - `to_ip`: limit per pair of recipient and sender's IP address
 - `to_ip_from`: limit per triplet: recipient, sender's envelope from and sender's IP
 - `user`: limit per authenticated user (useful for outbound limits)
+
+The following keywords can be combined with underscores to create composite limits:
+
+| Keyword | Description |
+|---------|-------------|
+| `ip` | Sender IP address |
+| `rip` | Sender IP address (only if not local) |
+| `from` | Envelope sender (lowercase) |
+| `bounce` | Matches if sender is a known bounce address |
+| `asn` | Sender's ASN number |
+| `user` | Authenticated username |
+| `to` | Principal recipient |
+| `digest` | Message digest |
+| `attachments` | Combined attachment digests |
+| `files` | Attachment filenames (colon-separated) |
 
 ~~~hcl
 # local.d/ratelimit.conf
