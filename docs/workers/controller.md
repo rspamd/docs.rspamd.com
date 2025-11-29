@@ -12,12 +12,17 @@ In essence, it operates as a web server that accepts requests and delivers respo
 
 The Rspamd controller worker offers the following configuration options:
 
-* `password`: This sets the password required for read-only commands.
-* `enable_password`: This sets the password required for write commands.
-* `secure_ip`: A list or map containing IP addresses designated as "secure." All commands are allowed from these IPs without the need for passwords. If a reverse proxy sets an `X-Forwarded-For` header, both the proxy's IP and the actual client's IP must be included in `secure_ip`.
-* `static_dir`: This specifies the directory where static files for the web interface are located. Typically, this would be `${WWWDIR}`.
-* `stats_path`: This sets the path where the controller worker stores persistent statistics about Rspamd, such as the count of scanned messages.
-* `bind_socket`: A string defining the bind address for the controller worker (web interface). If the port number is omitted, it defaults to port 11334. You can also refer to [the common worker options](/workers/#common-worker-options) for additional details.
+| Option | Default | Description |
+|--------|---------|-------------|
+| `password` | - | Password required for read-only commands |
+| `enable_password` | - | Password required for write (privileged) commands |
+| `secure_ip` | - | List or map of IP addresses allowed password-less access. If using a reverse proxy with `X-Forwarded-For`, include both proxy and client IPs |
+| `trusted_ips` | - | Alias for `secure_ip` |
+| `static_dir` | `${WWWDIR}` | Directory where static files for the web interface are located |
+| `bind_socket` | `*:11334` | Bind address for the controller worker. See [common worker options](/workers/#common-worker-options) |
+| `timeout` | 60s | Protocol I/O timeout |
+| `task_timeout` | 8s | Maximum task processing time for scan requests |
+| `keypair` | - | Encryption keypair for secure communications |
 
 ## Encryption support
 
