@@ -36,6 +36,12 @@ allow_envfrom_empty = true;
 # If true, envelope/header domain mismatch is ignored
 allow_hdrfrom_mismatch = false;
 
+# If true, domain mismatch is ignored for local IPs
+allow_hdrfrom_mismatch_local = false;
+
+# If true, domain mismatch is ignored for sign_networks
+allow_hdrfrom_mismatch_sign_networks = false;
+
 # If true, multiple from headers are allowed (but only first is used)
 allow_hdrfrom_multiple = false;
 
@@ -79,7 +85,7 @@ use_esld = true;
 use_redis = false;
 
 # Hash for DKIM keys in Redis
-key_prefix = "DKIM_KEYS";
+key_prefix = "dkim_keys";
 
 # map of domains -> names of selectors (since rspamd 1.5.3)
 #selector_map = "/etc/rspamd/dkim_selectors.map";
@@ -91,6 +97,21 @@ key_prefix = "DKIM_KEYS";
 check_pubkey = false;
 # Set to `false` if you want to skip signing if public and private keys mismatch
 allow_pubkey_mismatch = true;
+
+# Sign inbound messages (not from local/authenticated)
+# sign_inbound = false;
+
+# Skip signing if message is marked as spam
+# skip_spam_sign = false;
+
+# Use milter headers instead of modifying message directly
+# use_milter_headers = false;
+
+# Allowed settings IDs for signing
+# allowed_ids = [];
+
+# Forbidden settings IDs (block signing)
+# forbidden_ids = [];
 
 
 # Domain specific settings
@@ -215,7 +236,7 @@ To use DKIM keys stored in Redis, add the following to your configuration::
 ~~~hcl
 # local.d/dkim_signing.conf
 use_redis = true;
-key_prefix = "DKIM_KEYS";
+key_prefix = "dkim_keys";
 selector = "myselector";
 ~~~
 
@@ -238,7 +259,7 @@ LuwlMCy6ErQOxBZFEiiovfTrS2qFZToMnkc4uLbwdY36LQJTq7unGTECQCCok8Lz
 BeZtAw+TJofpOM3F2Rlm2qXiBVBeubhRedsiljG0hpvvLJBMppnQ6r27p5Jk39Sm
 aTRkxEKrxPWWLNM=
 -----END PRIVATE KEY-----]]
-redis.call('HMSET', 'DKIM_KEYS', 'myselector.example.com', key)
+redis.call('HMSET', 'dkim_keys', 'myselector.example.com', key)
 ~~~
 
 The selector will be chosen as per usual (a domain-specific selector will be used if configured, otherwise the global setting is used).
