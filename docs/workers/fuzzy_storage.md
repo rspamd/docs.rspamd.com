@@ -107,23 +107,52 @@ equals `match_count / shingles_count`.
 
 ## Configuration
 
-Fuzzy storage accepts the following extra options:
+Fuzzy storage accepts the following configuration options:
 
-- `hashfile` - path to the sqlite storage (where are also few outdated aliases for this command exist: hash_file, file, database)
-- `backend` - set it to `redis` if you want to use a redis server
-- `sync` - time to perform database sync in seconds, default value: 60
-- `expire` - time value for hashes expiration in seconds, default value: 2 days
-- `keypair` - encryption keypair (can be repeated as list for different keys), can be obtained via *rspamadm keypair -u* command
-- `keypair_cache_size` - Size of keypairs cache, default value: 512
-- `encrypted_only` - allow encrypted requests only (and forbid all unknown keys or plaintext requests)
-- `master_timeout` - master protocol IO timeout
-- `sync_keypair` - encryption key for master/slave updates
-- `masters` - string, allow master/slave updates from the following IP addresses
-- `master_key` - allow master/slave updates merely using the specified key
-- `slave` - list of slave hosts.
-- `mirror` - list of slave hosts, same as `slave`
-- `allow_update` - string, array of strings or a map of IP addresses that are allowed
-to perform changes to fuzzy storage (you should also set `read_only = no` in your fuzzy_check plugin).
+### Storage options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `hashfile` | - | Path to the sqlite storage (aliases: `hash_file`, `file`, `database`) |
+| `backend` | `sqlite` | Storage backend: `sqlite` or `redis` |
+| `sync` | 60s | Time interval to perform database sync |
+| `expire` | 2d | Default expire time for hashes |
+| `delay` | - | Default delay time for hashes (not enabled by default) |
+
+### Security options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `keypair` | - | Encryption keypair (can be repeated for different keys), generate via `rspamadm keypair -u` |
+| `keypair_cache_size` | 512 | Size of keypairs cache |
+| `encrypted_only` | false | Allow only encrypted requests (forbid unknown keys or plaintext) |
+| `allow_update` | - | IP addresses/map allowed to perform modifications |
+| `allow_update_keys` | - | Public keys allowed to perform modifications |
+| `blocked` | - | Block requests from specific networks |
+| `read_only` | false | Work in read-only mode |
+
+### Replication options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `master_timeout` | 10s | Master protocol I/O timeout |
+| `sync_keypair` | - | Encryption key for master/slave updates |
+| `masters` | - | IP addresses allowed for master/slave updates |
+| `master_key` | - | Key allowed for master/slave updates |
+| `slave` | - | List of slave hosts |
+| `mirror` | - | Alias for `slave` |
+
+### Advanced options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `tcp_timeout` | 5s | TCP connection timeout |
+| `updates_maxfail` | 3 | Maximum update failures before discarding |
+| `dedicated_update_worker` | false | Use worker 0 for updates only |
+| `delay_whitelist` | - | Disable delay check for specific IP addresses |
+| `forbidden_ids` | - | Deny specific flags by default |
+| `weak_ids` | - | Flags treated as weak (don't overwrite strong flags) |
+| `dynamic_keys_map` | - | Map for dynamic encryption keypairs |
 
 Here is an example configuration of fuzzy storage:
 
