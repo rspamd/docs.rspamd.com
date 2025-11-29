@@ -6,13 +6,15 @@ title: Normal worker (scanner)
 
 Rspamd normal worker is intended to scan messages for spam. It has the following configuration options available:
 
-* `count`: number of normal worker processes to run, default: 4
-* `mime`: turn to `false` if you want to scan non-mime messages (e.g. forum comments or SMS), default: `true`
-* `allow_learn`: turn to `true` if you want to learn messages using this worker (usually you should use [controller](/workers/controller) worker), default: `false`
-* `timeout`: input/output timeout, default: `1min`
-* `task_timeout`: maximum time to process a single task, default: `8s`
-* `max_tasks`: maximum count of tasks processes simultaneously, default: `0` - no limit
-* `keypair`: encryption keypair
+| Option | Default | Description |
+|--------|---------|-------------|
+| `count` | 4 | Number of normal worker processes to run |
+| `mime` | true | Set to `false` if you want to scan non-MIME messages (e.g. forum comments or SMS) |
+| `timeout` | 60s | Protocol I/O timeout |
+| `task_timeout` | 8s | Maximum time to process a single task |
+| `max_tasks` | 0 | Maximum count of parallel tasks processed by a single worker (0 = no limit) |
+| `keypair` | - | Encryption keypair for secure communications |
+| `encrypted_only` | false | Allow only encrypted connections |
 
 ## Encryption support
 
