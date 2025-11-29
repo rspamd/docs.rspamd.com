@@ -15,11 +15,25 @@ Settings for the module are described below (default values are indicated in bra
 - `action`: apply the given action to messages identified as replies (should typically be set to "no action" to accept)
 - `expire`: time, in seconds, after which to expire records (default is one day).
 - `key_prefix`: string prefixed to keys in Redis (default `rr`)
+- `key_size`: length of hash keys (default 20)
 - `sender_prefix`: string prefixed to replies sets (default `rsrk`)
-- `sender_key_global`: string that is used as a key to the global replies set
-- `symbol`: symbol yielded on messages identified as replies.
-- `max_local_size`: maximum ammount of senders that are in the local replies set (default is 20)
-- `max_global_size`: maximum ammount of senders that are in the global replies set (default is 30)
+- `sender_key_global`: string that is used as a key to the global replies set (default `verified_senders`)
+- `sender_key_size`: length of sender hash keys (default 20)
+- `symbol`: symbol yielded on messages identified as replies (default `REPLY`)
+- `score`: default score for the symbol (default -4)
+- `max_local_size`: maximum amount of senders that are in the local replies set (default is 20)
+- `max_global_size`: maximum amount of senders that are in the global replies set (default is 30)
+- `use_auth`: track replies for authenticated users (default true)
+- `use_local`: track replies for local IPs (default true)
+- `min_message_id`: minimum length of message-id header to consider (default 2)
+- `cookie`: enable DKIM-like reply cookie in message-id
+- `cookie_key`: key for cookie generation
+- `cookie_is_pattern`: treat cookie as a pattern
+- `cookie_valid_time`: how long cookie is valid (default `2w`)
+- `reply_sender_privacy`: enable sender address obfuscation in Redis (default false)
+- `reply_sender_privacy_alg`: hash algorithm for obfuscation (default `blake2`)
+- `reply_sender_privacy_prefix`: prefix for obfuscated addresses (default `obf`)
+- `reply_sender_privacy_length`: length of obfuscated hash (default 16)
 
 Additionally, you will need to set up Redis servers to store data, such as `servers` or `read_servers` and `write_servers`. You can specify all standard Redis arguments, including password, timeout, database, and so on.
 
