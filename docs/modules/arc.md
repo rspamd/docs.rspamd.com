@@ -2,100 +2,150 @@
 title: ARC module
 ---
 
-
 # ARC module
 
-This module verifies [ARC](https://arc-spec.org/) signatures and seals for scanned emails, which demonstrate the message's authenticity through a series of trusted relays. The ARC standard is explained in detail at <https://dmarc.org/presentations/ARC-Overview-2016Q2-v03.pdf>.
+This module verifies and signs [ARC](https://arc-spec.org/) (Authenticated Received Chain) signatures and seals for emails. ARC provides a mechanism for preserving email authentication results across trusted intermediaries, which is particularly useful for mailing lists and forwarding services that may modify messages in ways that break SPF and DKIM alignment.
 
-Rspamd, starting from version 1.6, offers support for both checking and signing ARC signatures and seals. It utilizes the [dkim](/modules/dkim) module to manage signatures.
+The ARC standard is defined in [RFC 8617](https://tools.ietf.org/html/rfc8617). An overview presentation is available at <https://dmarc.org/presentations/ARC-Overview-2016Q2-v03.pdf>.
 
-The configuration of this module is similar to the [dkim](/modules/dkim) and [dkim_signing](/modules/dkim_signing) modules.
+Rspamd supports both ARC verification and signing since version 1.6. It uses the [dkim](/modules/dkim) module internally for cryptographic operations.
+
+## Symbols
+
+The module registers the following symbols:
+
+| Symbol | Score | Description |
+|--------|-------|-------------|
+| `ARC_ALLOW` | -1.0 | Valid ARC chain found |
+| `ARC_REJECT` | 2.0 | ARC chain validation failed |
+| `ARC_INVALID` | 1.0 | ARC chain structure is invalid |
+| `ARC_DNSFAIL` | 0.0 | DNS lookup failed during validation |
+| `ARC_NA` | 0.0 | No ARC headers present |
+| `ARC_ALLOW_TRUSTED` | -2.0 | Valid ARC chain from a trusted forwarder (requires `whitelisted_signers_map`) |
+| `ARC_SIGNED` | 0.0 | Message was signed with ARC |
 
 ## Configuration
 
-- `whitelist` - a map of domains with known broken ARC implementations that should be trusted despite validation failures. When ARC validation fails for a domain in this list, the chain continues as if that step was valid
-- `whitelisted_signers_map` - a map of trusted ARC forwarders. When a valid ARC chain from one of these domains is found, the `ARC_ALLOW_TRUSTED` symbol is added with a score of -2.0
-- `adjust_dmarc` (**true** by default) - a boolean flag that enables fixing of DMARC issues when a trusted ARC forwarder is in the chain. This is useful in situations where a domain, `X`, uses a signer, `Y`, to forward emails, but `X` has a strict DMARC policy while `Y` alters the message in a legitimate way. By trusting `Y`, this option allows fixing DMARC rejection for `X`
+Settings should be added to `/etc/rspamd/local.d/arc.conf`.
 
-## Principles of operation
+### Basic settings
 
-The ARC signing module follows a configurable policy for choosing signing domains and selectors. The policy can be modified using various settings, as described below:
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `selector` | string | `arc` | Default selector for ARC signing |
+| `path` | string | `${DBDIR}/arc/$domain.$selector.key` | Path to signing key (supports `$domain` and `$selector` variables) |
+| `sign_symbol` | string | `ARC_SIGNED` | Symbol added when message is signed |
+| `try_fallback` | boolean | `true` | Fall back to global config if domain-specific config not found |
 
- * A mail is eligible for signing if it is received from an authenticated user, a reserved IP address, or an address in the `sign_networks` map (if defined)
- * If the envelope from address is not empty, the second-level domain must match the MIME header From
- * If an authenticated user is present, it must be suffixed with @domain, where domain is the envelope/header From address
- * Selector and path to key are selected from domain-specific config if present, falling back to global config
+### Domain selection
 
-## Configuration
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `use_domain` | string | `header` | Domain source: `header` (MIME From), `envelope` (SMTP From), `recipient` (SMTP To), `auth` (authenticated user), or explicit domain name |
+| `use_esld` | boolean | `true` | Normalize domains to effective second-level domain (eSLD) |
+| `use_domain_sign_networks` | string | - | Override `use_domain` for sign_networks |
+| `use_domain_sign_local` | string | - | Override `use_domain` for local IPs |
+| `use_domain_sign_inbound` | string | - | Override `use_domain` for inbound mail |
+| `use_domain_custom` | string/function | - | Custom Lua function to determine signing domain |
+
+### Signing eligibility
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `sign_authenticated` | boolean | `true` | Sign messages from authenticated users |
+| `sign_local` | boolean | `true` | Sign messages from local IP addresses |
+| `sign_inbound` | boolean | `false` | Sign inbound messages (not local, not authenticated) |
+| `sign_networks` | map | - | Map of networks eligible for signing |
+| `skip_spam_sign` | boolean | `false` | Skip signing if message is marked as spam |
+| `allowed_ids` | table | - | List of settings IDs that allow signing |
+| `forbidden_ids` | table | - | List of settings IDs that forbid signing |
+
+### Header/envelope validation
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `allow_envfrom_empty` | boolean | `true` | Allow signing with empty envelope From |
+| `allow_hdrfrom_mismatch` | boolean | `false` | Allow envelope/header From domain mismatch |
+| `allow_hdrfrom_mismatch_local` | boolean | `false` | Allow mismatch for local IPs |
+| `allow_hdrfrom_mismatch_sign_networks` | boolean | `false` | Allow mismatch for sign_networks |
+| `allow_hdrfrom_multiple` | boolean | `false` | Allow multiple From headers (only first is used) |
+| `allow_username_mismatch` | boolean | `false` | Allow authenticated user domain to differ from signing domain |
+
+### Trusted forwarders and whitelisting
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `whitelisted_signers_map` | map | - | Map of trusted ARC forwarder domains |
+| `whitelist` | map | - | Map of domains with broken ARC implementations to trust despite validation failures |
+| `adjust_dmarc` | boolean | `true` | Adjust DMARC score when trusted forwarder provides valid ARC chain |
+
+### Redis integration
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `use_redis` | boolean | `false` | Load signing keys from Redis |
+| `key_prefix` | string | `arc_keys` | Redis hash name for keys |
+| `selector_prefix` | string | - | Redis hash name for selectors (optional) |
+
+### Vault integration
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `use_vault` | boolean | `false` | Load signing keys from HashiCorp Vault |
+| `vault_url` | string | - | Vault server URL |
+| `vault_token` | string | - | Vault authentication token |
+| `vault_path` | string | `dkim` | Path in Vault for keys |
+| `vault_kv_version` | number | `1` | Vault KV secrets engine version (1 or 2) |
+| `vault_domains` | map | - | Map of domains to look up in Vault |
+
+### Public key verification
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `check_pubkey` | boolean | `false` | Verify public key exists before signing |
+| `allow_pubkey_mismatch` | boolean | `false` | Continue signing even if public key lookup fails |
+
+### Authentication results
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `reuse_auth_results` | boolean | `false` | Reuse existing Authentication-Results header instead of generating new one |
+
+### HTTP headers (for proxy integration)
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `use_http_headers` | boolean | `false` | Get signing parameters from HTTP request headers |
+| `http_sign_header` | string | `PerformDkimSign` | Header indicating signing should be performed |
+| `http_domain_header` | string | `DkimDomain` | Header containing domain |
+| `http_selector_header` | string | `DkimSelector` | Header containing selector |
+| `http_key_header` | string | `DkimPrivateKey` | Header containing private key |
+| `allow_headers_fallback` | boolean | `false` | Fall back to normal signing if headers missing |
+
+## Basic configuration example
 
 ~~~hcl
 # local.d/arc.conf
 
-# Allowed settings id
-allowed_ids = nil;
-# If false, messages with empty envelope from are not signed
-allow_envfrom_empty = true;
-# If true, envelope/header domain mismatch is ignored
-allow_hdrfrom_mismatch = false;
-# Domain mismatch allowed for local IP
-allow_hdrfrom_mismatch_local = false;
-# Domain mismatch allowed for sign_networks
-allow_hdrfrom_mismatch_sign_networks = false;
-# If true, multiple from headers are allowed (but only first is used)
-allow_hdrfrom_multiple = false;
-# If true, username does not need to contain matching domain
-allow_username_mismatch = false;
-# Banned settings id
-forbidden_ids = nil;
-# Default path to key, can include '$domain' and '$selector' variables
-path = "${DBDIR}/arc/$domain.$selector.key";
-# Default selector to use
+# Default signing selector
 selector = "arc";
-# If false, messages from authenticated users are not selected for signing
+
+# Path template for keys
+path = "${DBDIR}/arc/$domain.$selector.key";
+
+# Sign mail from authenticated users and local networks
 sign_authenticated = true;
-# If false, inbound messages are not selected for signing
-sign_inbound = true;
-# If false, messages from local networks are not selected for signing
 sign_local = true;
-# Symbol to add when message is signed
-sign_symbol = "ARC_SIGNED";
-# Whether to fallback to global config
-try_fallback = true;
-# Domain to use for ARC signing: can be "header" (MIME From), "envelope" (SMTP From), "recipient" (SMTP To), "auth" (SMTP username) or directly specified domain name
+
+# Use header From domain for signing
 use_domain = "header";
-# Whether to normalise domains to eSLD
 use_esld = true;
-# Whether to get keys from Redis
-use_redis = false;
-# Hash for ARC keys in Redis
-key_prefix = "ARC_KEYS";
-# Reuse the existing authentication results
-reuse_auth_results = false;
-# map of domains -> names of selectors (since rspamd 1.5.3)
-#selector_map = "/etc/rspamd/arc_selectors.map";
-# map of domains -> paths to keys (since rspamd 1.5.3)
-#path_map = "/etc/rspamd/arc_paths.map";
-# Map of trusted ARC forwarders. Symbol ARC_ALLOW_TRUSTED is added to messages
-# with valid ARC chains from these domains. A failed DMARC result is removed/ignored.
-# Can be configured as inline array, file map, or URL map:
-# whitelisted_signers_map = ["example.org", "example.com"];  # inline array
-# whitelisted_signers_map = "file:///etc/rspamd/maps/arc_trusted_signers.map";  # file map
-# whitelisted_signers_map = "http://example.com/maps/arc_trusted_signers.txt";  # URL map
 
-# Map of domains with broken ARC implementations to trust despite validation failures
-# whitelist = ["broken-forwarder.com", "buggy-arc.example"];  # inline array
-# whitelist = "file:///etc/rspamd/maps/arc_whitelist.map";  # file map
-
-# From version 1.8.4, Rspamd uses a different set of sign_headers for ARC:
-sign_headers = "(o)from:(o)sender:(o)reply-to:(o)subject:(o)date:(o)message-id:(o)to:(o)cc:(o)mime-version:(o)content-type:(o)content-transfer-encoding:resent-to:resent-cc:resent-from:resent-sender:resent-message-id:(o)in-reply-to:(o)references:list-id:list-owner:list-unsubscribe:list-subscribe:list-post:dkim-signature"
-
-# Domain specific settings
+# Domain-specific configuration
 domain {
   example.com {
-    # Private key path
-    path = "${DBDIR}/arc/example.key";
-    # Selector
-    selector = "ds";
+    path = "${DBDIR}/arc/example.com.key";
+    selector = "arc2024";
   }
 }
 ~~~
@@ -105,23 +155,21 @@ domain {
 The `whitelisted_signers_map` setting allows you to configure trusted ARC forwarders. When an email has a valid ARC chain that includes a signature from one of these trusted domains, Rspamd will:
 
 1. Add the `ARC_ALLOW_TRUSTED` symbol with a score of -2.0
-2. Optionally adjust DMARC policy violations if `adjust_dmarc` is enabled
+2. If `adjust_dmarc` is enabled (default), reduce the impact of DMARC failures
 
-This is particularly useful for legitimate email forwarding services that may alter messages in ways that break DMARC alignment, but can be trusted based on their ARC signatures.
-
-### Configuration examples
+This is particularly useful for legitimate email forwarding services that may alter messages in ways that break DKIM signatures, but can be trusted based on their ARC signatures.
 
 ~~~hcl
 # local.d/arc.conf
 
-# Inline array (simple list)
+# Inline array
 whitelisted_signers_map = ["mailgun.org", "sendgrid.net", "amazonses.com"];
 
-# File-based map
+# Or file-based map
 whitelisted_signers_map = "file:///etc/rspamd/maps/arc_trusted_signers.map";
 
-# URL-based map (updated dynamically)
-whitelisted_signers_map = "http://example.com/maps/arc_trusted_signers.txt";
+# Adjust DMARC policy for trusted forwarders (enabled by default)
+adjust_dmarc = true;
 ~~~
 
 For file-based maps, create a simple text file with one domain per line:
@@ -131,59 +179,50 @@ sendgrid.net
 amazonses.com
 ~~~
 
-## ARC chain validation and broken forwarders
+## Handling broken ARC implementations
 
-ARC validation works by verifying a chain of signatures and seals (i=1, i=2, i=3, etc.). If any step in this chain fails validation, the entire ARC chain is considered broken. However, in real-world deployments, you may encounter legitimate email forwarders that have buggy ARC implementations.
+Some email services have broken ARC implementations that fail validation despite being legitimate forwarders. The `whitelist` option allows ARC chain validation to continue despite failures from specified domains.
 
-The `whitelist` feature addresses this by allowing ARC chain validation to continue despite failures from trusted domains. For example:
+When a domain is in the whitelist:
+- ARC signature/seal validation failures for that domain are logged but treated as valid
+- The ARC chain validation continues to the next step
+- This preserves the security of the overall chain while accommodating known bugs
 
-- Message has ARC chain: i=1 (good.example), i=2 (broken-forwarder.com), i=3 (final.example)
-- i=2 fails validation due to broken ARC implementation at broken-forwarder.com
-- If broken-forwarder.com is in the whitelist, validation continues treating i=2 as valid
-- i=3 validation proceeds normally, preserving the overall chain integrity
+~~~hcl
+# local.d/arc.conf
 
-This is different from traditional whitelisting which would skip ARC checks entirely. Instead, it "patches over" known broken implementations while maintaining the ARC chain's security properties.
+# Domains with known broken ARC implementations
+whitelist = ["broken-forwarder.com", "buggy-arc.example"];
+
+# Or file-based map
+whitelist = "file:///etc/rspamd/maps/arc_whitelist.map";
+~~~
 
 ## ARC keys in Redis
 
-To use ARC keys stored in Redis you should add the following to configuration:
+To store ARC signing keys in Redis:
 
 ~~~hcl
 # local.d/arc.conf
 use_redis = true;
-key_prefix = "ARC_KEYS";
+key_prefix = "arc_keys";
 selector = "myselector";
 ~~~
 
-... and populate the hash with the ARC keys. For example, you can run the following Lua script using `redis-cli --eval`:
+Populate the hash with keys using the format `selector.domain`:
 
 ~~~lua
+-- Run with: redis-cli --eval script.lua
 local key = [[-----BEGIN PRIVATE KEY-----
 MIICdwIBADANBgkqhkiG9w0BAQEFAASCAmEwggJdAgEAAoGBANe3EETkiI1Exyrb
-+VzbMSt90K8MXJA0GcyNs6MFCs9JPaTh90Zu2l7ki7m5LTUx6350AR/3hcvwjSHC
-ZjD6fvQ8/zfjN8kaLZ6DAaqtqSlpawIM+8glkuTEkIkpBED/OtDrba4Rd29iLFVu
-wQZXDtTjAAZKZPmtTZ5TXLrcCU6VAgMBAAECgYEA1BFvmBsIN8Gu/+6kNupya2xU
-NVM0yLu/xT5lpNV3LBO325oejAq8+d87kkl/LTW3a2jGFlQ0ICuLw+2mo24QUWRy
-v8if3oeBMlnLqHE+6wNjFVqo5sOjKzjO363xSXwXNUrBT7jDhnZcDN8w3/FecYKj
-ifGTVtUs1SLsYwhlc8ECQQDuCRymLZQ/imPn5eFVIydwUzg8ptZlvoA7bfIxUL9B
-QRX33s59kLCilA0tTed8Dd+GnxsT93XOj1ApIfBwmTSlAkEA5/63PDsN7fH+WInq
-VD8nU07M9S8LcGDlPbVVBr2S2I78/iwrSDAYtbkU2vEbhFK/JuKNML2j8OkzV3v1
-QulfMQJBALDzhx+l/HHr3+8RPhx7QKNIyiKUaAdEwbDsP8IXY8YPq1QThu9jM1v4
-sX7/TdkzuvoppwiFykbe1NlvCH279p0CQCmTg4Ee0DtBcCSr6rvYaZLLf329RZ6J
-LuwlMCy6ErQOxBZFEiiovfTrS2qFZToMnkc4uLbwdY36LQJTq7unGTECQCCok8Lz
-BeZtAw+TJofpOM3F2Rlm2qXiBVBeubhRedsiljG0hpvvLJBMppnQ6r27p5Jk39Sm
-aTRkxEKrxPWWLNM=
+...
 -----END PRIVATE KEY-----]]
-redis.call('HMSET', 'ARC_KEYS', 'myselector.example.com', key)
+redis.call('HMSET', 'arc_keys', 'myselector.example.com', key)
 ~~~
 
-The selector will be selected according to the usual process. If a domain-specific selector is configured, it will be used; otherwise, the global setting will be applied.
+## Using maps for selectors and paths
 
-## Using maps
-
-You can use either `selector_map` or `path_map` to access selectors and private key paths respectively, with the ARC signing domain serving as the key. If a match is found, it will override the default settings.
-
-Our configuration defines a templated path for the ARC signing key, a default selector, and an optional selector map that can override the default. All eligible emails will be signed if a key with the appropriate name is present on the disk.
+Use `selector_map` and `path_map` to configure per-domain selectors and key paths:
 
 ~~~hcl
 # local.d/arc.conf
@@ -193,7 +232,19 @@ selector_map = "/etc/rspamd/arc_selectors.map";
 selector = "arc";
 ~~~
 
-In the following configuration, we attempt to sign only domains which are present in both `selector_map` and `path_map`:
+Map format (domain followed by value):
+~~~
+example.net arc2024
+example.org default
+~~~
+
+For paths:
+~~~
+example.net /var/lib/rspamd/arc/example.net.$selector.key
+example.org /etc/rspamd/arc/example.org.key
+~~~
+
+To require explicit configuration for each domain (no fallback):
 
 ~~~hcl
 # local.d/arc.conf
@@ -202,12 +253,44 @@ selector_map = "/etc/rspamd/arc_selectors.map";
 path_map = "/etc/rspamd/arc_paths.map";
 ~~~
 
-Format of the maps should be as shown:
+## Vault integration
 
-~~~
-$ head -1 /etc/rspamd/dkim_selectors.map
-example.net dkim
-$ head -1 /etc/rspamd/dkim_paths.map
-example.net /var/lib/rspamd/dkim/example.net.$selector.key
+For HashiCorp Vault integration:
+
+~~~hcl
+# local.d/arc.conf
+use_vault = true;
+vault_url = "https://vault.example.com:8200";
+vault_token = "your-vault-token";
+vault_path = "secret/dkim";
+vault_kv_version = 2;
+
+# Optional: restrict to specific domains
+vault_domains = ["example.com", "example.org"];
 ~~~
 
+Expected Vault secret structure at `secret/dkim/example.com`:
+~~~json
+{
+  "selectors": [
+    {
+      "selector": "arc2024",
+      "domain": "example.com",
+      "key": "-----BEGIN PRIVATE KEY-----\n...",
+      "valid_start": 1704067200,
+      "valid_end": 1735689600
+    }
+  ]
+}
+~~~
+
+## Sign headers
+
+From version 1.8.4, Rspamd uses a specific set of headers for ARC signing. The default can be overridden:
+
+~~~hcl
+# local.d/arc.conf
+sign_headers = "(o)from:(o)sender:(o)reply-to:(o)subject:(o)date:(o)message-id:(o)to:(o)cc:(o)mime-version:(o)content-type:(o)content-transfer-encoding:resent-to:resent-cc:resent-from:resent-sender:resent-message-id:(o)in-reply-to:(o)references:list-id:list-owner:list-unsubscribe:list-subscribe:list-post:dkim-signature";
+~~~
+
+The `(o)` prefix indicates optional headers (included only if present).
