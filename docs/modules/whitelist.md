@@ -75,6 +75,18 @@ or if using map:
 
 The `valid_dkim = true` check goes beyond verifying the triggering of just `R_DKIM_ALLOW`. It also ensures that the DKIM domain being validated matches the domain in the FROM envelope. Therefore, if a message is sent by a sender with the domain `x.com` but has been DKIM signed by `mailchimp.app`, the `valid_dkim` flag will not be set to true, and the whitelist rule will not be triggered
 
+### Global options
+
+The following global options can be set for the whitelist module:
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `check_local` | false | Apply whitelist rules to messages from local IPs |
+| `check_authed` | false | Apply whitelist rules to messages from authenticated users |
+| `dmarc_allow_symbol` | `DMARC_POLICY_ALLOW` | Symbol to check for DMARC validation |
+| `spf_allow_symbol` | `R_SPF_ALLOW` | Symbol to check for SPF validation |
+| `dkim_allow_symbol` | `R_DKIM_ALLOW` | Symbol to check for DKIM validation |
+
 ## Configuration example
 
 ~~~hcl
