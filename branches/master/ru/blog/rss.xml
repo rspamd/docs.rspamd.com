@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+    <channel>
+        <title>Rspamd Blog</title>
+        <link>https://rspamd.com/docs.rspamd.com/branches/master/ru/blog</link>
+        <description>News and updates from the Rspamd project</description>
+        <lastBuildDate>Sat, 18 Oct 2025 00:00:00 GMT</lastBuildDate>
+        <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
+        <generator>https://github.com/jpmonette/feed</generator>
+        <language>en</language>
+        <copyright>Copyright © 2025 Rspamd Project</copyright>
+        <item>
+            <title><![CDATA[Incident Disclosure - Rspamd Public Service Temporary Suspension]]></title>
+            <link>https://rspamd.com/docs.rspamd.com/branches/master/ru/blog/2025/10/18/incident-disclosure</link>
+            <guid>https://rspamd.com/docs.rspamd.com/branches/master/ru/blog/2025/10/18/incident-disclosure</guid>
+            <pubDate>Sat, 18 Oct 2025 00:00:00 GMT</pubDate>
+            <description><![CDATA[On Saturday, October 18th, 2025, the public Rspamd DNSBL RBL feed and what's more important public fuzzy service was disrupted due to an unexpected server block by our hosting provider, Hetzner. This interruption affected hundreds of thousands of users and likely led to increased volumes of spam for many legitimate email services worldwide.]]></description>
+            <content:encoded><![CDATA[<p>On Saturday, October 18th, 2025, the public Rspamd DNSBL RBL feed and what's more important <strong>public fuzzy</strong> service was disrupted due to an unexpected server block by our hosting provider, Hetzner. This interruption affected hundreds of thousands of users and likely led to increased volumes of spam for many legitimate email services worldwide.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="what-happened">What Happened<a href="https://rspamd.com/docs.rspamd.com/branches/master/ru/blog/2025/10/18/incident-disclosure#what-happened" class="hash-link" aria-label="Прямая ссылка на What Happened" title="Прямая ссылка на What Happened" translate="no">​</a></h2>
+<ul>
+<li class="">Our monitoring detected service degradation early Saturday, followed by Hetzner's notification that our server would be blocked due to "suspected port scan attacks."</li>
+<li class="">Rspamd's service responds to legitimate external requests on port 11335 as part of its normal operation—the traffic flagged was fully expected and non-malicious.</li>
+<li class="">Despite prior communications clarifying this issue (with Hetzner support involved on three separate occasions), our server was nevertheless blocked following a provider-side false positive.</li>
+<li class="">Although Hetzner's support eventually agreed that the block was in error and restored service, we received further claims that network activity from our side (including connections to resolvable, legitimate mail service IPs) was improper, citing "unrouted addresses" — a claim contradicted by publicly available DNS records and usage reports.</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="why-this-matters">Why This Matters<a href="https://rspamd.com/docs.rspamd.com/branches/master/ru/blog/2025/10/18/incident-disclosure#why-this-matters" class="hash-link" aria-label="Прямая ссылка на Why This Matters" title="Прямая ссылка на Why This Matters" translate="no">​</a></h2>
+<ul>
+<li class="">This ongoing false positive detection and inflexible incident response directly impacted the reliability of a widely-used open source project, with real-world effects for large-scale email filtering, spam defense, and downstream email service providers.</li>
+<li class="">We have complied with all incident forms, engaged in dialogue multiple times, and transparently reported our findings. Unfortunately, misinterpretation of perfectly ordinary and legitimate network traffic resulted in a block that, while now lifted, has forced us to disable certain public-facing Rspamd services to avoid future risk.</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="our-next-steps">Our Next Steps<a href="https://rspamd.com/docs.rspamd.com/branches/master/ru/blog/2025/10/18/incident-disclosure#our-next-steps" class="hash-link" aria-label="Прямая ссылка на Our Next Steps" title="Прямая ссылка на Our Next Steps" translate="no">​</a></h2>
+<ul>
+<li class="">We are reviewing our hosting provider relationship and will migrate to a more robust and responsive provider to avoid future interruptions.</li>
+<li class="">Public access to some Rspamd services will remain suspended until a solution that meets both our standards and availability requirements is fully in place.</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="-positive-update">✅ Positive Update<a href="https://rspamd.com/docs.rspamd.com/branches/master/ru/blog/2025/10/18/incident-disclosure#-positive-update" class="hash-link" aria-label="Прямая ссылка на ✅ Positive Update" title="Прямая ссылка на ✅ Positive Update" translate="no">​</a></h2>
+<p>Due to the generous support from many companies and individuals who are eager to support the project, we expect the <strong>public fuzzy service to be back online in approximately one week</strong>. We are grateful for the community's overwhelming response and commitment to keeping Rspamd services available.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="conclusion">Conclusion<a href="https://rspamd.com/docs.rspamd.com/branches/master/ru/blog/2025/10/18/incident-disclosure#conclusion" class="hash-link" aria-label="Прямая ссылка на Conclusion" title="Прямая ссылка на Conclusion" translate="no">​</a></h2>
+<p>This episode highlights the critical importance of technical nuance and responsive incident handling in the infrastructure supporting public open source projects.</p>
+<p>We regret the inconvenience to our user base and assure everyone that maintaining reliable, high-quality service for the global community remains our top priority.</p>
+<p>Thank you for your understanding and support.</p>
+<hr>
+<p><em>For questions or concerns, please reach out through our <a class="" href="https://rspamd.com/docs.rspamd.com/branches/master/ru/support">support channels</a>.</em></p>]]></content:encoded>
+            <category>incident</category>
+            <category>announcement</category>
+            <category>service disruption</category>
+        </item>
+        <item>
+            <title><![CDATA[Rspamd Performance Measures]]></title>
+            <link>https://rspamd.com/docs.rspamd.com/branches/master/ru/blog/rspamd-performance</link>
+            <guid>https://rspamd.com/docs.rspamd.com/branches/master/ru/blog/rspamd-performance</guid>
+            <pubDate>Thu, 16 May 2019 00:00:00 GMT</pubDate>
+            <description><![CDATA[Preface]]></description>
+            <content:encoded><![CDATA[<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="preface">Preface<a href="https://rspamd.com/docs.rspamd.com/branches/master/ru/blog/rspamd-performance#preface" class="hash-link" aria-label="Прямая ссылка на Preface" title="Прямая ссылка на Preface" translate="no">​</a></h2>
+<p>Rspamd has always been oriented on the performance but it was always quite hard to measure how fast it was as normally it runs <em>just fast enough</em>.</p>
+<p>However, I was recently offered to process <a href="https://www.abusix.ai/" target="_blank" rel="noopener noreferrer" class="">Abusix Intelligence</a> feeds using Rspamd. These feeds are used to improve Rspamd fuzzy storage quality, to feed URLs and Emails to the DNS black lists provided by Rspamd project and used in SURBL module.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="problem-statement">Problem statement<a href="https://rspamd.com/docs.rspamd.com/branches/master/ru/blog/rspamd-performance#problem-statement" class="hash-link" aria-label="Прямая ссылка на Problem statement" title="Прямая ссылка на Problem statement" translate="no">​</a></h2>
+<p>The amount of data that required to be processing is huge - it is about 100 millions of messages per day.</p>
+<p>Here is an example to calculate connections count when processing these messages using Rspamd:</p>
+<div class="term">
+$ rspamc stat | \
+  grep 'Connections count' | \
+  cut -d' ' -f3 ; \
+  sleep 10 ; \
+  rspamc stat | \
+  grep 'Connections count' | \
+  cut -d' ' -f3
+23548811
+23564384
+</div>
+<!-- -->
+<p>It means that over 10 seconds Rspamd has to process around 15 thousands of messages which gives us a rate of <strong>1500 messages per second</strong>.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="rspamd-setup">Rspamd setup<a href="https://rspamd.com/docs.rspamd.com/branches/master/ru/blog/rspamd-performance#rspamd-setup" class="hash-link" aria-label="Прямая ссылка на Rspamd setup" title="Прямая ссылка на Rspamd setup" translate="no">​</a></h2>
+<p>The settings used to process this amount of messages are pretty similar to those that are provided by default.</p>
+<p>There is also some significant amount of home-crafted scripts written in Lua to provide the following functionality:</p>
+<ul>
+<li class="">Provides deduplication to save time on processing of duplicates</li>
+<li class="">Performs conditional checks for url and emails blacklisting:
+<ul>
+<li class="">checks if an url is in whitelists (around 5 whitelists stored in Redis are used)</li>
+<li class="">check if an url is already listed</li>
+<li class="">check if it matches any suspicious patterns</li>
+</ul>
+</li>
+<li class="">Checks if a message should be learned on fuzzy storage (various conditions)</li>
+<li class="">Stores messages in IMAP folders providing sorting, partitioning and sampling logic</li>
+<li class="">Doing various HTTP and Redis queries for servicing purposes</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="hardware">Hardware<a href="https://rspamd.com/docs.rspamd.com/branches/master/ru/blog/rspamd-performance#hardware" class="hash-link" aria-label="Прямая ссылка на Hardware" title="Прямая ссылка на Hardware" translate="no">​</a></h2>
+<p>Now some words about hardware being used.</p>
+<p>Previously we have set the same setup on a small instance of <a href="https://web.archive.org/web/20190319181059/https://www.hetzner.com/dedicated-rootserver/ax60-ssd" target="_blank" rel="noopener noreferrer" class="">AX-60</a> and it was loaded for around 80%. We have decided to move to a more powerful server to have some margin for processing more emails and doing some experiments.</p>
+<p>Hence, we now have an <a href="https://web.archive.org/web/20190319181053/https://www.hetzner.com/dedicated-rootserver/ax160-ssd" target="_blank" rel="noopener noreferrer" class="">AX-160</a> AMD server rented in <a href="https://www.hetzner.com/" target="_blank" rel="noopener noreferrer" class="">Hetzner</a>. This is quite a powerful machine and the current load pictures look like this one:</p>
+<div class="term">
+top - 14:36:26 up 23:26,  1 user,  load average: 15.76, 13.22, 12.46
+Tasks: 511 total,   3 running, 508 sleeping,   0 stopped,   0 zombie
+%Cpu(s): 14.1 us,  4.6 sy,  0.0 ni, 78.9 id,  0.0 wa,  0.0 hi,  2.4 si,  0.0 st
+MiB Mem : 128802.5 total,  56985.7 free,  27897.5 used,  43919.3 buff/cache
+MiB Swap:   4092.0 total,   3925.5 free,    166.5 used. 100018.6 avail Mem
+
+   PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+ 14085 unbound   20   0 2058412   1.6g   6852 S 131.2   1.3   1478:04 unbound
+ 66509 _rspamd   20   0  806976 733336  23592 S  68.8   0.6 169:52.21 rspamd
+ 66498 _rspamd   20   0  780144 699540  23852 S  62.5   0.5 156:19.14 rspamd
+ 66502 _rspamd   20   0  816152 744352  23796 S  56.2   0.6 164:26.39 rspamd
+ 66468 _rspamd   20   0  773532 697084  23736 S  50.0   0.5 117:36.32 rspamd
+ 66491 _rspamd   20   0  806652 722340  23728 S  50.0   0.5 148:04.54 rspamd
+ 66476 _rspamd   20   0  767300 705996  23596 S  43.8   0.5 129:04.30 rspamd
+ 66481 _rspamd   20   0  797944 730528  23896 S  43.8   0.6 139:34.35 rspamd
+ 66443 _rspamd   20   0  727632 657104  23372 S  37.5   0.5  88:39.26 rspamd
+ 66451 _rspamd   20   0  742192 665196  23632 S  37.5   0.5  94:49.75 rspamd
+ 66456 _rspamd   20   0  790908 725784  23488 S  37.5   0.6 101:32.06 rspamd
+ 66463 _rspamd   20   0  771540 696064  23692 S  37.5   0.5 108:08.65 rspamd
+ 66487 _rspamd   20   0  780220 713024  23428 S  37.5   0.5 144:51.79 rspamd
+ 66447 _rspamd   20   0  762440 689592  23736 S  31.2   0.5  90:23.93 rspamd
+ 66455 _rspamd   20   0  763520 696108  23580 S  31.2   0.5  97:57.57 rspamd
+ 66464 _rspamd   20   0  764644 688724  23696 S  31.2   0.5 111:32.74 rspamd
+ 66469 _rspamd   20   0  756952 678704  23612 S  31.2   0.5 127:55.02 rspamd
+127011 rbldns    20   0  358824 307700   2244 R  31.2   0.2  10:26.14 rbldnsd
+ 10767 redis     20   0 9912104   7.7g   2532 S  25.0   6.1 236:29.63 redis-server
+ 66438 _rspamd   20   0  746772 680624  23424 R  25.0   0.5  82:18.04 rspamd
+ 66433 _rspamd   20   0  751180 687244  23472 S  18.8   0.5  80:12.21 rspamd
+ 66437 _rspamd   20   0  737200 669428  23796 S  18.8   0.5  81:37.81 rspamd
+ 10671 stunnel4  20   0   24.0g  77252   3644 S  12.5   0.1 269:06.53 stunnel4
+ 26994 root      20   0   11900   3984   3072 R  12.5   0.0   0:00.02 top
+ 66442 _rspamd   20   0  808808 707020  23608 S  12.5   0.5  85:11.64 rspamd
+ 17821 clickho+  20   0   21.8g   3.9g  18964 S   6.2   3.1 116:13.04 clickhouse-serv
+</div>
+<!-- -->
+<p>Rspamd is also being fed via proxy worker that runs on another host and performs initial data collection and emitting messages via the Internet providing transport encryption using HTTPCrypt. However, its CPU usage is quite negligible - it uses only a single CPU core by around 40% in average.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="results-analytics">Results analytics<a href="https://rspamd.com/docs.rspamd.com/branches/master/ru/blog/rspamd-performance#results-analytics" class="hash-link" aria-label="Прямая ссылка на Results analytics" title="Прямая ссылка на Results analytics" translate="no">​</a></h2>
+<p>As you can see, this machine runs also <a href="https://clickhouse.yandex/" target="_blank" rel="noopener noreferrer" class="">Clickhouse</a>, Redis, own recursive resolver (Unbound), and it still has <strong>~80% idle</strong> processing these <strong>1500 messages per second</strong>.</p>
+<p>If we look at the performance counters by attaching to some of the worker processes, we would see the following picture:</p>
+<div class="term">
+# timeout 30 perf record -p 66481
+[ perf record: Woken up 1 times to write data ]
+[ perf record: Captured and wrote 1.171 MB perf.data (29833 samples) ]
+# perf report
+
+# Overhead  Command  Shared Object            Symbol
+# ........  .......  .......................  .......................................................................
+#
+     5.23%  rspamd   rspamd                   [.] lj_alloc_free
+     3.35%  rspamd   rspamd                   [.] lj_str_new
+     3.03%  rspamd   librspamd-server.so      [.] gc_sweep
+     2.20%  rspamd   rspamd                   [.] lj_alloc_malloc
+     1.94%  rspamd   rspamd                   [.] gc_sweep
+     1.50%  rspamd   libc-2.28.so             [.] __strlen_avx2
+     1.32%  rspamd   rspamd                   [.] release_unused_segments
+     1.24%  rspamd   rspamd                   [.] lj_BC_TGETS
+     1.17%  rspamd   libjemalloc.so.2         [.] free
+     1.04%  rspamd   librspamd-server.so      [.] lj_BC_JLOOP
+     1.03%  rspamd   librspamd-server.so      [.] propagatemark
+     1.01%  rspamd   libpthread-2.28.so       [.] __pthread_mutex_lock
+     1.01%  rspamd   libglib-2.0.so.0.5800.3  [.] g_hash_table_lookup
+     0.94%  rspamd   libjemalloc.so.2         [.] malloc
+     0.77%  rspamd   rspamd                   [.] lj_func_newL_gc
+     0.76%  rspamd   rspamd                   [.] propagatemark
+     0.75%  rspamd   rspamd                   [.] lj_tab_get
+     0.69%  rspamd   libpthread-2.28.so       [.] __pthread_mutex_unlock_usercnt
+     0.65%  rspamd   librspamd-server.so      [.] t1ha2_atonce
+     0.61%  rspamd   librspamd-server.so      [.] newtab
+     0.60%  rspamd   libicui18n.so.63.1       [.] icu_63::NGramParser::search
+     0.59%  rspamd   [kernel.kallsyms]        [k] copy_user_generic_string
+     0.58%  rspamd   librspamd-server.so      [.] match
+     0.58%  rspamd   librspamd-server.so      [.] lj_tab_new1
+     0.56%  rspamd   librspamd-server.so      [.] rspamd_task_find_symbol_result
+     0.52%  rspamd   [kernel.kallsyms]        [k] _raw_spin_lock_irqsave
+     0.48%  rspamd   librspamd-server.so      [.] rspamd_vprintf_common
+     0.46%  rspamd   librspamd-server.so      [.] lj_str_new
+     0.42%  rspamd   rspamd                   [.] index2adr
+     0.42%  rspamd   rspamd                   [.] lj_BC_CALL
+     0.42%  rspamd   libc-2.28.so             [.] __strcmp_avx2
+     0.42%  rspamd   libc-2.28.so             [.] __memmove_avx_unaligned_erms
+</div>
+<!-- -->
+<p>The top consumers are Lua allocator and garbage collector. Since we are using [Rspamd experimental package]({{ site.baseurl }}/downloads.html) on Debian Buster, then it is built with bundled <a href="https://luajit.org/" target="_blank" rel="noopener noreferrer" class="">LuaJIT 2.1 beta3</a> and Jemalloc allocator, however, it seems that there is some issue with this allocator in Debian Buster, so I had to load it manually via the following command:</p>
+<div class="term">
+# systemctl edit rspamd.service
+
+[Service]
+Environment="LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2"
+</div>
+<!-- -->
+<p>Followed by restarting of Rspamd.</p>
+<p>It is interesting that this Rspamd setup accepts all connections encrypted using <a href="https://highsecure.ru/httpcrypt.pdf" target="_blank" rel="noopener noreferrer" class="">HTTPCrypt</a> but <code>chacha_blocks_avx2</code> takes less than 0.16% of CPU according to <code>perf</code> report.</p>
+<p>This particular instance of Rspamd is slightly tuned to use more memory to save some CPU cycles:</p>
+<div class="language-hcl codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-hcl codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain"># local.d/options.inc</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">lua_gc_step = 100;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">lua_gc_pause = 400;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">full_gc_iters = 10000;</span><br></span></code></pre></div></div>
+<p>These options tell Rspamd to preserve Lua objects in memory for longer time, at the same time in this mode, we can also observe GC stats on workers that performs full GC loop each 10k messages being scanned:</p>
+<div class="term">
+$ tail -f /var/log/rspamd/rspamd.log | fgrep 'full gc'
+
+perform full gc cycle; memory stats: 58.66MiB allocated, 62.01MiB active, 6.08MiB metadata, 84.71MiB resident, 90.64MiB mapped; lua memory: 107377 kb -&gt; 38015 kb; 308.0022420035675 ms for gc iter
+</div>
+<!-- -->
+<p>As you can see, full GC iter takes quite a significant time. However, it still keeps Lua memory usage sane. The ideas behind this GC mode have been taken from the generational GC idea in <a href="http://wiki.luajit.org/New-Garbage-Collector#gc-algorithms_generational-gc" target="_blank" rel="noopener noreferrer" class="">LuaJIT Wiki</a>.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="resulting-graphs">Resulting graphs<a href="https://rspamd.com/docs.rspamd.com/branches/master/ru/blog/rspamd-performance#resulting-graphs" class="hash-link" aria-label="Прямая ссылка на Resulting graphs" title="Прямая ссылка на Resulting graphs" translate="no">​</a></h2>
+<p>Here are some UI captures taken from a previous machine:</p>
+<img decoding="async" loading="lazy" width="75%" class="img-fluid img_ev3q" src="https://rspamd.com/img/perf_webui1.png">
+<img decoding="async" loading="lazy" width="75%" class="img-fluid img_ev3q" src="https://rspamd.com/img/perf_webui2.png">
+<p>As you can observe, there was some HAM portion increase over the recent days, however, it was caused by adding new sampling logic and duplicates filtering to save CPU resources (these messages are marked as ham and excepted from scan).</p>
+<p>There is also a <a href="https://clickhouse.yandex/" target="_blank" rel="noopener noreferrer" class="">Clickhouse</a> based dashboard that's created using <a href="https://redash.io/" target="_blank" rel="noopener noreferrer" class="">Redash</a>:</p>
+<img decoding="async" loading="lazy" width="75%" class="img-fluid img_ev3q" src="https://rspamd.com/img/perf_redash.png">
+<p>Since we have Clickhouse on board, we can do various analytics. Here is an average scan time for messages:</p>
+<div class="term">
+:) select avg(ScanTimeVirtual) from rspamd where Date=today();
+
+SELECT avg(ScanTimeVirtual)
+FROM rspamd
+WHERE Date = today()
+
+┌─avg(ScanTimeVirtual)─┐
+│    95.62269064131341 │
+└──────────────────────┘
+</div>
+<!-- -->
+<p>... and average size of messages:</p>
+<div class="term">
+:) select median(ScanTimeVirtual) from rspamd where Date=today();
+
+:) select avg(Size) from rspamd where Date=today();
+
+SELECT avg(Size)
+FROM rspamd
+WHERE Date = today()
+
+┌──────────avg(Size)─┐
+│ 1778.31            │
+└────────────────────┘
+</div>
+<!-- -->
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="conclusions">Conclusions<a href="https://rspamd.com/docs.rspamd.com/branches/master/ru/blog/rspamd-performance#conclusions" class="hash-link" aria-label="Прямая ссылка на Conclusions" title="Прямая ссылка на Conclusions" translate="no">​</a></h2>
+<p>So with this load rate (<strong>1500 messages per second</strong>) and with the average size of messages around 2Kb, Rspamd processes each message in around <strong>100ms in average</strong>. I hope these numbers could give one some impression about Rspamd performance in general.</p>
+<p>I would like to give the main kudos to <a href="https://www.abusix.com/" target="_blank" rel="noopener noreferrer" class="">Abusix</a> who are constantly supporting Rspamd project and have generously provided their amazing spam feeds to improve Rspamd quality!</p>]]></content:encoded>
+            <category>performance</category>
+            <category>benchmarks</category>
+        </item>
+    </channel>
+</rss>
