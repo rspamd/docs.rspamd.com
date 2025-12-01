@@ -53,19 +53,6 @@ const sidebars = {
       ]
     },
     "faq",
-    {
-      "type": "category",
-      "label": "About",
-      "link": {
-        "type": "doc",
-        "id": "about/index"
-      },
-      "items": [
-        "about/features",
-        "about/comparison",
-        "about/performance"
-      ]
-    },
     "support",
     "downloads",
     {
