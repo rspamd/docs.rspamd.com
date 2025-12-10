@@ -80,6 +80,9 @@ metadata_exporter {
  - `default`: returns full message content
  - `email_alert`: generates an e-Mail report about the message
  - `json`: returns JSON-formatted metadata about a message
+ - `multipart` (3.14.2+): Sends metadata as JSON part + raw message as `message/rfc822` part using standard `multipart/form-data`
+ - `msgpack` (3.14.2+): Binary MessagePack format with embedded message (efficient for binary data)
+ - `json_with_message` (3.14.2+): JSON with base64-encoded message
 
 ### Settings: general
 
@@ -95,7 +98,7 @@ The following settings can be defined on any rule:
 
  - `url` (required): defines the URL to post content to
  - `meta_header_prefix`: prefix for meta headers (default: `'X-Rspamd-'`)
- - `meta_headers` (bool): if set to `true`, general metadata is added to HTTP request headers (default: `false`)
+ - `meta_headers` (bool): if set to `true`, general metadata is added to HTTP request headers (default: `false`). **Deprecated in 3.14.2**: Use `formatter = "multipart"` or `formatter = "msgpack"` instead.
  - `mime_type`: defines the MIME type of the content sent in the HTTP POST
  - `user` & `password`: if both parameters are set, Basic authentication will be used
  - `gzip` (bool): specifies whether the payload needs to be sent with gzip compression (default: `false`)
@@ -226,3 +229,111 @@ EOD;
 
 }
 ~~~
+
+### Examples
+
+#### Python Receiver for `multipart` formatter
+
+This example demonstrates how to build a simple service using `aiohttp` that accepts metadata and messages sent by the `metadata_exporter` with `formatter = "multipart"`.
+
+It conceptually shows how to quarantine messages to Kafka or Cassandra.
+
+Prerequisites:
+```bash
+pip install aiohttp aiokafka cassandra-driver
+```
+
+receiver.py:
+```python
+import asyncio
+import json
+import logging
+from aiohttp import web
+# Optional: import for Kafka/Cassandra
+# from aiokafka import AIOKafkaProducer
+# from cassandra.cluster import Cluster
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("rspamd-receiver")
+
+async def handle_push(request):
+    """
+    Handle POST request from Rspamd metadata_exporter (multipart).
+    Expected parts:
+    - 'metadata': JSON object with Rspamd metadata
+    - 'message': Raw message content (optional)
+    """
+    reader = await request.multipart()
+    metadata = {}
+    message_content = b""
+
+    # Iterate through multipart fields
+    async for field in reader:
+        if field.name == 'metadata':
+            # Parse metadata JSON
+            try:
+                raw_json = await field.read()
+                metadata = json.loads(raw_json)
+                logger.info(f"Received metadata for Message-ID: {metadata.get('message_id')}")
+            except Exception as e:
+                logger.error(f"Failed to parse metadata: {e}")
+                return web.Response(status=400, text="Invalid Metadata")
+        
+        elif field.name == 'message':
+            # Read raw message content
+            message_content = await field.read()
+            logger.info(f"Received message content ({len(message_content)} bytes)")
+    
+    if not metadata:
+        return web.Response(status=400, text="Missing Metadata")
+
+    # --- Quarantine Logic Example ---
+    
+    # 1. Kafka Example (Async)
+    # await produce_to_kafka(metadata, message_content)
+    
+    # 2. Cassandra Example (Async)
+    # await save_to_cassandra(metadata, message_content)
+    
+    logger.info("Message processed successfully")
+    return web.Response(text="OK")
+
+# Mock functions for illustration
+async def produce_to_kafka(metadata, content):
+    # producer = AIOKafkaProducer(bootstrap_servers='localhost:9092')
+    # await producer.start()
+    # try:
+    #     await producer.send_and_wait("rspamd-quarantine", value=content, key=metadata.get('message_id').encode())
+    # finally:
+    #     await producer.stop()
+    pass
+
+async def save_to_cassandra(metadata, content):
+    # loop = asyncio.get_event_loop()
+    # cluster = Cluster(['127.0.0.1'])
+    # session = cluster.connect('mail_quarantine')
+    # stmt = "INSERT INTO messages (id, metadata, content) VALUES (%s, %s, %s)"
+    # await loop.run_in_executor(None, session.execute, stmt, (metadata['message_id'], json.dumps(metadata), content))
+    pass
+
+app = web.Application()
+app.add_routes([web.post('/push', handle_push)])
+
+if __name__ == '__main__':
+    web.run_app(app, port=8080)
+```
+
+Configure Rspamd to use this receiver:
+
+```hcl
+metadata_exporter {
+  rules {
+    QUARANTINE {
+      backend = "http";
+      url = "http://127.0.0.1:8080/push";
+      selector = "is_reject"; # Export rejected messages
+      formatter = "multipart"; # Send metadata + raw message
+    }
+  }
+}
+```

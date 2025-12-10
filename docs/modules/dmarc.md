@@ -124,6 +124,8 @@ Starting from Rspamd 3.8, there is a new option `exclude_recipients` available i
 
 Starting from Rspamd 3.13.2, there is a new option `exclude_rua_addresses` available in the reporting section. Here you can list rua recipient email addresses for which no reporting data should be collected (because the recipients generate bounces ("user does not exist" and so on) all the time).
 
+From version 3.14.2, you can use `rspamadm dmarc_report --recheck-rua` to validate cached reports against this map before sending. This is useful when using external RBL services to validate RUA addresses, as domains may not have been tested at initial report generation time.
+
 Rspamd does not support sending `forensic` DMARC reports.
 
 ## DMARC Munging

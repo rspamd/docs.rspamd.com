@@ -176,6 +176,9 @@ routines {
     header = "Authentication-Results";
     # Remove existing headers
     remove = 1;
+    # Allows selective removal of Authentication-Results headers by hostname (3.14.2+)
+    # Supports single hostname, array of hostnames, domain patterns (`.example.com`), or map files
+    # remove_ar_from = ["example.com", ".example.net"];
     # Set this false not to add SMTP usernames in authentication-results
     add_smtp_user = true;
     # SPF/DKIM/DMARC symbols in case these are redefined
