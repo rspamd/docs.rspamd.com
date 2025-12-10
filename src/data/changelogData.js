@@ -3,6 +3,34 @@
 
 export const changelogData = [
   {
+    "version": "3.14.2",
+    "date": "2025-12-10",
+    "type": "patch",
+    "title": "Patch Release with Metadata Exporter Enhancements and DMARC RUA Validation",
+    "sections": [
+      {
+        "title": "Added",
+        "items": [
+          "**Metadata Exporter Formatters**: New formatters `multipart`, `msgpack`, and `json_with_message` for better message content handling including binary support and multipart uploads",
+          "**DMARC RUA Validation**: New `rspamadm dmarc_report --recheck-rua` flag to re-validate cached report addresses against exclusion maps (useful with RBLs)",
+          "**Selective AR Header Removal**: New `remove_ar_from` setting in milter_headers to selectively remove Authentication-Results headers from specific domains"
+        ]
+      },
+      {
+        "title": "Improved",
+        "items": [
+          "**Metadata Exporter Docs**: Added comprehensive example for handling multipart metadata exports with Python/aiohttp"
+        ]
+      },
+      {
+        "title": "Deprecated",
+        "items": [
+          "**Metadata Exporter**: `meta_headers` option is deprecated; use `multipart` or `msgpack` formatters instead"
+        ]
+      }
+    ]
+  },
+  {
     "version": "3.14.1",
     "date": "2025-12-01",
     "type": "minor",
