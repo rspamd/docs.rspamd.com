@@ -5,7 +5,7 @@ const path = require('path');
 
 const CHANGELOGS_DIR = path.join(__dirname, '..', 'changelogs');
 const OUTPUT_FILE = path.join(__dirname, '..', 'static', 'rss', 'changelog.xml');
-const SITE_URL = 'https://rspamd.com';
+const SITE_URL = 'https://docs.rspamd.com';
 
 function escapeXml(unsafe) {
   if (typeof unsafe !== 'string') {

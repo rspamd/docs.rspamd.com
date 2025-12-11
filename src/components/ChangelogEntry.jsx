@@ -4,6 +4,7 @@ import styles from './ChangelogEntry.module.css';
 
 export default function ChangelogEntry({ release, typeInfo }) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const versionId = `version-${release.version.replace(/\./g, '-')}`;
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -73,7 +74,7 @@ export default function ChangelogEntry({ release, typeInfo }) {
   };
 
   return (
-    <div className={styles.releaseCard}>
+    <div className={styles.releaseCard} id={versionId}>
       <div className={styles.releaseHeader} onClick={() => setIsExpanded(!isExpanded)}>
         <div className={styles.releaseInfo}>
           <div className={styles.versionSection}>
