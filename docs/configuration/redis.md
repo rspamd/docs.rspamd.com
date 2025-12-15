@@ -21,7 +21,7 @@ The [Redis](https://redis.io) cache server, is utilized as a highly efficient ke
 * [Reputation module](/modules/reputation) uses Redis for caching
 * [Neural network module](/modules/neural) uses Redis for data storage
 
-Furthermore, Redis is used to store Bayes tokens in the [statistics](/configuration/statistic) module. Rspamd offers multiple configuration options for Redis storage. Moreover, Redis [replication](https://redis.io/docs/management/replication/)is supported, enabling Rspamd to **write** values to one set of Redis servers and **read** data from another set.
+Furthermore, Redis is used to store Bayes tokens in the [statistics](/configuration/statistic) module. Rspamd offers multiple configuration options for Redis storage. Moreover, Redis [replication](https://redis.io/docs/management/replication/) is supported, enabling Rspamd to **write** values to one set of Redis servers and **read** data from another set.
 
 ## Redis setup
 
@@ -60,7 +60,7 @@ read_servers = "127.0.0.1,10.0.0.1";
 write_servers = "127.0.0.1";
 ~~~
 
-Please bear in mind that you should either use `servers` for both `read_servers` and `write_servers` or define `read_servers` and `write_servers` separately. So it is **either** `servers` or `read_servers`+`write_servers` **together**.
+Please bear in mind that you should either use `servers` for both `read_servers` and `write_servers`, or define `read_servers` and `write_servers` separately. So it is **either** `servers` **alone**, or `read_servers`+`write_servers` **together**.
 
 Additionally, you have the option to redefine Redis options inside the `redis` section specifically for the desired module or modules. This provides flexibility in configuring Redis options on a per-module basis:
 
