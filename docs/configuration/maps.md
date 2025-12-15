@@ -22,6 +22,7 @@ Maps are one of the most important and flexible features in Rspamd, allowing for
 11. [Fallback Options](#fallback-options)
 12. [CDB Maps](#cdb-maps)
 13. [Map API Reference](#map-api-reference)
+14. [Refresh Intervals](#refresh-intervals)
 
 ## What Are Maps?
 
@@ -36,6 +37,8 @@ The significant distinction between maps and static configuration elements is th
 
 - For file maps: checking file modification time and the `inotify` where available (meaning you must save maps files atomically using `rename` as otherwise you might end up with an incomplete load)
 - For HTTP maps: using HTTP caching headers (If-Modified-Since, ETag)
+
+See [refresh intervals](#refresh-intervals) for more details on how Rspamd decides when to check and reload maps.
 
 ## Map Types
 
@@ -105,7 +108,7 @@ map = {
   name = "My important map";
   description = "Contains important data";
   url = "http://example.com/map.txt";
-  timeout = 10.0; # in seconds
+  timeout = 10.0; # in seconds (aliases: poll, poll_time, watch_interval)
 }
 ```
 
@@ -207,7 +210,7 @@ The default poll interval can be adjusted in the configuration:
 
 ```hcl
 options {
-  map_timeout = 60s; # Default HTTP map poll interval
+  map_timeout = 5min; # Default HTTP map poll interval
   map_file_watch_multiplier = 0.1; # Local files are checked more frequently
 }
 ```
@@ -670,6 +673,39 @@ The main API functions for map expressions include:
   - Returns: `nil` if no match, or two values if matched:
     1. The expression result (typically 1.0)
     2. A table of match details by rule name
+
+## Refresh Intervals
+
+This section explains how Rspamd decides when to check and reload maps, with emphasis on HTTP maps.
+
+For file maps: Rspamd prefers event-based notifications to detect changes. When the platform supports a native file-notify facility (typically inotify or kqueue), Rspamd reacts quickly to atomic file replacements (rename). When native notification is not usable (e.g. network filesystems, missing kernel support), ev_stat falls back to periodic stat polling; Rspamd controls the polling cadence with map poll timeout multiplied by `options.map_file_watch_multiplier`. Important: always update map files atomically (write to a temp file and rename) to avoid partial reads and ensure watchers see a consistent replacement.
+
+- Poll interval sources: each map has a poll_timeout (configurable via a map object's `timeout`/`poll`/`watch_interval` or the global `options.map_timeout`). For file-only maps the runtime poll timeout is multiplied by `options.map_file_watch_multiplier`.
+
+- HTTP cache headers and conditional requests: Rspamd respects server-provided caching. When checking an HTTP backend Rspamd issues conditional requests using If-None-Match (ETag) and If-Modified-Since (Last-Modified); a check uses HEAD, and a 304 response (Not Modified) updates validation state without re-downloading the body.
+
+- How the next check is computed (high-level rules):
+  * If a valid Expires header is present and in the future, Rspamd will normally use the Expires time, but with protections:
+    - If the Expires interval is shorter than the configured map poll interval, Rspamd will not poll faster than the configured interval (server cannot force more aggressive polling).
+    - If the Expires interval is > 8 hours Rspamd applies a "liberal" cap: it uses min(map_poll_interval * 10, 8 hours) instead of the raw Expires to avoid long sleeps.
+  * If there is no Expires header but cache validation is available (ETag or Last-Modified), Rspamd considers conditional requests cheap and uses a "respectful" multiplier (default 4×) of the map poll interval, but enforces a 10‑minute minimum.
+  * If neither Expires nor validation headers are present, Rspamd enforces a strict minimum (10 minutes) and will not re-download the entire map more often than that (and still respects the configured poll interval).
+
+  Practical constants used by the implementation:
+  - maximum Expires cap: ~8 hours
+  - liberal multiplier for very large Expires: 10× (but capped by the 8‑hour maximum)
+  - respectful multiplier for conditional requests: 4×
+  - minimum enforced when no Expires/validation: 10 minutes
+
+- Behavior on successful loads and 304s: when a 200 with body is received Rspamd stores the body in shared cache (and a small on-disk cache file) and records ETag/Last-Modified and a computed next_check; when a 304 is received Rspamd updates last_checked and computes next_check the same way without storing a new body.
+
+- Hot vs cold start and cache use: on hot restarts Rspamd reuses cached HTTP map data immediately and schedules the next check from the stored next_check in the cache file; on cold starts, if no cached file exists Rspamd will attempt to fetch the HTTP source (or fall back to a configured fallback+file backend if present).
+
+- Active HTTP vs passive workers: only the worker designated to perform HTTP activity (the "active_http"/primary controller worker or the worker bound to the map) makes network checks; other workers use cached data and may check cached files more frequently using `map_file_watch_multiplier`.
+
+- Fallbacks and resilience: define `fallback+file://` backends when you want a local fallback for cold starts or when the primary HTTP source is unavailable; Rspamd will prefer cached/shared data where possible and only re-download according to the rules above.
+
+Summary: Rspamd balances respecting server-controlled caching (Expires/ETag/Last-Modified) with protecting itself from abusive or misconfigured servers by enforcing configured minimums and caps; to control client behavior tune map poll timeouts and provide proper cache headers from your map hosting service.
 
 ## Conclusion
 
