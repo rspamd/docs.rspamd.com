@@ -1,239 +1,477 @@
 ---
 title: Downloads
-description: Rspamd installation packages for various platforms
+description: Rspamd installation packages and build information
 ---
-
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
 
 # Rspamd Packages
 
-<Tabs>
-  <TabItem value="docker" label="Docker" default>
-    <img src="/img/docker.png" width="20" alt="Docker logo" /> Docker
+Rspamd provides official packages for various platforms. This page covers package installation, package types, and building from source.
 
-An official docker image is available at [rspamd/rspamd on Dockerhub](https://hub.docker.com/r/rspamd/rspamd), with sources [on GitHub](https://github.com/rspamd/rspamd-docker). This is a recommended way to run Rspamd.
+## Package Branches
 
-In this build, upstream config files are installed in `/usr/share/rspamd/config`, allowing `/etc/rspamd` to contain only local configuration.
+Rspamd provides three types of packages:
 
-This build provides a [language identification model](https://fasttext.cc/docs/en/language-identification.html) to enable language detection using `fasttext`, distributed under [version 3.0 of the Creative Commons Attribution-Share-Alike License](https://creativecommons.org/licenses/by-sa/3.0/).
+### Stable Packages
 
-Volumes or bind mounts should be used for the `/var/lib/rspamd` directory and optionally for `/etc/rspamd`. If bind mounts are used, the `/var/lib/rspamd` directory should be writable by `11333:11333` on the host machine.
+Stable packages are the official Rspamd releases recommended for production usage. These packages are built from tagged releases and undergo thorough testing before publication.
 
-The root directory may be set read-only for added security at the cost of being less tactile for the administrator.
+### Experimental Packages
 
-Basic usage:
+Experimental packages are built from the `master` branch of the Rspamd repository. They include the latest features and bug fixes but may occasionally contain regressions.
+
+**When to use experimental packages:**
+
+- You experience a significant issue with stable packages that is fixed in the development branch
+- You want to test new features before they are released
+- You are running a test environment where you can handle potential instability
+- You can use [mirroring in Rspamd proxy](/workers/rspamd_proxy) to test new versions alongside stable
+
+**Identifying experimental package versions:**
+
+Experimental packages include a git hash in their version. You can view changes between versions using:
+
+```bash
+git log <old_hash>..<new_hash>
+```
+
+### ASAN Packages
+
+ASAN (AddressSanitizer) packages are specially built with [AddressSanitizer](https://en.wikipedia.org/wiki/AddressSanitizer) instrumentation for debugging memory-related issues. These packages:
+
+- Are built with minimal optimizations for accurate debugging
+- Include memory error detection (buffer overflows, use-after-free, etc.)
+- Are **significantly slower** than regular packages (not recommended for production)
+- Are essential for diagnosing crashes and memory corruption issues
+
+**Using ASAN packages:**
+
+1. Install the ASAN package (`rspamd-asan` instead of `rspamd`)
+2. Configure ASAN log output by setting an environment variable:
+
+```bash
+export ASAN_OPTIONS="log_path=/tmp/rspamd-asan"
+```
+
+Or add to systemd service override (`systemctl edit rspamd`):
+
+```ini
+[Service]
+Environment="ASAN_OPTIONS=log_path=/tmp/rspamd-asan"
+```
+
+3. When a crash occurs, collect both the core file and the ASAN log (`/tmp/rspamd-asan.<pid>`) for bug reports
+
+## How Packages Are Built
+
+Official Rspamd packages are built using GitHub Actions workflows in the [rspamd-packages](https://github.com/rspamd/rspamd-packages) repository. The build system:
+
+- Builds packages in parallel for all supported distributions
+- Tests packages in matching container environments
+- Signs all packages with GPG keys
+
+### Build Optimizations
+
+Official packages include several optimizations not present in distribution packages:
+
+| Feature | Description |
+|---------|-------------|
+| **Link Time Optimization (LTO)** | Enables cross-module optimization for better performance |
+| **Bundled LuaJIT 2.1** | Uses LuaJIT 2.1 beta for up to 30% performance improvement over stable LuaJIT |
+| **jemalloc** | Memory allocator optimized for multi-threaded applications |
+| **Hyperscan** | Intel's high-performance regex matching library (x86_64) |
+| **Vectorscan** | Hyperscan port for ARM64 and PowerPC platforms |
+
+These optimizations may not be available on older platforms due to toolchain limitations.
+
+### Debug Symbols
+
+Debug symbol packages are available for crash analysis:
+- **RPM-based**: `rspamd-debuginfo` (or `rspamd-asan-debuginfo`)
+- **DEB-based**: `rspamd-dbg` (or `rspamd-asan-dbg`)
+
+These packages can be safely installed in production environments.
+
+---
+
+## Docker
+
+The official Docker image is available at [rspamd/rspamd on Docker Hub](https://hub.docker.com/r/rspamd/rspamd), with sources on [GitHub](https://github.com/rspamd/rspamd-docker).
+
+### Image Features
+
+- Upstream config files in `/usr/share/rspamd/config`, keeping `/etc/rspamd` for local configuration only
+- [FastText language identification model](https://fasttext.cc/docs/en/language-identification.html) included (CC BY-SA 3.0 license)
+- Multi-architecture support (amd64, arm64)
+
+### Available Tags
+
+| Tag | Description |
+|-----|-------------|
+| `latest` | Latest stable release |
+| `3.x`, `3.x.y` | Specific version series |
+| `nightly` | Development builds from master branch |
+| `asan-*` | ASAN-enabled images for debugging |
+
+### Basic Usage
 
 ```bash
 docker run -v rspamd_dbdir:/var/lib/rspamd -v rspamd_confdir:/etc/rspamd -ti rspamd/rspamd
 ```
 
-A [Docker compose example](https://github.com/rspamd/rspamd-docker/tree/main/examples/compose) is available in the source repo.
-  </TabItem>
-  <TabItem value="rhel" label="RHEL">
-    <img src="/img/redhat.png" width="20" alt="Red Hat logo" /> RHEL-alike distributions
+### Volume Requirements
 
-Packages are available for RHEL-compatible distributions such as Oracle Linux, AlmaLinux, Rocky Linux, and CentOS. Currently, versions 8 through 10 are supported.
+- `/var/lib/rspamd` - Required for persistent data (statistics, databases)
+- `/etc/rspamd` - Optional for configuration overrides
 
-Please note that these packages **require** [EPEL](https://fedoraproject.org/wiki/EPEL) to be installed on your system as many dependencies are missing from the base repositories.
+If using bind mounts, ensure `/var/lib/rspamd` is writable by UID/GID `11333:11333`.
 
-Please bear in mind that you might also need the debug symbols package for Rspamd to be able to file bug reports about possible crashes. Debug symbols are placed in the `rspamd-debug` package and can be safely installed even in a production environment.
+### Security
 
-To install the rspamd repo, please download the corresponding repository file and the signing key (both repo and all packages are signed with my GPG key). You can use the following commands to install the rspamd stable<sup>1</sup> RPM repository:
+The root directory may be set read-only for added security.
 
-```bash
-source /etc/os-release
-export EL_VERSION=`echo -n $PLATFORM_ID | sed "s/.*el//"`
-curl https://rspamd.com/rpm-stable/centos-${EL_VERSION}/rspamd.repo > /etc/yum.repos.d/rspamd.repo
-dnf install rspamd
-```
+### Examples
 
-For experimental<sup>2</sup> branch packages, download the `rpm-experimental` repofile as follows:
+A [Docker Compose example](https://github.com/rspamd/rspamd-docker/tree/main/examples/compose) is available in the source repository.
 
-```bash
-source /etc/os-release
-export EL_VERSION=`echo -n $PLATFORM_ID | sed "s/.*el//"`
-curl https://rspamd.com/rpm/centos-${EL_VERSION}/rspamd-experimental.repo > /etc/yum.repos.d/rspamd.repo
-dnf install rspamd
-```
-
-For asan<sup>3</sup> packages, install `rspamd-asan`.
+For detailed Docker and Kubernetes deployment, see the [Installation Guide](/getting-started/installation#docker-installation).
 
 ---
 
-<sup>1</sup> Use STABLE branch of packages: these packages are the official rspamd releases which are recommended for production usage.
+## Debian and Ubuntu
 
-<sup>2</sup> Use EXPERIMENTAL branch of packages: these packages are less stable and they are generated frequently from the current development branch. Experimental packages usually have more features but might be SOMETIMES broken in some points (nevertheless, bugs are usually quickly fixed after detection).
+Rspamd supports the following Debian-based distributions:
 
-<sup>3</sup> Use ASAN branch of packages: these are packages (both stable and experimental) designed to debug Rspamd issues, especially core files, using advanced debugging tools. Use these packages if you encounter an issue in Rspamd and you want it to be fixed.
-  </TabItem>
-  <TabItem value="debian" label="Debian/Ubuntu">
-    <img src="/img/Ubuntu.png" width="20" alt="Ubuntu logo" /> Debian and Ubuntu Linux
+| Distribution | Supported Since |
+|--------------|-----------------|
+| Debian trixie | 3.13 |
+| Debian bookworm | 3.5 |
+| Debian bullseye | — |
+| Ubuntu noble (24.04) | 3.9 |
+| Ubuntu jammy (22.04) | 3.3 |
+| Ubuntu focal (20.04) | 2.5 |
 
-Rspamd supports the following .deb based distributions:
-
-- **Debian trixie** (since 3.13)
-- **Debian bookworm** (since 3.5)
-- **Debian bullseye**
-- **Ubuntu focal** (since 2.5)
-- **Ubuntu jammy** (since 3.3)
-- **Ubuntu noble** (since 3.9)
-
-To install the rspamd stable<sup>1</sup> apt repository, please use the following commands:
+### Install Stable Packages
 
 ```bash
-#apt update # if running a minimal system
-#apt-get install sudo # if running a minimal system
-sudo apt-get install -y lsb-release wget gpg  # for install
-CODENAME=`lsb_release -c -s`
+# Install prerequisites
+sudo apt-get update
+sudo apt-get install -y lsb-release wget gpg
+
+# Add GPG key
 sudo mkdir -p /etc/apt/keyrings
 wget -O- https://rspamd.com/apt-stable/gpg.key | gpg --dearmor | sudo tee /etc/apt/keyrings/rspamd.gpg > /dev/null
+
+# Add repository
+CODENAME=$(lsb_release -c -s)
 echo "deb [signed-by=/etc/apt/keyrings/rspamd.gpg] http://rspamd.com/apt-stable/ $CODENAME main" | sudo tee /etc/apt/sources.list.d/rspamd.list
-echo "deb-src [signed-by=/etc/apt/keyrings/rspamd.gpg] http://rspamd.com/apt-stable/ $CODENAME main"  | sudo tee -a /etc/apt/sources.list.d/rspamd.list
+echo "deb-src [signed-by=/etc/apt/keyrings/rspamd.gpg] http://rspamd.com/apt-stable/ $CODENAME main" | sudo tee -a /etc/apt/sources.list.d/rspamd.list
+
+# Install
 sudo apt-get update
 sudo apt-get --no-install-recommends install rspamd
 ```
 
-For [Hyperscan](https://www.hyperscan.io/) and [LuaJIT](https://luajit.org) information see the [FAQ](./faq).
+### Install Experimental Packages
 
-For experimental<sup>2</sup> branch replace `apt-stable` with just `apt`:
+Replace `apt-stable` with `apt` in the repository URL:
 
 ```bash
-#apt update # if running a minimal system
-#apt-get install sudo # if running a minimal system
-sudo apt-get install -y lsb-release wget gpg  # for install
-CODENAME=`lsb_release -c -s`
+# Install prerequisites
+sudo apt-get update
+sudo apt-get install -y lsb-release wget gpg
+
+# Add GPG key
 sudo mkdir -p /etc/apt/keyrings
 wget -O- https://rspamd.com/apt-stable/gpg.key | gpg --dearmor | sudo tee /etc/apt/keyrings/rspamd.gpg > /dev/null
+
+# Add experimental repository
+CODENAME=$(lsb_release -c -s)
 echo "deb [signed-by=/etc/apt/keyrings/rspamd.gpg] http://rspamd.com/apt/ $CODENAME main" | sudo tee /etc/apt/sources.list.d/rspamd.list
-echo "deb-src [signed-by=/etc/apt/keyrings/rspamd.gpg] http://rspamd.com/apt/ $CODENAME main"  | sudo tee -a /etc/apt/sources.list.d/rspamd.list
+echo "deb-src [signed-by=/etc/apt/keyrings/rspamd.gpg] http://rspamd.com/apt/ $CODENAME main" | sudo tee -a /etc/apt/sources.list.d/rspamd.list
+
+# Install
 sudo apt-get update
 sudo apt-get --no-install-recommends install rspamd
 ```
 
-For ASAN<sup>3</sup> branch install the `rspamd-asan` package instead of `rspamd` (since 3.5).
+### Install ASAN Packages
 
-Please bear in mind that you might also need the debug symbols package for Rspamd to be able to file bug reports about possible crashes. Debug symbols are placed in the `rspamd-dbg` (or `rspamd-asan-dbg`) package and can be safely installed even in a production environment.
-Check [the quick start document](./tutorials/quickstart#rspamd-installation) for further steps.
+Install `rspamd-asan` instead of `rspamd` (available since version 3.5):
 
-### Packages support policy
+```bash
+sudo apt-get --no-install-recommends install rspamd-asan
+```
 
-Check [the support policy document](#packages-support-policy) to clarify what OS versions are supported by Rspamd packages.
+### Hyperscan and LuaJIT
 
-### Debian `standard` repos notes
+For information about Hyperscan and LuaJIT in Debian/Ubuntu packages, see the [FAQ](/faq#how-rspamd-packages-are-built).
 
-Please **DO NOT** use those packages, as they are likely outdated and are not supported by the Rspamd project in any way (so any associated issue will likely be closed automatically). If you decide to use those packages then please address any issues to the Debian package maintainers.
+### Debian Standard Repository Warning
+
+The Rspamd packages in Debian's standard repositories are **not supported** by the Rspamd project. They are typically outdated and issues related to those packages will be closed automatically. Always use the official Rspamd repositories.
 
 ---
 
-<sup>1</sup> Use STABLE branch of packages: these packages are the official rspamd releases which are recommended for production usage.
+## RHEL and Compatible Distributions
 
-<sup>2</sup> Use EXPERIMENTAL branch of packages: these packages are less stable and they are generated frequently from the current development branch. Experimental packages usually have more features but might be SOMETIMES broken in some points (nevertheless, bugs are usually quickly fixed after detection).
+Rspamd provides packages for RHEL-compatible distributions including:
 
-<sup>3</sup> Use ASAN branch of packages: these are packages (both stable and experimental) designed to debug Rspamd issues, especially core files, using advanced debugging tools. Use these packages if you encounter an issue in Rspamd and you want it to be fixed.
-  </TabItem>
-  <TabItem value="other" label="Other Linux">
-    <img src="/img/linux.png" width="20" alt="Linux logo" /> Other Linux
+- Red Hat Enterprise Linux (RHEL)
+- AlmaLinux
+- Rocky Linux
+- Oracle Linux
+- CentOS Stream
 
-Rspamd is also available on the following Linux distributions:
+**Supported versions**: 8, 9, and 10
 
-- **Alpine Linux**
-- **Arch Linux**
-- **Gentoo Linux**
-- **OpenSUSE**
+### Prerequisites
+
+These packages **require** [EPEL](https://fedoraproject.org/wiki/EPEL) as many dependencies are not in base repositories:
+
+```bash
+sudo dnf install epel-release
+```
+
+### Install Stable Packages
+
+```bash
+# Determine EL version and add repository
+source /etc/os-release
+EL_VERSION=$(echo -n $PLATFORM_ID | sed "s/.*el//")
+sudo curl -o /etc/yum.repos.d/rspamd.repo https://rspamd.com/rpm-stable/centos-${EL_VERSION}/rspamd.repo
+
+# Install
+sudo dnf install rspamd
+```
+
+### Install Experimental Packages
+
+```bash
+# Determine EL version and add experimental repository
+source /etc/os-release
+EL_VERSION=$(echo -n $PLATFORM_ID | sed "s/.*el//")
+sudo curl -o /etc/yum.repos.d/rspamd.repo https://rspamd.com/rpm/centos-${EL_VERSION}/rspamd-experimental.repo
+
+# Install
+sudo dnf install rspamd
+```
+
+### Install ASAN Packages
+
+Install `rspamd-asan` instead of `rspamd`:
+
+```bash
+sudo dnf install rspamd-asan
+```
+
+### Debug Symbols
+
+For crash debugging, install the debug info package:
+
+```bash
+sudo dnf install rspamd-debuginfo
+# or for ASAN
+sudo dnf install rspamd-asan-debuginfo
+```
+
+---
+
+## Other Linux Distributions
+
+Rspamd is available in community repositories for several other distributions. Note that these packages are maintained by distribution maintainers, not the Rspamd project.
 
 ### Alpine Linux
-Rspamd is available in the [community repository](https://pkgs.alpinelinux.org/package/edge/community/x86_64/rspamd)
+
+Available in the [community repository](https://pkgs.alpinelinux.org/package/edge/community/x86_64/rspamd):
+
+```bash
+apk add rspamd
+```
 
 ### Arch Linux
-Rspamd is available in the [extra repository](https://archlinux.org/packages/extra/x86_64/rspamd/)
+
+Available in the [extra repository](https://archlinux.org/packages/extra/x86_64/rspamd/):
+
+```bash
+pacman -S rspamd
+```
 
 ### Gentoo Linux
-Ebuilds for Gentoo Linux users are available in the main [Gentoo Portage repository](https://packages.gentoo.org/packages/mail-filter/rspamd).
 
-### OpenSUSE
-Packages for OpenSUSE Leap & Tumbleweed are available on [OBS](https://build.opensuse.org/package/show/server:mail/rspamd).
-  </TabItem>
-  <TabItem value="bsd" label="BSD">
-    <img src="/img/freebsd.png" width="20" alt="FreeBSD logo" /> BSD systems
+Available in the main [Portage repository](https://packages.gentoo.org/packages/mail-filter/rspamd):
 
-Rspamd has been ported to the following BSD-like operating systems:
+```bash
+emerge mail-filter/rspamd
+```
 
-- **FreeBSD**
-- **NetBSD**
-- **OpenBSD**
-- **macOS** (using MacPorts)
+### openSUSE
 
-FreeBSD users can install Rspamd from [ports](https://www.freshports.org/mail/rspamd/) or use the experimental line of packages by [rspamd-devel](https://www.freshports.org/mail/rspamd-devel/) port.
+Packages for Leap and Tumbleweed are available on [OBS](https://build.opensuse.org/package/show/server:mail/rspamd).
 
-Users of NetBSD (and other systems with pkgsrc) can use [pkgsrc](https://pkgsrc.se/mail/rspamd).
+---
 
-OpenBSD users can use [ports](https://openports.pl/path/mail/rspamd).
+## BSD Systems
 
-macOS users can install from [MacPorts](https://ports.macports.org/port/rspamd):
+### FreeBSD
+
+Available from [ports](https://www.freshports.org/mail/rspamd/) or packages:
+
+```bash
+pkg install rspamd
+```
+
+For experimental packages, use [rspamd-devel](https://www.freshports.org/mail/rspamd-devel/).
+
+### NetBSD
+
+Available via [pkgsrc](https://pkgsrc.se/mail/rspamd):
+
+```bash
+cd /usr/pkgsrc/mail/rspamd && make install
+```
+
+### OpenBSD
+
+Available from [ports](https://openports.pl/path/mail/rspamd):
+
+```bash
+pkg_add rspamd
+```
+
+### macOS
+
+Available via [MacPorts](https://ports.macports.org/port/rspamd):
+
 ```bash
 sudo port install rspamd
 sudo port load rspamd
 ```
-  </TabItem>
-  <TabItem value="source" label="Build from Source">
-    <img src="/img/octocat.png" width="20" alt="GitHub logo" /> Build rspamd from the sources
 
-If there are no packages for your system or you want custom build options, you can also build rspamd from the source code. To do that, grab the source from [GitHub](https://github.com/rspamd/rspamd) using `git`:
+---
+
+## Building from Source
+
+If packages are not available for your platform or you need custom build options, you can build Rspamd from source.
+
+### Getting the Source
 
 ```bash
 git clone --recursive https://github.com/rspamd/rspamd.git
+cd rspamd
 ```
 
-### Build requirements
-
-Rspamd requires several 3rd-party software packages to build and run:
-
-* [openssl](https://www.openssl.org/) - cryptography and SSL/TLS Toolkit
-* [glib2](https://developer.gnome.org/glib/) - common purposes library
-* [ragel](https://www.colm.net/open-source/ragel/) - state machine compiler
-* [LuaJIT](https://luajit.org/) - JIT compiler for [Lua](https://www.lua.org/) programming language. Plain Lua should work as well.
-* [cmake](https://cmake.org/) - build system used to configure rspamd
-* [sqlite3](https://sqlite.org/) - embedded database used to store some data by rspamd
-* [libmagic](https://www.darwinsys.com/file/) - common library for detecting file types
-* [libicu](https://icu.unicode.org/) - unicode library
-* [PCRE](https://www.pcre.org/) - regular expressions library
-* [Hyperscan](https://www.hyperscan.io)/[Vectorscan](https://github.com/VectorCamp/vectorscan) - optional regexp performance boost library
-* [zlib](https://zlib.net/) - compression library
-
-You can either install them from sources or (recommended) install using the package manager of your system.
-
-It is also highly recommended to use [Redis](https://redis.io) as it can be used by many Rspamd modules to improve their filtering quality (some modules will be turned off completely without Redis).
-
-It is also recommended to build Rspamd with Hyperscan (x86_64 only) or Vectorscan (aarch64/ppc64le) and Jemalloc to improve performance.
-
-### Build process
-
-To build rspamd we recommend creating a separate build directory:
+For a specific version:
 
 ```bash
-mkdir rspamd.build
-cd rspamd.build
-cmake ../rspamd -DENABLE_HYPERSCAN=ON -DENABLE_LUAJIT=ON -DCMAKE_BUILD_TYPE=RelWithDebuginfo
-make
+git clone --recursive -b 3.10.2 https://github.com/rspamd/rspamd.git
+```
+
+### Build Requirements
+
+| Dependency | Description | Required |
+|------------|-------------|----------|
+| [CMake](https://cmake.org/) 3.12+ | Build system | Yes |
+| C11 compiler | GCC 7+ or Clang 6+ | Yes |
+| C++20 compiler | GCC 10+ or Clang 10+ | Yes |
+| [OpenSSL](https://www.openssl.org/) | Cryptography library | Yes |
+| [GLib2](https://developer.gnome.org/glib/) 2.28+ | Common utilities library | Yes |
+| [Ragel](https://www.colm.net/open-source/ragel/) | State machine compiler | Yes |
+| [LuaJIT](https://luajit.org/) or [Lua](https://www.lua.org/) 5.1-5.4 | Scripting language | Yes |
+| [SQLite3](https://sqlite.org/) | Embedded database | Yes |
+| [libmagic](https://www.darwinsys.com/file/) | File type detection | Yes |
+| [libicu](https://icu.unicode.org/) | Unicode library | Yes |
+| [PCRE2](https://www.pcre.org/) | Regular expressions | Yes |
+| [zlib](https://zlib.net/) | Compression library | Yes |
+| [Hyperscan](https://www.hyperscan.io/) | High-performance regex (x86_64) | Recommended |
+| [Vectorscan](https://github.com/VectorCamp/vectorscan) | Hyperscan for ARM64/PPC64 | Recommended |
+| [jemalloc](https://jemalloc.net/) | Memory allocator | Recommended |
+| [Redis](https://redis.io/) | In-memory data store | Recommended |
+
+### Basic Build
+
+```bash
+mkdir build && cd build
+cmake .. \
+  -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+  -DENABLE_LUAJIT=ON
+make -j$(nproc)
 sudo make install
 ```
 
-On unsupported Debian-alike or RPM-based systems, you might use in-repo fixtures to build a package.
+### Recommended Production Build
 
-An example for [Debian](https://debian.org/)-like systems:
+For production, enable additional optimizations:
 
 ```bash
-export RSPAMD_VERSION=3.7.3 # set this to desired Rspamd version
+mkdir build && cd build
+cmake .. \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DENABLE_LUAJIT=ON \
+  -DENABLE_HYPERSCAN=ON \
+  -DENABLE_JEMALLOC=ON \
+  -DCMAKE_C_FLAGS="-flto" \
+  -DCMAKE_CXX_FLAGS="-flto"
+make -j$(nproc)
+sudo make install
+```
+
+### Building with ASAN (for debugging)
+
+```bash
+mkdir build && cd build
+cmake .. \
+  -DCMAKE_BUILD_TYPE=Debug \
+  -DSANITIZE=address \
+  -DENABLE_LUAJIT=ON
+make -j$(nproc)
+```
+
+Note: ASAN builds automatically disable jemalloc.
+
+### Common CMake Options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `ENABLE_LUAJIT` | ON | Use LuaJIT instead of Lua |
+| `ENABLE_HYPERSCAN` | OFF | Enable Hyperscan regex acceleration |
+| `ENABLE_JEMALLOC` | OFF | Use jemalloc memory allocator |
+| `ENABLE_PCRE2` | ON | Use PCRE2 (vs legacy PCRE) |
+| `SANITIZE` | — | Enable sanitizers (address, memory, undefined, leak) |
+| `CMAKE_INSTALL_PREFIX` | /usr/local | Installation prefix |
+
+### Building Packages for Unsupported Systems
+
+For Debian-based systems not officially supported, you can build packages using the in-tree fixtures:
+
+```bash
+export RSPAMD_VERSION=3.10.2
 git clone -b ${RSPAMD_VERSION} https://github.com/rspamd/rspamd.git
 cd rspamd
-sed -i s/\(.*\)/\(${RSPAMD_VERSION}\)/ debian/changelog
-sed -i s/quilt/native/ debian/source/format
+
+# Update changelog version
+sed -i "s/(.*)/($RSPAMD_VERSION)/" debian/changelog
+sed -i "s/quilt/native/" debian/source/format
+
+# Install build dependencies
 sudo apt install devscripts
 mk-build-deps
-sudo bash -c "dpkg -i rspamd-build-deps_${RSPAMD_VERSION}_*.deb && apt install -f -y"
+sudo dpkg -i rspamd-build-deps_*.deb || sudo apt install -f -y
+
+# Build package
 debuild -us -uc
-sudo "dpkg -i ../rspamd_${RSPAMD_VERSION}_*.deb"
+
+# Install
+sudo dpkg -i ../rspamd_${RSPAMD_VERSION}_*.deb
 ```
-  </TabItem>
-</Tabs>
+
+For RPM-based systems, use the spec file in the `rpm/` directory.
+
+---
+
+## Next Steps
+
+After installation:
+
+1. **[Installation Guide](/getting-started/installation)** — Verify installation and configure services
+2. **[First Setup Guide](/getting-started/first-setup)** — Integrate with your MTA
+3. **[Quick Start Tutorial](/tutorials/quickstart)** — Get basic spam filtering working
