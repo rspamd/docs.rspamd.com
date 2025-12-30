@@ -2,192 +2,414 @@
 title: Composite symbols
 ---
 
+# Rspamd Composite Symbols
 
-# Rspamd composite symbols
+Composites combine multiple rules into more complex conditions. When a composite matches, it can add its own symbol and optionally remove the triggering symbols and/or their weights.
 
+## Quick Reference
 
-Rspamd composites are used to combine rules and create more complex rules. Composite rules are defined in the `composites` section of the configuration. 
-
-
+| Feature | Syntax | Effect |
+|---------|--------|--------|
+| Default removal | `SYMBOL` | Remove symbol and weight |
+| Keep weight | `~SYMBOL` | Remove symbol, keep weight |
+| Keep both | `-SYMBOL` | Keep symbol and weight |
+| Force remove | `^SYMBOL` | Force remove (overrides `-`) |
+| Symbol options | `SYMBOL[opt1,opt2]` | Match only with specific options |
+| Group match | `g:groupname` | Match any symbol from group |
+| Positive group | `g+:groupname` | Match positive-scoring symbols |
+| Negative group | `g-:groupname` | Match negative-scoring symbols |
 
 ## Configuration
 
-You could use `local.d/composites.conf` (which effects changes **inside** the `composites` section) to define new composites or to change/override existing composites. Names of keys here define the name of the composite; the value of the key should be an object that defines the composite's properties & expression, which is a combination of rules.
+Define composites in `local.d/composites.conf`:
 
-For example, you can define a composite that fires when two specific symbols are found and **replace** these symbols weights with its score:
-
-~~~hcl
+```hcl
 TEST_COMPOSITE {
     expression = "SYMBOL1 and SYMBOL2";
     score = 5.0;
 }
-~~~
+```
 
-In this case, if a message contains both `SYMBOL1` and `SYMBOL2`, they will be replaced by the `TEST_COMPOSITE` symbol. The weights of `SYMBOL1` and `SYMBOL2` will be subtracted from the metric accordingly.
+When both `SYMBOL1` and `SYMBOL2` match, they are replaced by `TEST_COMPOSITE` with score 5.0.
 
-## Composite expressions
+### Composite Properties
 
-You can use the following operations in a composite expression:
+| Property | Type | Description |
+|----------|------|-------------|
+| `expression` | string | Boolean expression defining when composite fires |
+| `score` | number | Score assigned to the composite symbol |
+| `group` | string | Symbol group for the composite |
+| `policy` | string | Default removal policy for all atoms |
+| `enabled` | boolean | Set to `false` to disable |
 
-* `AND` `&` - matches true only if both operands are true
-* `OR` `|` - matches true if any operands are true
-* `NOT` `!` - matches true if operand is false
+---
 
-You can use braces to specify the priority of operations in composite rules. If braces are not used, the operators will be evaluated from left to right. For example:
+## Execution Architecture
 
-~~~hcl
-TEST {
-    expression = "SYMBOL1 and SYMBOL2 and ( not SYMBOL3 | not SYMBOL4 | not SYMBOL5 )";
+Understanding how composites execute is essential for writing correct rules, especially when composites depend on each other or on symbols from different processing stages.
+
+### Task Processing Stages
+
+Rspamd processes messages through ordered stages. Composites execute at two specific points:
+
+```
+PREFILTERS → FILTERS → CLASSIFIERS → COMPOSITES → POST_FILTERS → COMPOSITES_POST → IDEMPOTENT
+                                          ↑                              ↑
+                                     First pass                    Second pass
+```
+
+| Stage | Description |
+|-------|-------------|
+| FILTERS | Regular filter rules execute |
+| CLASSIFIERS | Bayes classifier runs |
+| **COMPOSITES** | First-pass composites evaluate |
+| POST_FILTERS | Post-filter rules execute |
+| **COMPOSITES_POST** | Second-pass composites evaluate |
+| IDEMPOTENT | Final processing (logging, history) |
+
+### Two-Pass Evaluation
+
+Rspamd automatically analyzes composite dependencies and assigns each composite to the appropriate pass:
+
+**First pass** (COMPOSITES stage):
+- Composites that only depend on symbols from FILTERS, PREFILTERS, or CLASSIFIERS
+- The majority of composites execute here
+
+**Second pass** (COMPOSITES_POST stage):
+- Composites that depend on POST_FILTER symbols
+- Composites that depend on other second-pass composites
+
+Note: Composites cannot depend on IDEMPOTENT stage symbols because that stage is read-only and doesn't insert symbols into scan results.
+
+```hcl
+# First pass - only depends on filter symbols
+FIRST_PASS_EXAMPLE {
+    expression = "DKIM_SIGNED & SPF_ALLOW";
+}
+
+# Second pass - depends on post-filter symbol
+SECOND_PASS_EXAMPLE {
+    expression = "FIRST_PASS_EXAMPLE & SOME_POSTFILTER_SYMBOL";
+}
+```
+
+Rspamd determines pass assignment by analyzing:
+1. Direct dependencies (symbols in the expression)
+2. Transitive dependencies (if atom A depends on composite B, and B is second-pass, then A becomes second-pass)
+
+### Symbol Removal Timing
+
+Symbol removal happens **after** all composites in a pass are evaluated, not during evaluation. This has important implications:
+
+```hcl
+COMP_A {
+    expression = "SYMBOL1 & SYMBOL2";
+    # Removes SYMBOL1 and SYMBOL2
+}
+
+COMP_B {
+    expression = "SYMBOL1 & SYMBOL3";
+    # Also sees SYMBOL1 during evaluation (not yet removed)
+}
+```
+
+Both composites evaluate against the original symbol set. Removal decisions are collected and applied afterward.
+
+### Inverted Index Optimization
+
+Rspamd builds an inverted index mapping symbols to composites that use them. When a symbol fires:
+1. Rspamd looks up which composites contain that symbol
+2. Only those composites are evaluated
+
+Composites with only negated atoms (like `!SYMBOL1 & !SYMBOL2`) are always evaluated since they don't appear in the inverted index.
+
+---
+
+## Expression Syntax
+
+### Boolean Operators
+
+| Operator | Alternatives | Description |
+|----------|--------------|-------------|
+| `AND` | `&`, `and` | Both operands must be true |
+| `OR` | `\|`, `or` | Either operand must be true |
+| `NOT` | `!`, `not` | Operand must be false |
+
+Use parentheses to control precedence. Without them, operators evaluate left-to-right:
+
+```hcl
+EXAMPLE {
+    expression = "SYMBOL1 and SYMBOL2 and (not SYMBOL3 | not SYMBOL4)";
     score = 10.0;
-    group = "Some group";
 }
-~~~
+```
 
-Composite rule can include another composites in the body. There is no restriction on the order in which composite rules are defined:
+### Composites Referencing Composites
 
-~~~hcl
-TEST1 {
-    expression = "SYMBOL1 AND TEST2";
+Composites can include other composites. Definition order doesn't matter:
+
+```hcl
+PARENT {
+    expression = "SYMBOL1 AND CHILD";
 }
-TEST2 {
+CHILD {
     expression = "SYMBOL2 OR NOT SYMBOL3";
 }
-~~~
+```
 
-Composites should not be recursive, but Rspamd usually detects and prevents this automatically.
+When a composite references another composite:
+- If the referenced composite is second-pass, the referencing composite becomes second-pass too
+- Rspamd detects and prevents recursive definitions
 
-Note that symbols are removed **after** composites are applied. Therefore, you cannot rely on one composite to remove a symbol that is used in another composite.
+---
 
-You can also set up policies for composites regarding the symbols that are included in their expression. By default, Rspamd **removes** the symbols and weights that trigger the composite and replaces them with the symbol and weight of the composite itself. However, you can change this behavior in two ways.
+## Symbol Removal Policies
 
-1. Set up removal policy for each symbol:
-    * `~`: remove symbol only (weight is preserved)
-    * `-`: do not remove anything (both weight and the symbol itself are preserved)
-    * `^`: force removing of symbol and weight (by default, Rspamd prefers to leave symbols when some composite wants to remove and another composite wants to leave any of score/name pair)
-2. Set the default policy for all elements in the expression using `policy` option:
-    * `default`: default policy - remove weight and symbol
-    * `remove_weight`: remove weight only
-    * `remove_symbol`: remove symbol only
-    * `leave`: leave both symbol and score
+When a composite matches, it can remove the triggering symbols, their weights, or both. This is controlled through prefix modifiers or the `policy` setting.
 
-E.g.
+### Prefix Modifiers
 
-~~~hcl
-TEST_COMPOSITE {
+| Prefix | Symbol | Weight | Use Case |
+|--------|--------|--------|----------|
+| (none) | Removed | Removed | Replace symbols with composite |
+| `~` | Removed | **Kept** | Hide symbol but count its weight |
+| `-` | **Kept** | **Kept** | Additive scoring |
+| `^` | Removed | Removed | Force removal (overrides `-`) |
+
+### How Removal Works
+
+1. Each composite collects removal decisions for its atoms
+2. After all composites in a pass evaluate, Rspamd processes the collected decisions
+3. For each symbol, all removal requests are combined using bitwise OR
+
+The removal decision for each symbol tracks three flags:
+- **Remove symbol**: Hide the symbol name from output
+- **Remove weight**: Subtract the symbol's weight from total score
+- **Forced**: Override any "keep" requests
+
+### Conflict Resolution
+
+When multiple composites reference the same symbol with different modifiers:
+
+| Scenario | Result | Reason |
+|----------|--------|--------|
+| One uses default, another uses `-` | Symbol kept | `-` sets no removal flags, nothing to OR |
+| One uses `~`, another uses `-` | Symbol kept, weight kept | `-` prevents symbol removal |
+| One uses `^`, another uses `-` | Symbol removed | `^` sets forced flag, overrides everything |
+| Multiple use default | Symbol removed | Flags combine identically |
+
+**Example:**
+
+```hcl
+# Assume SPAM_INDICATOR exists in scan results
+
+COMPOSITE_A {
+    expression = "SPAM_INDICATOR & OTHER_SYM";
+    # Default: requests remove_symbol + remove_weight
+}
+
+COMPOSITE_B {
+    expression = "-SPAM_INDICATOR & DIFFERENT_SYM";
+    # The `-` sets no removal flags for SPAM_INDICATOR
+}
+```
+
+Result: `SPAM_INDICATOR` is **kept**. COMPOSITE_A's removal flags (remove_symbol | remove_weight) are ORed with COMPOSITE_B's flags (none). But since COMPOSITE_B explicitly requests "leave", Rspamd interprets this as "at least one composite wants it kept" and preserves the symbol.
+
+**Force removal overrides:**
+
+```hcl
+COMPOSITE_C {
+    expression = "^SPAM_INDICATOR & FORCE_CLEANUP";
+    # The `^` sets forced flag
+}
+```
+
+Now `SPAM_INDICATOR` is **removed** despite COMPOSITE_B wanting to keep it, because the forced flag overrides the keep request.
+
+**Key insight**: The `-` modifier doesn't just "not remove" — it actively protects the symbol from removal by other composites. Use `^` when you need to guarantee removal regardless of other composites.
+
+### Policy Setting
+
+Set a default policy for all atoms in an expression:
+
+```hcl
+ADDITIVE_COMPOSITE {
     expression = "SYMBOL1 and SYMBOL2";
-    policy = "leave";
+    policy = "leave";  # Both symbols and weights preserved
 }
-TEST_COMPOSITE2 {
-    expression = "SYMBOL3 and SYMBOL4";
-    policy = "remove_weight";
+```
+
+| Policy | Effect |
+|--------|--------|
+| `default` | Remove symbol and weight |
+| `remove_weight` | Remove weight only, keep symbol |
+| `remove_symbol` | Remove symbol only, keep weight |
+| `leave` | Keep both symbol and weight |
+
+Prefix modifiers override the policy for individual symbols.
+
+### Weight Calculation Examples
+
+Given: `SYMBOL_A` (weight 2.0), `SYMBOL_B` (weight 3.0), composite score 5.0
+
+| Expression | Symbols Shown | Total Score |
+|------------|---------------|-------------|
+| `SYMBOL_A & SYMBOL_B` | Composite only | 5.0 |
+| `~SYMBOL_A & SYMBOL_B` | Composite only | 7.0 (2.0 + 5.0) |
+| `-SYMBOL_A & SYMBOL_B` | SYMBOL_A + Composite | 7.0 (2.0 + 5.0) |
+| `-SYMBOL_A & -SYMBOL_B` | Both + Composite | 10.0 (2.0 + 3.0 + 5.0) |
+
+---
+
+## Symbol Groups
+
+Match any symbol from a defined group:
+
+| Syntax | Matches |
+|--------|---------|
+| `g:groupname` | Any symbol from the group |
+| `g+:groupname` | Symbols with positive score |
+| `g-:groupname` | Symbols with negative score |
+
+```hcl
+FUZZY_AND_DKIM_FAIL {
+    expression = "g+:fuzzy & !g:dkim";
+    # Matches if any positive fuzzy symbol AND no DKIM symbols
 }
-~~~
+```
 
-## Composite weight rules
+Removal policies apply only to the matched symbol, not the entire group.
 
-Composites can record symbols in a metric, which can be used to create non-captive composites. For example, you have symbol `A` and `B` with weights `W_a` and `W_b` and a composite `C` with weight `W_c`.
+---
 
-* If `C` is `A & B` then if rule `A` and rule `B` matched then these symbols are *removed* and their weights are removed as well, leading to a single symbol `C` with weight `W_c`.
-* If `C` is `-A & B`, then rule `A` is preserved, but the symbol `C` is inserted. The weight of `A` is preserved as well, so the total weight of `-A & B` will be `W_a + W_c` (weight of `B` is still removed).
-* If `C` is `~A & B`, then rule `A` is removed, but it's weight is preserved,
-  leading to the total weight of `W_a + W_c`
+## Symbol Options
 
-If you have multiple composites that include the same symbol, and one composite wants to remove the symbol while another composite wants to preserve it, the symbol will be preserved by default. Here are some more examples:
+Match symbols only when they have specific options (added in 2.0):
 
-~~~hcl
-COMP1 {
-    expression = "BLAH | !DATE_IN_PAST";
+```hcl
+SPECIFIC_DMARC {
+    expression = "DMARC_POLICY_REJECT[sp]";
+    # Only matches if DMARC_POLICY_REJECT has "sp" option
 }
-COMP2 {
-    expression = "!BLAH | DATE_IN_PAST";
+```
+
+### Option Matching
+
+| Syntax | Requirement |
+|--------|-------------|
+| `[opt1]` | Must have `opt1` |
+| `[opt1,opt2]` | Must have both `opt1` AND `opt2` |
+| `[/regex/i]` | Must have option matching regex |
+| `[/regex/,opt1]` | Must match regex AND have `opt1` |
+
+All specified options must be present (AND logic):
+
+```hcl
+COMBINED_OPTIONS {
+    expression = "SYMBOL[/user@.*/i, authenticated]";
+    # Must have an option matching the regex AND "authenticated"
 }
-COMP3 {
-    expression = "!BLAH | -DATE_IN_PAST";
+```
+
+---
+
+## Whitelist Composites
+
+Composites with negative scores act as whitelists. Rspamd handles these specially:
+
+```hcl
+WHITELIST_SENDER {
+    expression = "GOOD_SENDER & DKIM_VALID";
+    score = -10.0;  # Negative score = whitelist
 }
-~~~
+```
 
-Both `BLAH` and `DATE_IN_PAST` exist in the message's check results. However, `COMP3` wants to preserve `DATE_IN_PAST` so it will be saved in the output.
+When a composite has negative score, Rspamd marks its atoms as "FINE" symbols. This prevents the spam filtering logic from short-circuiting before these symbols are evaluated, ensuring whitelist composites have a chance to match.
 
-If we rewrite the previous example but replace `-` with `~` then `DATE_IN_PAST` will be removed (however, its weight won't be removed):
+---
 
-~~~hcl
-COMP1 {
-    expression = "BLAH | !DATE_IN_PAST";
-}
-COMP2 {
-    expression = "!BLAH | DATE_IN_PAST";
-}
-COMP3 {
-    expression = "!BLAH | ~DATE_IN_PAST";
-}
-~~~
+## Disabling Composites
 
-When we want to remove a symbol, despite other composites combinations, it is possible to add the prefix `^` to the symbol:
+Disable a stock composite in `local.d/composites.conf`:
 
-~~~hcl
-COMP1 {
-    expression = "BLAH | !DATE_IN_PAST";
-}
-COMP2 {
-    expression = "!BLAH | ^DATE_IN_PAST";
-}
-COMP3 {
-    expression = "!BLAH | -DATE_IN_PAST";
-}
-~~~
-
-In this example `COMP3` wants to save `DATE_IN_PAST` once again, however `COMP2` overrides this and removes `DATE_IN_PAST`.
-
-## Composites with symbol groups
-
-It is possible to include a group of symbols in a composite rule. This effectively means **any** matched symbol of the specified group:
-
-* `g:<group>` - matches **any** symbol
-* `g+:<group>` - matches any symbol with **positive** score
-* `g-:<group>` - matches any symbol with **negative** score
-
-Removal policies are applied only to the matched symbols and not to the entire group.
-
-~~~hcl
-TEST2 {
-    expression = "SYMBOL2 & !g:mua & g+:fuzzy";
-}
-~~~
-
-## Disabling composites
-
-You can disable a composite rule by adding `enabled = false` to its definition. For example, to disable the `DKIM_MIXED` composite defined in the stock configuration, you can add the following to `local.d/composites.conf`:
-
-~~~hcl
+```hcl
 DKIM_MIXED {
     enabled = false;
 }
-~~~
+```
 
-You can also disable composites from the [users settings](/configuration/settings) from Rspamd `1.9`.
+You can also disable composites via [user settings](/configuration/settings).
 
-## Composites on symbol options
+---
 
-Starting from version 2.0, it is also possible to augment the conditions of composite rules by adding required symbol options. For example, if a symbol `SYM` can insert options `opt1` and `opt2`, you can create a composite expression that only triggers if the `opt2` option is presented:
+## Common Patterns
 
-~~~hcl
-TEST2 {
-    expression = "SYM[opt2]";
+### Combine Related Signals
+
+```hcl
+PHISHING_COMBO {
+    expression = "PHISHING & (SUSPICIOUS_URL | REDIRECTOR_URL)";
+    score = 8.0;
 }
-~~~
+```
 
-`[opt2]` syntax means a list of options allowed for a symbol to match. You can also add multiple options:
+### Whitelist Exception
 
-`[opt1,opt2]` - it means that **both** `opt1` and `opt2` must be added by a symbol,
+```hcl
+TRUSTED_FORWARDER {
+    expression = "-FORGED_SENDER & KNOWN_FORWARDER & DKIM_VALID";
+    score = -5.0;
+    # Keeps FORGED_SENDER visible but reduces overall score
+}
+```
 
-or even regular expressions:
+### Escalate When Multiple Signals
 
-`[/opt\d/i]` - this must not include comma, even escaped...
+```hcl
+HIGH_CONFIDENCE_SPAM {
+    expression = "g+:fuzzy & BAYES_SPAM & (RBL_SPAMHAUS | RBL_BARRACUDA)";
+    score = 15.0;
+}
+```
 
-or a mix of both:
+### Remove Noise, Keep Score
 
-`[/opt\d/i, foo]`
+```hcl
+CONSOLIDATED_RBL {
+    expression = "~RBL_A & ~RBL_B & ~RBL_C";
+    score = 0;  # Weight from individual RBLs is preserved
+    # Hides individual RBL symbols, shows only this composite
+}
+```
 
-In all cases, **all** matches are required (not just in a single option, but in an options list for a symbol).
+---
 
-In the future, this feature may be extended to support fully functional expressions if needed.
+## Troubleshooting
+
+### Composite Not Firing
+
+1. **Check symbol availability**: Use `rspamc symbols` to see available symbols
+2. **Verify execution stage**: If the composite depends on post-filter symbols, it runs in the second pass
+3. **Check for typos**: Symbol names are case-sensitive
+4. **Test expression logic**: Simplify the expression to isolate the issue
+
+### Unexpected Symbol Removal
+
+1. **Check all composites**: Search for the symbol across all composite definitions
+2. **Look for `^` prefix**: Force removal overrides keep (`-`) requests
+3. **Consider pass ordering**: Second-pass composites see results of first-pass removals
+
+### Debugging
+
+Use `rspamc` to test composites:
+
+```bash
+# Check which composites matched
+rspamc -v < test_message.eml | grep -i composite
+
+# See all symbols including removed ones (pass all symbols through)
+rspamc -p < test_message.eml
+```
+
+The `-p` flag (or HTTP header `Pass: all`) shows all symbols including those that were removed by composites, which helps trace removal decisions.
