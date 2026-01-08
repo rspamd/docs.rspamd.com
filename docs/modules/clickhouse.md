@@ -266,6 +266,66 @@ custom_rules {
 };
 ~~~
 
+## Dynamic extra tables API
+
+*Available since version 3.14.3*
+
+The Clickhouse module exposes a Lua API that allows other plugins to register custom tables at runtime. This enables plugins to store their own data in ClickHouse without modifying the core clickhouse configuration.
+
+### API functions
+
+Access via `rspamd_plugins['clickhouse']`:
+
+| Function | Description |
+|----------|-------------|
+| `register_extra_table(opts)` | Register a new table with schema, insert query, and row callback |
+| `unregister_extra_table(name)` | Remove a registered table |
+| `get_extra_tables()` | List all registered tables |
+| `is_enabled()` | Check if clickhouse plugin is active |
+
+### Features
+
+- **Lazy schema upload**: Table schema is created on first data flush, not at registration time
+- **Multi-row support**: `get_row` callback can return a single row `{...}` or an array of rows `{{...}, {...}}`
+- **Per-table retention**: Each registered table can have independent retention period and method (drop/detach)
+- **Error resilience**: Callbacks are wrapped in pcall; errors are logged but don't affect other tables
+
+### Example usage
+
+~~~lua
+rspamd_config:add_on_load(function(cfg, ev_base, worker)
+  if worker:is_scanner() and rspamd_plugins['clickhouse'] and 
+     rspamd_plugins['clickhouse'].is_enabled() then
+    rspamd_plugins['clickhouse'].register_extra_table({
+      name = 'my_plugin_stats',
+      table_name = 'rspamd_my_plugin',
+      schema = [[CREATE TABLE IF NOT EXISTS rspamd_my_plugin (
+        Date Date, TS DateTime, MessageId String, CustomData String
+      ) ENGINE = MergeTree() PARTITION BY toMonday(Date) ORDER BY TS]],
+      insert_query = function() 
+        return 'INSERT INTO rspamd_my_plugin (Date, TS, MessageId, CustomData)' 
+      end,
+      get_row = function(task)
+        local ts = task:get_date({format = 'connect', gmt = true})
+        return { os.date('!%Y-%m-%d', ts), ts, task:get_message_id() or '', 'data' }
+      end,
+      retention = { enable = true, period_months = 3, method = 'detach' }
+    })
+  end
+end)
+~~~
+
+### Registration options
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `name` | String | Unique identifier for the registration |
+| `table_name` | String | ClickHouse table name |
+| `schema` | String | CREATE TABLE statement |
+| `insert_query` | Function | Returns INSERT statement string |
+| `get_row` | Function | Returns row data for a task (single row or array) |
+| `retention` | Table | Optional retention settings: `enable`, `period_months`, `method` |
+
 ## Database schema
 
 The module creates a `rspamd` table with the following columns:
