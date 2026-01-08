@@ -3,6 +3,48 @@
 
 export const changelogData = [
   {
+    "version": "3.14.3",
+    "date": "2026-01-08",
+    "type": "patch",
+    "title": "Patch Release with PDF Text Extraction, Task Registry, and ClickHouse Extensibility",
+    "sections": [
+      {
+        "title": "Added",
+        "items": [
+          "**PDF text extraction**: Extract text from PDF attachments for content analysis with text quality filtering, FlateDecode and ASCIIHexDecode filter support, UTF-16 detection and conversion, ligature support for Standard and MacRoman encodings, and new `rspamadm mime -r` flag for raw extraction ([#5762](https://github.com/rspamd/rspamd/pull/5762))",
+          "**Task registry for Lua**: New task registry prevents use-after-free bugs in async Lua callbacks using counter-based keys instead of raw pointers for safe validation ([#5803](https://github.com/rspamd/rspamd/pull/5803))",
+          "**ClickHouse extra tables API**: Plugins can dynamically register custom ClickHouse tables via `rspamd_plugins['clickhouse'].register_extra_table()` with per-table schemas, row callbacks, and independent retention settings ([#5810](https://github.com/rspamd/rspamd/pull/5810))",
+          "**WebUI error log**: New error log modal tracking last 50 API errors with unseen error counter badge, copy-to-clipboard support with HTTP fallback, and color-coded error types with responsive column hiding ([#5821](https://github.com/rspamd/rspamd/pull/5821))"
+        ]
+      },
+      {
+        "title": "Fixed",
+        "items": [
+          "**Neural symbol flags**: Include symbols with no flags by default instead of excluding them",
+          "**Symcache FINE propagation**: Make FINE propagation deterministic ([#5825](https://github.com/rspamd/rspamd/issues/5825))",
+          "**URL numeric IP**: Prevent false positives from numeric IP regeneration in mailto URLs ([#5823](https://github.com/rspamd/rspamd/issues/5823))",
+          "**Settings selector**: Allow spaces in selector regexps",
+          "**Thai language**: Prevent R_MIXED_CHARSET false positives by marking Thai as having diacritics ([#5817](https://github.com/rspamd/rspamd/pull/5817), [#5799](https://github.com/rspamd/rspamd/issues/5799))",
+          "**GPT plugin**: Improved output format instructions for more reliable responses ([#5815](https://github.com/rspamd/rspamd/pull/5815), [#5670](https://github.com/rspamd/rspamd/issues/5670))",
+          "**io_uring HTTP**: Handle connection errors properly in HTTP client backend",
+          "**MIME Lua stack**: Restore Lua stack properly in second-pass detection",
+          "**Redis stats**: Add null checks for task in callbacks",
+          "**Lua 5.4 compatibility**: Fixes in ClickHouse and Elastic plugins ([#5774](https://github.com/rspamd/rspamd/pull/5774))",
+          "**Task lifetime crashes**: Fix potential crashes when Redis is unavailable longer than task lifetime ([#5803](https://github.com/rspamd/rspamd/pull/5803))"
+        ]
+      },
+      {
+        "title": "Improved",
+        "items": [
+          "**replxx build**: Fix build with LLVM 21+",
+          "**macOS build**: Add Homebrew LLVM libc++ library path",
+          "**fmt library**: Update to version 12.1.0",
+          "**SDK headers**: Avoid SDK headers in include path when package ROOT is specified"
+        ]
+      }
+    ]
+  },
+  {
     "version": "3.14.2",
     "date": "2025-12-10",
     "type": "patch",
