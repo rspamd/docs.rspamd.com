@@ -48,7 +48,7 @@ All scanner types support these common options:
 | `log_clean` | boolean | `false` | Log messages when content is clean |
 | `action` | string | (none) | Force this action when virus found (e.g., `reject`) |
 | `message` | string | (varies) | Custom rejection message, supports `${SCANNER}` and `${VIRUS}` variables |
-| `whitelist` | string | (none) | Path to map of IP addresses to skip scanning |
+| `whitelist` | string | (none) | Path to map of virus names/signatures to ignore |
 | `patterns` | table | (none) | Regex patterns to map virus names to custom symbols |
 | `patterns_fail` | table | (none) | Regex patterns to map error messages to custom symbols |
 | `prefix` | string | (auto) | Redis cache key prefix |
@@ -148,7 +148,7 @@ clamav {
     JUST_EICAR = '^Eicar-Test-Signature$';
   }
   
-  # Whitelist IPs that should not be scanned
+  # Whitelist virus names/signatures to ignore
   # whitelist = "/etc/rspamd/antivirus.wl";
   
   # Replace this exact string with EICAR for testing
