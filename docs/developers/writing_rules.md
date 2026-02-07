@@ -190,36 +190,90 @@ rspamd_config:register_symbol({
 
 ## Level 7: Plugin Creation
 
-Use a plugin when you need configurable, reusable multi-symbol logic.
+Use a plugin when you need to be configuration-driven; if you don't need configuration use a rule.
 
 ```lua
--- /etc/rspamd/local.d/my_plugin.lua (deployed in the right place for your setup)
+-- /etc/rspamd/plugins.d/my_plugin.lua ($LOCAL_CONFDIR/plugins.d)
+
+local rspamd_logger = require "rspamd_logger"
 local lua_util = require "lua_util"
+local T = require "lua_shape.core"
+local PluginSchema = require "lua_shape.plugin_schema"
 
-local M = 'my_plugin'
+local N = 'my_plugin'
 
-local function check_one(task)
-  if task:get_header('X-Flag') == 'on' then
-    task:insert_result('MY_PLUGIN_SYMBOL', 1.0)
+-- Default settings
+local settings = {
+  header_name = 'X-Flag',
+}
+
+-- Schema validates and documents configuration
+local settings_schema = T.table({
+  header_name = T.string():optional():doc({ summary = "Header to check" }),
+}):doc({ summary = "My plugin configuration" })
+
+PluginSchema.register("plugins.my_plugin", settings_schema)
+
+-- Load configuration
+local opts = rspamd_config:get_all_opt(N)
+if opts then
+  settings = lua_util.override_defaults(settings, opts)
+
+  local ok, schema_err = settings_schema:transform(settings)
+  if not ok then
+    rspamd_logger.errx(rspamd_config, '%s: config schema error: %s', N, schema_err)
+    lua_util.disable_module(N, "config")
+    return
   end
 end
 
-rspamd_config:register_symbol({
-  name = 'MY_PLUGIN_SYMBOL',
-  callback = check_one,
-  score = 0.0,
-  group = 'policies',
+if not settings.enabled then
+  rspamd_logger.infox(rspamd_config, '%s: disabled by configuration', N)
+  lua_util.disable_module(N, "config")
+  return
+end
+
+local function check_header(task)
+  local hdr = task:get_header(settings.header_name)
+  if not hdr then
+    task:insert_result('MY_PLUGIN_MISSING', 1.0)
+    return
+  end
+  if hdr:sub(1, 2) == 'on' then
+    task:insert_result('MY_PLUGIN_SYMBOL', 1.0, settings.header_name)
+  end
+end
+
+local id = rspamd_config:register_symbol({
+  name = 'MY_PLUGIN_CHECK',
+  type = 'callback',
+  callback = check_header,
+  group = N,
 })
 
-return { name = M }
+rspamd_config:register_symbol({
+  name = 'MY_PLUGIN_SYMBOL',
+  type = 'virtual',
+  score = 0.0,
+  parent = id,
+  group = N,
+})
+
+rspamd_config:register_symbol({
+  name = 'MY_PLUGIN_MISSING',
+  type = 'virtual',
+  score = 1.0,
+  parent = id,
+  group = N,
+})
 ```
 
-Configuration:
+Configuration in `/etc/rspamd/rspamd.conf.local`:
 
 ```hcl
-# /etc/rspamd/local.d/my_plugin.conf
-enabled = true;
-threshold = 5;
+my_plugin {
+  header_name = "X-Custom-Flag";
+}
 ```
 
 ## Level 8: Advanced Lua Functions
