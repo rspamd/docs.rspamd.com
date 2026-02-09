@@ -31,7 +31,7 @@ sudo mkdir -p /etc/rspamd/dkim
 cd /etc/rspamd/dkim
 
 # Generate a 2048-bit RSA key (recommended)
-rspamadm dkim_keygen -s mail -d example.com -k mail.key
+rspamadm dkim_keygen -b 2048 -s mail -d example.com -k mail.key
 
 # This creates:
 # - mail.key (private key)  
