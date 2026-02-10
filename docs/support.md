@@ -3,32 +3,29 @@ title: Rspamd Support
 description: Support options for Rspamd users
 ---
 
-# Support Options
+# Support
 
-Rspamd is free and open source software. The developers are mostly volunteers who provide user support in their free time. Before asking for help, please check our [Documentation](/) first, especially the [Rspamd Quick Start](./tutorials/quickstart) and [Frequently Asked Questions](./faq).
+Rspamd is free and open source software. The developers are mostly volunteers who provide user support in their free time. Before asking for help, please check the [documentation](/) -- in particular the [Quick Start guide](./tutorials/quickstart) and the [FAQ](./faq).
 
-## Reporting Bugs and Feature Requests
+## Where to ask
 
-If you find a bug or would like to request a specific feature, please use our issue tracker hosted on GitHub. We also welcome pull requests for any part of the project: documentation, website, WebUI, or Rspamd itself.
+| I need to... | Go here |
+|---|---|
+| Report a bug or request a feature | [GitHub Issues](https://github.com/rspamd/rspamd/issues) |
+| Propose or discuss an idea | [GitHub Discussions](https://github.com/rspamd/rspamd/discussions) |
+| Ask a quick question or get troubleshooting help | [Discord](https://discord.gg/RsBM5KXtgX) or [Telegram](https://t.me/rspamd) |
+| Follow announcements and long-form threads | [Mailing lists](https://lists.rspamd.com) |
+| Submit a patch (code, docs, WebUI) | [Pull requests on GitHub](https://github.com/rspamd/rspamd/pulls) |
+
+:::caution
+Please do not share sensitive data in any public channel. Redact IP addresses, domain names, and log fragments before posting.
+:::
+
+## Community channels
 
 <div className="buttons-row">
   <a className="button button--primary button--lg" href="https://github.com/rspamd/rspamd" target="_blank" rel="noopener noreferrer">
     <i className="fa-brands fa-github"></i> GitHub
-  </a>
-</div>
-
-## Community Support
-
-Join our community for updates, release announcements, and other news:
-
-Discord provides a real-time place for quick questions, status updates, and community coordination. It complements GitHub Discussions and mailing lists: use GitHub for bug reports and feature proposals, and Discord for short Q&A, troubleshooting hints, and release announcements. Please do not share sensitive data; redact logs and addresses.
-
-<div className="buttons-row">
-  <a className="button button--primary button--lg" href="https://lists.rspamd.com" target="_blank" rel="noopener noreferrer">
-    <i className="fa-solid fa-envelope"></i> Mailing Lists
-  </a>
-  <a className="button button--secondary button--lg" href="https://github.com/rspamd/rspamd/discussions" target="_blank" rel="noopener noreferrer">
-    <i className="fa-brands fa-github"></i> GitHub Discussions
   </a>
   <a className="button button--info button--lg" href="https://discord.gg/RsBM5KXtgX" target="_blank" rel="noopener noreferrer">
     <i className="fa-brands fa-discord"></i> Discord
@@ -39,21 +36,24 @@ Discord provides a real-time place for quick questions, status updates, and comm
   <a className="button button--info button--lg" href="https://t.me/rspamd_ru" target="_blank" rel="noopener noreferrer">
     <i className="fa-solid fa-paper-plane"></i> Telegram (Russian)
   </a>
+  <a className="button button--secondary button--lg" href="https://lists.rspamd.com" target="_blank" rel="noopener noreferrer">
+    <i className="fa-solid fa-envelope"></i> Mailing Lists
+  </a>
 </div>
+
+## Commercial support
+
+For large or custom deployments that may require NDA signing, consulting, dedicated access to fuzzy storage or DNS lists, commercial support is available. Contact <support@rspamd.com> for details.
 
 ## Donations
 
-If you would like to support Rspamd development, you can make donations to help cover hardware costs and conference expenses used for Rspamd development and promotion. You can donate via PayPal, GitHub Sponsors, or contact support@rspamd.com.
+Donations help cover hardware costs and conference expenses. If you would like to support Rspamd development:
 
 <div className="buttons-row">
-  <a className="button button--primary button--lg" href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=3TP4GZMMXV8H4" target="_blank" rel="noopener noreferrer">
-    <i className="fa-brands fa-paypal"></i> PayPal
-  </a>
-  <a className="button button--secondary button--lg" href="https://github.com/sponsors/vstakhov" target="_blank" rel="noopener noreferrer">
+  <a className="button button--primary button--lg" href="https://github.com/sponsors/vstakhov" target="_blank" rel="noopener noreferrer">
     <i className="fa-brands fa-github"></i> GitHub Sponsors
   </a>
+  <a className="button button--secondary button--lg" href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=3TP4GZMMXV8H4" target="_blank" rel="noopener noreferrer">
+    <i className="fa-brands fa-paypal"></i> PayPal
+  </a>
 </div>
-
-## Commercial Support
-
-If you require additional support for large or custom Rspamd setups that may involve NDA signing, consulting, direct access to fuzzy storage, DNS lists, and similar services, commercial support options are available. For more information, please contact <support@rspamd.com>.
