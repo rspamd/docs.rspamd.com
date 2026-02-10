@@ -33,35 +33,45 @@ Rspamd is a **high-performance email processing daemon** that analyzes messages 
 When an email arrives, it goes through a multi-stage processing pipeline:
 
 ```mermaid
-sequenceDiagram
-    participant MTA as Mail Server
-    participant Rspamd as Rspamd Daemon
-    participant Modules as Analysis Modules
-    participant Storage as Redis/Database
+flowchart TD
+    MTA[MTA] -->|Milter| Proxy[Proxy worker]
+    MTA -->|HTTP| NW
+    Proxy -->|HTTP| NW
 
-    MTA->>Rspamd: Send message via HTTP
-    Rspamd->>Rspamd: Parse MIME structure
-    Rspamd->>Modules: Pre-filters (whitelist, rate limiting)
-
-    alt Message whitelisted
-        Modules->>Rspamd: Skip processing
-        Rspamd->>MTA: Accept (pre-result)
-    else Continue processing
-        Rspamd->>Modules: Main filters (SPF, DKIM, content, etc.)
-        Modules->>Storage: Async lookups (DNS, Redis, HTTP)
-        Storage->>Modules: Results
-        Modules->>Rspamd: Symbols with scores
-        Rspamd->>Modules: Post-filters (composites, actions)
-        Rspamd->>Rspamd: Calculate final score
-        Rspamd->>MTA: JSON response (action + details)
+    subgraph NW[Normal worker]
+        direction TB
+        A[Parse MIME structure] --> B[Pre-filters]
+        B -->|pre-result| Reply
+        B -->|continue| C[Filters]
+        C --> D[Classifiers]
+        D --> E[Composites]
+        E --> F[Post-filters]
+        F --> G[Autolearn]
+        G --> H[Idempotent filters]
+        H --> Reply[Score and action]
     end
+
+    C ---|async I/O| Ext[DNS / Redis / HTTP]
 ```
+
+**Pipeline stages at a glance:**
+
+| Stage | What runs | Can short-circuit? |
+|-------|-----------|-------------------|
+| 1. Parse MIME | Headers, text parts, URLs, attachments | No |
+| 2. Pre-filters | Settings, whitelisting, rate limiting | Yes (pre-result) |
+| 3. Filters | SPF, DKIM, DMARC, RBL, regexp, phishing, fuzzy, ... | No |
+| 4. Classifiers | Bayes, neural network | No |
+| 5. Composites | Combine symbols with boolean logic | No |
+| 6. Post-filters | Force actions, milter headers | No |
+| 7. Autolearn | Optional Bayes training | No |
+| 8. Idempotent | History, metadata export, ClickHouse | No |
 
 ### Stage-by-Stage Breakdown
 
 #### 1. Message Reception
 
-The MTA sends the message to Rspamd via HTTP POST request:
+The MTA sends the message to Rspamd either via the **milter protocol** (through the [proxy worker](/workers/rspamd_proxy)) or via a direct **HTTP POST** to the [normal worker](/workers/normal):
 
 ```http
 POST /checkv2 HTTP/1.1
@@ -72,7 +82,7 @@ Helo: mail.example.com
 [raw message content]
 ```
 
-Rspamd receives not just the message, but also **envelope data** (sender IP, SMTP commands, authentication info) that's crucial for accurate analysis.
+Rspamd receives not just the message, but also **envelope data** (sender IP, SMTP commands, authentication info) that is crucial for accurate analysis.
 
 #### 2. MIME Parsing
 
@@ -87,18 +97,17 @@ This parsed structure is made available to all modules through the **task object
 
 #### 3. Pre-filters: Early Decisions
 
-**Pre-filters** run before main analysis and can short-circuit processing:
+**Pre-filters** run before main analysis and can short-circuit processing by setting a **pre-result**:
 
-**Use cases:**
+- **Settings application**: Load user-specific or domain-specific configuration
 - **Whitelisting**: Trusted senders bypass spam checks entirely
 - **Rate limiting**: Reject messages exceeding rate limits immediately
-- **Settings application**: Load user-specific or domain-specific configuration
 
-**Example**: A whitelisted IP address gets `no action` immediately, saving processing time.
+If a pre-filter sets a pre-result (e.g. `accept` or `soft reject`), remaining stages are skipped and Rspamd replies to the MTA immediately.
 
-#### 4. Main Filters: Core Analysis
+#### 4. Filters: Core Analysis
 
-This is where the bulk of spam detection happens. Multiple modules run **concurrently** (for I/O-bound checks) or sequentially (for CPU-bound checks):
+This is where the bulk of spam detection happens. Multiple modules run **concurrently** (for I/O-bound checks like DNS and Redis lookups) or sequentially (for CPU-bound checks):
 
 **Authentication checks** (SPF, DKIM, DMARC):
 ```
@@ -115,13 +124,6 @@ Body: Contains suspicious patterns
 → Symbols: SUBJ_ALL_CAPS, DRUGS_ERECTILE
 ```
 
-**Statistical classification** (Bayes, neural networks):
-```
-Token analysis: 85% match with spam corpus
-Neural network: 0.92 spam probability
-→ Symbols: BAYES_SPAM, NEURAL_SPAM_LONG
-```
-
 **Reputation checks** (RBLs, URL lists):
 ```
 Sender IP: Listed in zen.spamhaus.org
@@ -129,29 +131,46 @@ URL: example-spam.com listed in SURBL
 → Symbols: RBL_SPAMHAUS_PBL, SURBL_MULTI
 ```
 
-#### 5. Post-filters: Final Adjustments
+#### 5. Classifiers
 
-**Post-filters** run after all main filters complete:
+After the main filters complete, **statistical classifiers** run:
 
-**Composites** - Combine symbols using boolean logic:
-```lua
--- If both SPF and DKIM fail, it's very suspicious
+- **Bayes** (OSB tokenizer): Compares token frequencies against learned spam/ham corpora stored in Redis.
+- **Neural network**: Analyses the pattern of symbols already inserted by previous stages and produces its own score.
+
+```
+Bayes token analysis: 85% match with spam corpus → BAYES_SPAM (+3.5)
+Neural network: 0.92 spam probability → NEURAL_SPAM_LONG (+2.0)
+```
+
+#### 6. Composites
+
+**Composites** combine symbols using boolean logic to create meta-symbols or adjust scores:
+
+```
+# If both SPF and DKIM fail, it is very suspicious
 SUSPICIOUS_FORGERY = (R_SPF_FAIL | R_SPF_SOFTFAIL) & DKIM_REJECT
 ```
 
-**Force actions** - Override score-based decisions:
-```lua
--- Always reject if listed in specific RBL
-if symbol('RBL_SPAMCOP') then
-    action = 'reject'
-end
-```
+Composites can also remove redundant symbols or zero out scores when combinations indicate a false positive.
 
-**Metadata export** - Send results to external systems (ClickHouse, Elasticsearch).
+#### 7. Post-filters
 
-#### 6. Score Calculation and Action Selection
+**Post-filters** run after composites and can override the score-based action:
 
-Rspamd sums all symbol scores to get a **total score**:
+- **Force actions**: Override the score-based decision (e.g. always reject if a specific RBL matches).
+- **Milter headers**: Add or modify headers (`X-Spam-Status`, DKIM signatures, etc.).
+
+#### 8. Autolearn and Idempotent Filters
+
+Two final stages run after the action has been determined:
+
+- **Autolearn**: If configured, Rspamd feeds the message to the Bayes classifier as spam or ham based on the final score. This stage never changes the action.
+- **Idempotent filters**: Export results to external systems ([history_redis](/modules/history_redis), [ClickHouse](/modules/clickhouse), [metadata exporter](/modules/metadata_exporter)). These filters are guaranteed to never modify the scan result.
+
+### Score Calculation and Action Selection
+
+After all stages complete, Rspamd sums all symbol scores to get a **total score**:
 
 ```
 R_SPF_FAIL:              +1.0
@@ -172,7 +191,7 @@ Threshold: add header (6.0) - Yes
 → Action: add header
 ```
 
-#### 7. Response to MTA
+### Response to MTA
 
 Rspamd returns a JSON response:
 
