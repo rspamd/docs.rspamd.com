@@ -28,6 +28,8 @@ The `hosts` option for the `upstream` and `mirror` can specify IP addresses or U
 | `max_retries` | 5 | Maximum number of retries for upstream connections |
 | `keypair` | - | Server's encryption keypair |
 | `encrypted_only` | false | Allow only encrypted connections |
+| `ssl_cert` | - | Path to PEM certificate file (required when using `ssl` bind sockets, see [HTTPS support](/workers/#https-support)) |
+| `ssl_key` | - | Path to PEM private key file (required when using `ssl` bind sockets) |
 | `discard_on_reject` | false | Tell MTA to discard rejected messages silently |
 | `quarantine_on_reject` | false | Tell MTA to quarantine rejected messages |
 | `spam_header` | `X-Spam` | Header name for spam marking |
@@ -50,8 +52,8 @@ The `hosts` option for the `upstream` and `mirror` can specify IP addresses or U
 | `settings_id` | - | Apply specific settings from user settings module |
 | `timeout` | - | Override timeout for this upstream |
 | `local` | false | Mark as local upstream |
-| `ssl` | false | Use SSL/TLS for connection |
-| `keepalive` | false | Use HTTP keepalive |
+| `ssl` | false | Use SSL/TLS for connection to upstream |
+| `keepalive` | false | Use HTTP keepalive (also accepted as `keep_alive`) |
 | `extra_headers` | - | Additional headers to send |
 
 For a full list of options, please refer to `rspamadm confighelp workers.rspamd_proxy`.

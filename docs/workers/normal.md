@@ -15,6 +15,8 @@ Rspamd normal worker is intended to scan messages for spam. It has the following
 | `max_tasks` | 0 | Maximum count of parallel tasks processed by a single worker (0 = no limit) |
 | `keypair` | - | Encryption keypair for secure communications |
 | `encrypted_only` | false | Allow only encrypted connections |
+| `ssl_cert` | - | Path to PEM certificate file (required when using `ssl` bind sockets, see [HTTPS support](/workers/#https-support)) |
+| `ssl_key` | - | Path to PEM private key file (required when using `ssl` bind sockets) |
 
 ## Encryption support
 
