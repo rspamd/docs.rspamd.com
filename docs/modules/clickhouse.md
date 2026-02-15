@@ -326,6 +326,21 @@ end)
 | `get_row` | Function | Returns row data for a task (single row or array) |
 | `retention` | Table | Optional retention settings: `enable`, `period_months`, `method` |
 
+### Task UUID (3.15+)
+
+*Available since version 3.15*
+
+The module can store a native UUID v7 (RFC 9562) for each task, enabling efficient cross-system correlation and time-based queries:
+
+~~~hcl
+# local.d/clickhouse.conf
+
+# Enable UUID column (default: true)
+enable_uuid = true;
+~~~
+
+UUID v7 uses a 48-bit millisecond timestamp prefix, which works efficiently with ClickHouse's `Delta` codec for compression. The UUID is generated at task creation time and remains consistent across all plugins that use it.
+
 ## Database schema
 
 The module creates a `rspamd` table with the following columns:
@@ -334,6 +349,7 @@ The module creates a `rspamd` table with the following columns:
 |--------|------|-------------|
 | `Date` | Date | Date (used for partitioning) |
 | `TS` | DateTime | Timestamp (UTC) |
+| `TaskUUID` | UUID | Native UUID v7 for task identification (3.15+, Delta+LZ4 codec) |
 | `From` | String | Envelope sender domain |
 | `MimeFrom` | String | MIME From domain |
 | `IP` | String | Sender IP (masked) |

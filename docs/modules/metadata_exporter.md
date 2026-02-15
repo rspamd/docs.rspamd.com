@@ -64,6 +64,7 @@ metadata_exporter {
 
  - `http`: sends content over HTTP POST
  - `redis_pubsub`: sends content over Redis Pub/Sub
+ - `redis_stream` (3.15+): sends content to a Redis Stream
  - `send_mail`: sends content over SMTP
 
 ### Stock selectors
@@ -83,6 +84,7 @@ metadata_exporter {
  - `multipart` (3.14.2+): Sends metadata as JSON part + raw message as `message/rfc822` part using standard `multipart/form-data`
  - `msgpack` (3.14.2+): Binary MessagePack format with embedded message (efficient for binary data)
  - `json_with_message` (3.14.2+): JSON with base64-encoded message
+ - `structured` (3.15+): Rich structured export with UUID v7 correlation, extracted text, attachments, images, URLs in MessagePack format
 
 ### Settings: general
 
@@ -110,6 +112,16 @@ The following settings can be defined on any rule:
  - `channel` (required): defines Pub/Sub channel to post content to
 
 See [here](/configuration/redis) for information on configuring Redis servers.
+
+### Settings: `redis_stream` backend
+
+*Available since version 3.15*
+
+ - `stream_key` (required): defines Redis Stream key to append content to
+ - `max_len`: optional maximum length for the stream (uses `MAXLEN ~` for approximate trimming)
+ - `per_recipient`: if `true`, creates per-recipient streams by appending `:recipient@address` to `stream_key`
+
+The backend uses Redis `XADD` command. This is useful for building event-driven pipelines with consumer groups.
 
 ### Settings: `send_mail` backend
 
@@ -337,3 +349,58 @@ metadata_exporter {
   }
 }
 ```
+
+### Structured formatter (3.15+)
+
+The `structured` formatter provides rich, analysis-ready metadata in MessagePack format with native UUID v7 correlation:
+
+~~~hcl
+metadata_exporter {
+  rules {
+    STRUCTURED_EXPORT {
+      backend = "redis_stream";
+      formatter = "structured";
+      stream_key = "rspamd:events";
+      max_len = 10000;
+      # Optional: compress text/attachments with zstd
+      zstd_compress = true;
+    }
+  }
+}
+~~~
+
+#### Structured formatter output fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `uuid` | String | Native UUID v7 (RFC 9562) with 48-bit timestamp prefix |
+| `ip` | String | Sender IP address |
+| `from` | String | SMTP envelope sender |
+| `rcpt` | String | SMTP envelope recipient |
+| `user` | String | Authenticated username |
+| `score` | Number | Spam score |
+| `action` | String | Rspamd action |
+| `symbols` | Object | Symbol results |
+| `text` | String/Binary | Extracted plain text (optionally zstd-compressed) |
+| `text_truncated` | Boolean | True if text was truncated (max 32KB) |
+| `text_compressed` | Boolean | True if text is zstd-compressed |
+| `attachments` | Array | Attachment metadata with content |
+| `images` | Array | Embedded image metadata with content |
+| `urls` | Array | Extracted URLs with host/TLD |
+| `is_reply` | Boolean | True if message has In-Reply-To header |
+
+#### Structured formatter features
+
+- **UUID v7 correlation**: Time-ordered UUID enables efficient cross-system correlation and time-series analysis
+- **X-Rspamd-UUID header**: Automatically injected into message for IMAP/external correlation
+- **Smart text extraction**: Cleaned, reply-trimmed text up to 32KB
+- **Attachment analysis**: Includes detected MIME type (not just announced), size, digest, and optional content
+- **URL extraction**: Up to 100 URLs with host and TLD information
+- **Zstd compression**: Optional compression for text, attachments, and images to reduce storage
+
+#### Zstd compression option
+
+When `zstd_compress = true` is set:
+- Text, attachment content, and image content are compressed with zstd
+- Compressed fields include `content_compressed = true` or `text_compressed = true`
+- Consumer must decompress using zstd library
