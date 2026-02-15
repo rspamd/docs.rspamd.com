@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="ru" dir="ltr" class="docs-wrapper plugin-docs plugin-id-default docs-version-current docs-doc-page docs-doc-id-configuration/composites" data-has-hydrated="false">
+<head>
+<meta charset="UTF-8">
+<meta name="generator" content="Docusaurus v3.9.2">
+<title data-rh="true">Composite symbols | Rspamd Documentation</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://rspamd.com/docs.rspamd.com/branches/master/ru/configuration/composites"><meta data-rh="true" property="og:locale" content="ru"><meta data-rh="true" property="og:locale:alternate" content="en"><meta data-rh="true" name="docusaurus_locale" content="ru"><meta data-rh="true" name="docsearch:language" content="ru"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Composite symbols | Rspamd Documentation"><meta data-rh="true" name="description" content="Composites combine multiple rules into more complex conditions. When a composite matches, it can add its own symbol and optionally remove the triggering symbols and/or their weights."><meta data-rh="true" property="og:description" content="Composites combine multiple rules into more complex conditions. When a composite matches, it can add its own symbol and optionally remove the triggering symbols and/or their weights."><link data-rh="true" rel="icon" href="/docs.rspamd.com/branches/master/ru/img/favicon.png"><link data-rh="true" rel="canonical" href="https://rspamd.com/docs.rspamd.com/branches/master/ru/configuration/composites"><link data-rh="true" rel="alternate" href="https://rspamd.com/docs.rspamd.com/branches/master/configuration/composites" hreflang="en"><link data-rh="true" rel="alternate" href="https://rspamd.com/docs.rspamd.com/branches/master/ru/configuration/composites" hreflang="ru"><link data-rh="true" rel="alternate" href="https://rspamd.com/docs.rspamd.com/branches/master/configuration/composites" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Configuration","item":"https://rspamd.com/docs.rspamd.com/branches/master/ru/configuration/"},{"@type":"ListItem","position":2,"name":"Composite symbols","item":"https://rspamd.com/docs.rspamd.com/branches/master/ru/configuration/composites"}]}</script><link rel="alternate" type="application/rss+xml" href="/docs.rspamd.com/branches/master/ru/blog/rss.xml" title="Rspamd Blog RSS Feed">
+<link rel="alternate" type="application/atom+xml" href="/docs.rspamd.com/branches/master/ru/blog/atom.xml" title="Rspamd Blog Atom Feed">
+
+
+
+
+<script>window.SEARCH_BACKEND_CONFIG={endpoint:"/api"}</script>
+
+<link rel="alternate" type="application/rss+xml" title="Rspamd Changelog RSS" href="/rss/changelog.xml">
+<link rel="alternate" type="application/rss+xml" title="Rspamd Blog RSS" href="/blog/rss.xml">
+<link rel="alternate" type="application/atom+xml" title="Rspamd Blog Atom" href="/blog/atom.xml"><link rel="stylesheet" href="/docs.rspamd.com/branches/master/ru/assets/css/styles.5200ff8d.css">
+<script src="/docs.rspamd.com/branches/master/ru/assets/js/runtime~main.72ee80c0.js" defer="defer"></script>
+<script src="/docs.rspamd.com/branches/master/ru/assets/js/main.544a51e8.js" defer="defer"></script>
+</head>
+<body class="navigation-with-keyboard">
+<svg style="display: none;"><defs>
+<symbol id="theme-svg-external-link" viewBox="0 0 24 24"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/></symbol>
+</defs></svg>
+<script>!function(){var t=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();document.documentElement.setAttribute("data-theme",t||(window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")),document.documentElement.setAttribute("data-theme-choice",t||"system")}(),function(){try{const c=new URLSearchParams(window.location.search).entries();for(var[t,e]of c)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><link rel="preload" as="image" href="/docs.rspamd.com/branches/master/ru/img/rspamd_logo_black.png"><link rel="preload" as="image" href="/docs.rspamd.com/branches/master/ru/img/rspamd_logo_navbar.png"><div role="region" aria-label="Перейти к основному содержимому"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">Перейти к основному содержимому</a></div><nav aria-label="Main" class="theme-layout-navbar navbar navbar--fixed-top"><div class="navbar__inner"><div class="theme-layout-navbar-left navbar__items"><button aria-label="Переключить навигационную панель" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a href="https://www.rspamd.com" target="_self" rel="noopener noreferrer" class="navbar__brand"><div class="navbar__logo"><img src="/docs.rspamd.com/branches/master/ru/img/rspamd_logo_black.png" alt="Rspamd Logo" class="themedComponent_mlkZ themedComponent--light_NVdE"><img src="/docs.rspamd.com/branches/master/ru/img/rspamd_logo_navbar.png" alt="Rspamd Logo" class="themedComponent_mlkZ themedComponent--dark_xIcU"></div><b class="navbar__title text--truncate"></b></a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/docs.rspamd.com/branches/master/ru/">Documentation</a><a class="navbar__item navbar__link" href="/docs.rspamd.com/branches/master/ru/about/">About</a><a class="navbar__item navbar__link" href="/docs.rspamd.com/branches/master/ru/tutorials/">Tutorials</a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/docs.rspamd.com/branches/master/ru/modules/">Modules</a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/docs.rspamd.com/branches/master/ru/other/usage_policy">Usage Policy</a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/docs.rspamd.com/branches/master/ru/faq">FAQ</a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/docs.rspamd.com/branches/master/ru/support">Support</a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/docs.rspamd.com/branches/master/ru/downloads">Downloads</a><a class="navbar__item navbar__link" href="/docs.rspamd.com/branches/master/ru/blog">Blog</a><a class="navbar__item navbar__link" href="/docs.rspamd.com/branches/master/ru/changelog">Changelog</a></div><div class="theme-layout-navbar-right navbar__items navbar__items--right"><div><div class="elasticsearch-search-container"><form class="elasticsearch-search-form"><div class="elasticsearch-search-input-container"><input type="text" placeholder="Search documentation..." class="elasticsearch-search-input" aria-label="Search documentation" value=""><div class="elasticsearch-search-shortcut"><span>⌘K</span></div></div></form></div></div><div class="navbar__item"><div id="font-size-control-mount"></div></div><a href="https://github.com/rspamd/rspamd" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="system mode" aria-label="Переключение между темным и светлым режимом (сейчас используется system mode)"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP systemToggleIcon_QzmC"><path fill="currentColor" d="m12 21c4.971 0 9-4.029 9-9s-4.029-9-9-9-9 4.029-9 9 4.029 9 9 9zm4.95-13.95c1.313 1.313 2.05 3.093 2.05 4.95s-0.738 3.637-2.05 4.95c-1.313 1.313-3.093 2.05-4.95 2.05v-14c1.857 0 3.637 0.737 4.95 2.05z"></path></svg></button></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="theme-layout-main main-wrapper mainWrapper_z2l0"><div class="docsWrapper_hBAB"><button aria-label="Прокрутка к началу" class="clean-btn theme-back-to-top-button backToTopButton_sjWU" type="button"></button><div class="docRoot_UBD9"><aside class="theme-doc-sidebar-container docSidebarContainer_YfHR"><div class="sidebarViewport_aRkj"><div class="sidebar_njMd"><nav aria-label="Docs sidebar" class="menu thin-scrollbar menu_SIkG"><ul class="theme-doc-sidebar-menu menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/docs.rspamd.com/branches/master/ru/"><span title="About Rspamd" class="linkLabel_WmDU">About Rspamd</span></a></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist" href="/docs.rspamd.com/branches/master/ru/getting-started/"><span title="Getting Started" class="categoryLinkLabel_W154">Getting Started</span></a><button aria-label="Expand sidebar category &#x27;Getting Started&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs.rspamd.com/branches/master/ru/tutorials/migration"><span title="How-To Guides" class="categoryLinkLabel_W154">How-To Guides</span></a></div></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/docs.rspamd.com/branches/master/ru/faq"><span title="Frequently Asked Questions" class="linkLabel_WmDU">Frequently Asked Questions</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/docs.rspamd.com/branches/master/ru/support"><span title="Rspamd Support" class="linkLabel_WmDU">Rspamd Support</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/docs.rspamd.com/branches/master/ru/downloads"><span title="Downloads" class="linkLabel_WmDU">Downloads</span></a></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--active" href="/docs.rspamd.com/branches/master/ru/configuration/"><span title="Configuration" class="categoryLinkLabel_W154">Configuration</span></a><button aria-label="Collapse sidebar category &#x27;Configuration&#x27;" aria-expanded="true" type="button" class="clean-btn menu__caret"></button></div><ul class="menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs.rspamd.com/branches/master/ru/configuration/settings"><span title="User settings" class="linkLabel_WmDU">User settings</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs.rspamd.com/branches/master/ru/configuration/metrics"><span title="Actions and scores" class="linkLabel_WmDU">Actions and scores</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs.rspamd.com/branches/master/ru/configuration/logging"><span title="Logging settings" class="linkLabel_WmDU">Logging settings</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs.rspamd.com/branches/master/ru/configuration/options"><span title="Common options" class="linkLabel_WmDU">Common options</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link menu__link--active" aria-current="page" tabindex="0" href="/docs.rspamd.com/branches/master/ru/configuration/composites"><span title="Composite symbols" class="linkLabel_WmDU">Composite symbols</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs.rspamd.com/branches/master/ru/configuration/maps"><span title="Rspamd maps" class="linkLabel_WmDU">Rspamd maps</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs.rspamd.com/branches/master/ru/configuration/selectors"><span title="Selectors" class="linkLabel_WmDU">Selectors</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs.rspamd.com/branches/master/ru/configuration/statistic"><span title="Statistics settings" class="linkLabel_WmDU">Statistics settings</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs.rspamd.com/branches/master/ru/configuration/redis"><span title="Redis configuration" class="linkLabel_WmDU">Redis configuration</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs.rspamd.com/branches/master/ru/configuration/upstream"><span title="Upstreams configuration" class="linkLabel_WmDU">Upstreams configuration</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs.rspamd.com/branches/master/ru/configuration/ucl"><span title="Universal configuration language (UCL)" class="linkLabel_WmDU">Universal configuration language (UCL)</span></a></li></ul></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist" href="/docs.rspamd.com/branches/master/ru/workers/"><span title="Workers" class="categoryLinkLabel_W154">Workers</span></a><button aria-label="Expand sidebar category &#x27;Workers&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist" href="/docs.rspamd.com/branches/master/ru/modules/"><span title="Modules" class="categoryLinkLabel_W154">Modules</span></a><button aria-label="Expand sidebar category &#x27;Modules&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist" href="/docs.rspamd.com/branches/master/ru/lua/"><span title="Lua API" class="categoryLinkLabel_W154">Lua API</span></a><button aria-label="Expand sidebar category &#x27;Lua API&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist" href="/docs.rspamd.com/branches/master/ru/developers/architecture"><span title="Developers" class="categoryLinkLabel_W154">Developers</span></a><button aria-label="Expand sidebar category &#x27;Developers&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist" href="/docs.rspamd.com/branches/master/ru/administration/rspamadm/"><span title="Administration Tools" class="categoryLinkLabel_W154">Administration Tools</span></a><button aria-label="Expand sidebar category &#x27;Administration Tools&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs.rspamd.com/branches/master/ru/other/gtube_patterns"><span title="Other" class="categoryLinkLabel_W154">Other</span></a></div></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/docs.rspamd.com/branches/master/ru/blog"><span title="Blog" class="linkLabel_WmDU">Blog</span></a></li></ul></nav><button type="button" title="Свернуть сайдбар" aria-label="Свернуть сайдбар" class="button button--secondary button--outline collapseSidebarButton_PEFL"><svg width="20" height="20" aria-hidden="true" class="collapseSidebarButtonIcon_kv0_"><g fill="#7a7a7a"><path d="M9.992 10.023c0 .2-.062.399-.172.547l-4.996 7.492a.982.982 0 01-.828.454H1c-.55 0-1-.453-1-1 0-.2.059-.403.168-.551l4.629-6.942L.168 3.078A.939.939 0 010 2.528c0-.548.45-.997 1-.997h2.996c.352 0 .649.18.828.45L9.82 9.472c.11.148.172.347.172.55zm0 0"></path><path d="M19.98 10.023c0 .2-.058.399-.168.547l-4.996 7.492a.987.987 0 01-.828.454h-3c-.547 0-.996-.453-.996-1 0-.2.059-.403.168-.551l4.625-6.942-4.625-6.945a.939.939 0 01-.168-.55 1 1 0 01.996-.997h3c.348 0 .649.18.828.45l4.996 7.492c.11.148.168.347.168.55zm0 0"></path></g></svg></button></div></div></aside><main class="docMainContainer_TBSr"><div class="container padding-top--md padding-bottom--lg"><div class="row"><div class="col docItemCol_VOVn"><div class="docItemContainer_Djhp"><article><nav class="theme-doc-breadcrumbs breadcrumbsContainer_Z_bl" aria-label="Навигационная цепочка текущей страницы"><ul class="breadcrumbs"><li class="breadcrumbs__item"><a aria-label="Главная страница" class="breadcrumbs__link" href="/docs.rspamd.com/branches/master/ru/"><svg viewBox="0 0 24 24" class="breadcrumbHomeIcon_YNFT"><path d="M10 19v-5h4v5c0 .55.45 1 1 1h3c.55 0 1-.45 1-1v-7h1.7c.46 0 .68-.57.33-.87L12.67 3.6c-.38-.34-.96-.34-1.34 0l-8.36 7.53c-.34.3-.13.87.33.87H5v7c0 .55.45 1 1 1h3c.55 0 1-.45 1-1z" fill="currentColor"></path></svg></a></li><li class="breadcrumbs__item"><a class="breadcrumbs__link" href="/docs.rspamd.com/branches/master/ru/configuration/"><span>Configuration</span></a></li><li class="breadcrumbs__item breadcrumbs__item--active"><span class="breadcrumbs__link">Composite symbols</span></li></ul></nav><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_ITEo"><button type="button" class="clean-btn tocCollapsibleButton_TO0P">Содержание этой страницы</button></div><div class="theme-doc-markdown markdown"><header><h1>Rspamd Composite Symbols</h1></header>
+<p>Composites combine multiple rules into more complex conditions. When a composite matches, it can add its own symbol and optionally remove the triggering symbols and/or their weights.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="quick-reference">Quick Reference<a href="#quick-reference" class="hash-link" aria-label="Прямая ссылка на Quick Reference" title="Прямая ссылка на Quick Reference" translate="no">​</a></h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Feature</th><th>Syntax</th><th>Effect</th></tr></thead><tbody><tr><td>Default removal</td><td><code>SYMBOL</code></td><td>Remove symbol and weight</td></tr><tr><td>Keep weight</td><td><code>~SYMBOL</code></td><td>Remove symbol, keep weight</td></tr><tr><td>Keep both</td><td><code>-SYMBOL</code></td><td>Keep symbol and weight</td></tr><tr><td>Force remove</td><td><code>^SYMBOL</code></td><td>Force remove (overrides <code>-</code>)</td></tr><tr><td>Symbol options</td><td><code>SYMBOL[opt1,opt2]</code></td><td>Match only with specific options</td></tr><tr><td>Group match</td><td><code>g:groupname</code></td><td>Match any symbol from group</td></tr><tr><td>Positive group</td><td><code>g+:groupname</code></td><td>Match positive-scoring symbols</td></tr><tr><td>Negative group</td><td><code>g-:groupname</code></td><td>Match negative-scoring symbols</td></tr></tbody></table>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="configuration">Configuration<a href="#configuration" class="hash-link" aria-label="Прямая ссылка на Configuration" title="Прямая ссылка на Configuration" translate="no">​</a></h2>
+<p>Define composites in <code>local.d/composites.conf</code>:</p>
+<div class="language-hcl codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-hcl codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">TEST_COMPOSITE {</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    expression = &quot;SYMBOL1 and SYMBOL2&quot;;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    score = 5.0;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">}</span><br></span></code></pre></div></div>
+<p>When both <code>SYMBOL1</code> and <code>SYMBOL2</code> match, they are replaced by <code>TEST_COMPOSITE</code> with score 5.0.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="composite-properties">Composite Properties<a href="#composite-properties" class="hash-link" aria-label="Прямая ссылка на Composite Properties" title="Прямая ссылка на Composite Properties" translate="no">​</a></h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Property</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>expression</code></td><td>string</td><td>Boolean expression defining when composite fires</td></tr><tr><td><code>score</code></td><td>number</td><td>Score assigned to the composite symbol</td></tr><tr><td><code>group</code></td><td>string</td><td>Symbol group for the composite</td></tr><tr><td><code>policy</code></td><td>string</td><td>Default removal policy for all atoms</td></tr><tr><td><code>enabled</code></td><td>boolean</td><td>Set to <code>false</code> to disable</td></tr></tbody></table>
+<hr>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="execution-architecture">Execution Architecture<a href="#execution-architecture" class="hash-link" aria-label="Прямая ссылка на Execution Architecture" title="Прямая ссылка на Execution Architecture" translate="no">​</a></h2>
+<p>Understanding how composites execute is essential for writing correct rules, especially when composites depend on each other or on symbols from different processing stages.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="task-processing-stages">Task Processing Stages<a href="#task-processing-stages" class="hash-link" aria-label="Прямая ссылка на Task Processing Stages" title="Прямая ссылка на Task Processing Stages" translate="no">​</a></h3>
+<p>Rspamd processes messages through ordered stages. Composites execute at two specific points:</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">PREFILTERS → FILTERS → CLASSIFIERS → COMPOSITES → POST_FILTERS → COMPOSITES_POST → IDEMPOTENT</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">                                          ↑                              ↑</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">                                     First pass                    Second pass</span><br></span></code></pre></div></div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Stage</th><th>Description</th></tr></thead><tbody><tr><td>FILTERS</td><td>Regular filter rules execute</td></tr><tr><td>CLASSIFIERS</td><td>Bayes classifier runs</td></tr><tr><td><strong>COMPOSITES</strong></td><td>First-pass composites evaluate</td></tr><tr><td>POST_FILTERS</td><td>Post-filter rules execute</td></tr><tr><td><strong>COMPOSITES_POST</strong></td><td>Second-pass composites evaluate</td></tr><tr><td>IDEMPOTENT</td><td>Final processing (logging, history)</td></tr></tbody></table>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="two-pass-evaluation">Two-Pass Evaluation<a href="#two-pass-evaluation" class="hash-link" aria-label="Прямая ссылка на Two-Pass Evaluation" title="Прямая ссылка на Two-Pass Evaluation" translate="no">​</a></h3>
+<p>Rspamd automatically analyzes composite dependencies and assigns each composite to the appropriate pass:</p>
+<p><strong>First pass</strong> (COMPOSITES stage):</p>
+<ul>
+<li class="">Composites that only depend on symbols from FILTERS, PREFILTERS, or CLASSIFIERS</li>
+<li class="">The majority of composites execute here</li>
+</ul>
+<p><strong>Second pass</strong> (COMPOSITES_POST stage):</p>
+<ul>
+<li class="">Composites that depend on POST_FILTER symbols</li>
+<li class="">Composites that depend on other second-pass composites</li>
+</ul>
+<p>Note: Composites cannot depend on IDEMPOTENT stage symbols because that stage is read-only and doesn&#x27;t insert symbols into scan results.</p>
+<div class="language-hcl codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-hcl codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain"># First pass - only depends on filter symbols</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">FIRST_PASS_EXAMPLE {</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    expression = &quot;DKIM_SIGNED &amp; SPF_ALLOW&quot;;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">}</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># Second pass - depends on post-filter symbol</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">SECOND_PASS_EXAMPLE {</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    expression = &quot;FIRST_PASS_EXAMPLE &amp; SOME_POSTFILTER_SYMBOL&quot;;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">}</span><br></span></code></pre></div></div>
+<p>Rspamd determines pass assignment by analyzing:</p>
+<ol>
+<li class="">Direct dependencies (symbols in the expression)</li>
+<li class="">Transitive dependencies (if atom A depends on composite B, and B is second-pass, then A becomes second-pass)</li>
+</ol>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="symbol-removal-timing">Symbol Removal Timing<a href="#symbol-removal-timing" class="hash-link" aria-label="Прямая ссылка на Symbol Removal Timing" title="Прямая ссылка на Symbol Removal Timing" translate="no">​</a></h3>
+<p>Symbol removal happens <strong>after</strong> all composites in a pass are evaluated, not during evaluation. This has important implications:</p>
+<div class="language-hcl codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-hcl codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">COMP_A {</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    expression = &quot;SYMBOL1 &amp; SYMBOL2&quot;;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    # Removes SYMBOL1 and SYMBOL2</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">}</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">COMP_B {</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    expression = &quot;SYMBOL1 &amp; SYMBOL3&quot;;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    # Also sees SYMBOL1 during evaluation (not yet removed)</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">}</span><br></span></code></pre></div></div>
+<p>Both composites evaluate against the original symbol set. Removal decisions are collected and applied afterward.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="inverted-index-optimization">Inverted Index Optimization<a href="#inverted-index-optimization" class="hash-link" aria-label="Прямая ссылка на Inverted Index Optimization" title="Прямая ссылка на Inverted Index Optimization" translate="no">​</a></h3>
+<p>Rspamd builds an inverted index mapping symbols to composites that use them. When a symbol fires:</p>
+<ol>
+<li class="">Rspamd looks up which composites contain that symbol</li>
+<li class="">Only those composites are evaluated</li>
+</ol>
+<p>Composites with only negated atoms (like <code>!SYMBOL1 &amp; !SYMBOL2</code>) are always evaluated since they don&#x27;t appear in the inverted index.</p>
+<hr>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="expression-syntax">Expression Syntax<a href="#expression-syntax" class="hash-link" aria-label="Прямая ссылка на Expression Syntax" title="Прямая ссылка на Expression Syntax" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="boolean-operators">Boolean Operators<a href="#boolean-operators" class="hash-link" aria-label="Прямая ссылка на Boolean Operators" title="Прямая ссылка на Boolean Operators" translate="no">​</a></h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Operator</th><th>Alternatives</th><th>Description</th></tr></thead><tbody><tr><td><code>AND</code></td><td><code>&amp;</code>, <code>and</code></td><td>Both operands must be true</td></tr><tr><td><code>OR</code></td><td><code>|</code>, <code>or</code></td><td>Either operand must be true</td></tr><tr><td><code>NOT</code></td><td><code>!</code>, <code>not</code></td><td>Operand must be false</td></tr></tbody></table>
+<p>Use parentheses to control precedence. Without them, operators evaluate left-to-right:</p>
+<div class="language-hcl codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-hcl codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">EXAMPLE {</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    expression = &quot;SYMBOL1 and SYMBOL2 and (not SYMBOL3 | not SYMBOL4)&quot;;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    score = 10.0;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">}</span><br></span></code></pre></div></div>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="composites-referencing-composites">Composites Referencing Composites<a href="#composites-referencing-composites" class="hash-link" aria-label="Прямая ссылка на Composites Referencing Composites" title="Прямая ссылка на Composites Referencing Composites" translate="no">​</a></h3>
+<p>Composites can include other composites. Definition order doesn&#x27;t matter:</p>
+<div class="language-hcl codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-hcl codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">PARENT {</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    expression = &quot;SYMBOL1 AND CHILD&quot;;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">}</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">CHILD {</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    expression = &quot;SYMBOL2 OR NOT SYMBOL3&quot;;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">}</span><br></span></code></pre></div></div>
+<p>When a composite references another composite:</p>
+<ul>
+<li class="">If the referenced composite is second-pass, the referencing composite becomes second-pass too</li>
+<li class="">Rspamd detects and prevents recursive definitions</li>
+</ul>
+<hr>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="symbol-removal-policies">Symbol Removal Policies<a href="#symbol-removal-policies" class="hash-link" aria-label="Прямая ссылка на Symbol Removal Policies" title="Прямая ссылка на Symbol Removal Policies" translate="no">​</a></h2>
+<p>When a composite matches, it can remove the triggering symbols, their weights, or both. This is controlled through prefix modifiers or the <code>policy</code> setting.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="prefix-modifiers">Prefix Modifiers<a href="#prefix-modifiers" class="hash-link" aria-label="Прямая ссылка на Prefix Modifiers" title="Прямая ссылка на Prefix Modifiers" translate="no">​</a></h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Prefix</th><th>Symbol</th><th>Weight</th><th>Use Case</th></tr></thead><tbody><tr><td>(none)</td><td>Removed</td><td>Removed</td><td>Replace symbols with composite</td></tr><tr><td><code>~</code></td><td>Removed</td><td><strong>Kept</strong></td><td>Hide symbol but count its weight</td></tr><tr><td><code>-</code></td><td><strong>Kept</strong></td><td><strong>Kept</strong></td><td>Additive scoring</td></tr><tr><td><code>^</code></td><td>Removed</td><td>Removed</td><td>Force removal (overrides <code>-</code>)</td></tr></tbody></table>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="how-removal-works">How Removal Works<a href="#how-removal-works" class="hash-link" aria-label="Прямая ссылка на How Removal Works" title="Прямая ссылка на How Removal Works" translate="no">​</a></h3>
+<ol>
+<li class="">Each composite collects removal decisions for its atoms</li>
+<li class="">After all composites in a pass evaluate, Rspamd processes the collected decisions</li>
+<li class="">For each symbol, all removal requests are combined using bitwise OR</li>
+</ol>
+<p>The removal decision for each symbol tracks three flags:</p>
+<ul>
+<li class=""><strong>Remove symbol</strong>: Hide the symbol name from output</li>
+<li class=""><strong>Remove weight</strong>: Subtract the symbol&#x27;s weight from total score</li>
+<li class=""><strong>Forced</strong>: Override any &quot;keep&quot; requests</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="conflict-resolution">Conflict Resolution<a href="#conflict-resolution" class="hash-link" aria-label="Прямая ссылка на Conflict Resolution" title="Прямая ссылка на Conflict Resolution" translate="no">​</a></h3>
+<p>When multiple composites reference the same symbol with different modifiers:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Scenario</th><th>Result</th><th>Reason</th></tr></thead><tbody><tr><td>One uses default, another uses <code>-</code></td><td>Symbol kept</td><td><code>-</code> sets no removal flags, nothing to OR</td></tr><tr><td>One uses <code>~</code>, another uses <code>-</code></td><td>Symbol kept, weight kept</td><td><code>-</code> prevents symbol removal</td></tr><tr><td>One uses <code>^</code>, another uses <code>-</code></td><td>Symbol removed</td><td><code>^</code> sets forced flag, overrides everything</td></tr><tr><td>Multiple use default</td><td>Symbol removed</td><td>Flags combine identically</td></tr></tbody></table>
+<p><strong>Example:</strong></p>
+<div class="language-hcl codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-hcl codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain"># Assume SPAM_INDICATOR exists in scan results</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">COMPOSITE_A {</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    expression = &quot;SPAM_INDICATOR &amp; OTHER_SYM&quot;;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    # Default: requests remove_symbol + remove_weight</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">}</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">COMPOSITE_B {</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    expression = &quot;-SPAM_INDICATOR &amp; DIFFERENT_SYM&quot;;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    # The `-` sets no removal flags for SPAM_INDICATOR</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">}</span><br></span></code></pre></div></div>
+<p>Result: <code>SPAM_INDICATOR</code> is <strong>kept</strong>. COMPOSITE_A&#x27;s removal flags (remove_symbol | remove_weight) are ORed with COMPOSITE_B&#x27;s flags (none). But since COMPOSITE_B explicitly requests &quot;leave&quot;, Rspamd interprets this as &quot;at least one composite wants it kept&quot; and preserves the symbol.</p>
+<p><strong>Force removal overrides:</strong></p>
+<div class="language-hcl codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-hcl codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">COMPOSITE_C {</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    expression = &quot;^SPAM_INDICATOR &amp; FORCE_CLEANUP&quot;;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    # The `^` sets forced flag</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">}</span><br></span></code></pre></div></div>
+<p>Now <code>SPAM_INDICATOR</code> is <strong>removed</strong> despite COMPOSITE_B wanting to keep it, because the forced flag overrides the keep request.</p>
+<p><strong>Key insight</strong>: The <code>-</code> modifier doesn&#x27;t just &quot;not remove&quot; — it actively protects the symbol from removal by other composites. Use <code>^</code> when you need to guarantee removal regardless of other composites.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="policy-setting">Policy Setting<a href="#policy-setting" class="hash-link" aria-label="Прямая ссылка на Policy Setting" title="Прямая ссылка на Policy Setting" translate="no">​</a></h3>
+<p>Set a default policy for all atoms in an expression:</p>
+<div class="language-hcl codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-hcl codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">ADDITIVE_COMPOSITE {</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    expression = &quot;SYMBOL1 and SYMBOL2&quot;;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    policy = &quot;leave&quot;;  # Both symbols and weights preserved</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">}</span><br></span></code></pre></div></div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Policy</th><th>Effect</th></tr></thead><tbody><tr><td><code>default</code></td><td>Remove symbol and weight</td></tr><tr><td><code>remove_weight</code></td><td>Remove weight only, keep symbol</td></tr><tr><td><code>remove_symbol</code></td><td>Remove symbol only, keep weight</td></tr><tr><td><code>leave</code></td><td>Keep both symbol and weight</td></tr></tbody></table>
+<p>Prefix modifiers override the policy for individual symbols.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="weight-calculation-examples">Weight Calculation Examples<a href="#weight-calculation-examples" class="hash-link" aria-label="Прямая ссылка на Weight Calculation Examples" title="Прямая ссылка на Weight Calculation Examples" translate="no">​</a></h3>
+<p>Given: <code>SYMBOL_A</code> (weight 2.0), <code>SYMBOL_B</code> (weight 3.0), composite score 5.0</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Expression</th><th>Symbols Shown</th><th>Total Score</th></tr></thead><tbody><tr><td><code>SYMBOL_A &amp; SYMBOL_B</code></td><td>Composite only</td><td>5.0</td></tr><tr><td><code>~SYMBOL_A &amp; SYMBOL_B</code></td><td>Composite only</td><td>7.0 (2.0 + 5.0)</td></tr><tr><td><code>-SYMBOL_A &amp; SYMBOL_B</code></td><td>SYMBOL_A + Composite</td><td>7.0 (2.0 + 5.0)</td></tr><tr><td><code>-SYMBOL_A &amp; -SYMBOL_B</code></td><td>Both + Composite</td><td>10.0 (2.0 + 3.0 + 5.0)</td></tr></tbody></table>
+<hr>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="symbol-groups">Symbol Groups<a href="#symbol-groups" class="hash-link" aria-label="Прямая ссылка на Symbol Groups" title="Прямая ссылка на Symbol Groups" translate="no">​</a></h2>
+<p>Match any symbol from a defined group:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Syntax</th><th>Matches</th></tr></thead><tbody><tr><td><code>g:groupname</code></td><td>Any symbol from the group</td></tr><tr><td><code>g+:groupname</code></td><td>Symbols with positive score</td></tr><tr><td><code>g-:groupname</code></td><td>Symbols with negative score</td></tr></tbody></table>
+<div class="language-hcl codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-hcl codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">FUZZY_AND_DKIM_FAIL {</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    expression = &quot;g+:fuzzy &amp; !g:dkim&quot;;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    # Matches if any positive fuzzy symbol AND no DKIM symbols</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">}</span><br></span></code></pre></div></div>
+<p>Removal policies apply only to the matched symbol, not the entire group.</p>
+<hr>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="symbol-options">Symbol Options<a href="#symbol-options" class="hash-link" aria-label="Прямая ссылка на Symbol Options" title="Прямая ссылка на Symbol Options" translate="no">​</a></h2>
+<p>Match symbols only when they have specific options (added in 2.0):</p>
+<div class="language-hcl codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-hcl codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">SPECIFIC_DMARC {</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    expression = &quot;DMARC_POLICY_REJECT[sp]&quot;;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    # Only matches if DMARC_POLICY_REJECT has &quot;sp&quot; option</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">}</span><br></span></code></pre></div></div>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="option-matching">Option Matching<a href="#option-matching" class="hash-link" aria-label="Прямая ссылка на Option Matching" title="Прямая ссылка на Option Matching" translate="no">​</a></h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Syntax</th><th>Requirement</th></tr></thead><tbody><tr><td><code>[opt1]</code></td><td>Must have <code>opt1</code></td></tr><tr><td><code>[opt1,opt2]</code></td><td>Must have both <code>opt1</code> AND <code>opt2</code></td></tr><tr><td><code>[/regex/i]</code></td><td>Must have option matching regex</td></tr><tr><td><code>[/regex/,opt1]</code></td><td>Must match regex AND have <code>opt1</code></td></tr></tbody></table>
+<p>All specified options must be present (AND logic):</p>
+<div class="language-hcl codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-hcl codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">COMBINED_OPTIONS {</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    expression = &quot;SYMBOL[/user@.*/i, authenticated]&quot;;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    # Must have an option matching the regex AND &quot;authenticated&quot;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">}</span><br></span></code></pre></div></div>
+<hr>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="whitelist-composites">Whitelist Composites<a href="#whitelist-composites" class="hash-link" aria-label="Прямая ссылка на Whitelist Composites" title="Прямая ссылка на Whitelist Composites" translate="no">​</a></h2>
+<p>Composites with negative scores act as whitelists. Rspamd handles these specially:</p>
+<div class="language-hcl codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-hcl codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">WHITELIST_SENDER {</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    expression = &quot;GOOD_SENDER &amp; DKIM_VALID&quot;;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    score = -10.0;  # Negative score = whitelist</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">}</span><br></span></code></pre></div></div>
+<p>When a composite has negative score, Rspamd marks its atoms as &quot;FINE&quot; symbols. This prevents the spam filtering logic from short-circuiting before these symbols are evaluated, ensuring whitelist composites have a chance to match.</p>
+<hr>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="disabling-composites">Disabling Composites<a href="#disabling-composites" class="hash-link" aria-label="Прямая ссылка на Disabling Composites" title="Прямая ссылка на Disabling Composites" translate="no">​</a></h2>
+<p>Disable a stock composite in <code>local.d/composites.conf</code>:</p>
+<div class="language-hcl codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-hcl codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">DKIM_MIXED {</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    enabled = false;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">}</span><br></span></code></pre></div></div>
+<p>You can also disable composites via <a class="" href="/docs.rspamd.com/branches/master/ru/configuration/settings">user settings</a>.</p>
+<hr>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="common-patterns">Common Patterns<a href="#common-patterns" class="hash-link" aria-label="Прямая ссылка на Common Patterns" title="Прямая ссылка на Common Patterns" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="combine-related-signals">Combine Related Signals<a href="#combine-related-signals" class="hash-link" aria-label="Прямая ссылка на Combine Related Signals" title="Прямая ссылка на Combine Related Signals" translate="no">​</a></h3>
+<div class="language-hcl codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-hcl codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">PHISHING_COMBO {</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    expression = &quot;PHISHING &amp; (SUSPICIOUS_URL | REDIRECTOR_URL)&quot;;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    score = 8.0;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">}</span><br></span></code></pre></div></div>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="whitelist-exception">Whitelist Exception<a href="#whitelist-exception" class="hash-link" aria-label="Прямая ссылка на Whitelist Exception" title="Прямая ссылка на Whitelist Exception" translate="no">​</a></h3>
+<div class="language-hcl codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-hcl codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">TRUSTED_FORWARDER {</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    expression = &quot;-FORGED_SENDER &amp; KNOWN_FORWARDER &amp; DKIM_VALID&quot;;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    score = -5.0;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    # Keeps FORGED_SENDER visible but reduces overall score</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">}</span><br></span></code></pre></div></div>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="escalate-when-multiple-signals">Escalate When Multiple Signals<a href="#escalate-when-multiple-signals" class="hash-link" aria-label="Прямая ссылка на Escalate When Multiple Signals" title="Прямая ссылка на Escalate When Multiple Signals" translate="no">​</a></h3>
+<div class="language-hcl codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-hcl codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">HIGH_CONFIDENCE_SPAM {</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    expression = &quot;g+:fuzzy &amp; BAYES_SPAM &amp; (RBL_SPAMHAUS | RBL_BARRACUDA)&quot;;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    score = 15.0;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">}</span><br></span></code></pre></div></div>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="remove-noise-keep-score">Remove Noise, Keep Score<a href="#remove-noise-keep-score" class="hash-link" aria-label="Прямая ссылка на Remove Noise, Keep Score" title="Прямая ссылка на Remove Noise, Keep Score" translate="no">​</a></h3>
+<div class="language-hcl codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-hcl codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">CONSOLIDATED_RBL {</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    expression = &quot;~RBL_A &amp; ~RBL_B &amp; ~RBL_C&quot;;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    score = 0;  # Weight from individual RBLs is preserved</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    # Hides individual RBL symbols, shows only this composite</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">}</span><br></span></code></pre></div></div>
+<hr>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="troubleshooting">Troubleshooting<a href="#troubleshooting" class="hash-link" aria-label="Прямая ссылка на Troubleshooting" title="Прямая ссылка на Troubleshooting" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="composite-not-firing">Composite Not Firing<a href="#composite-not-firing" class="hash-link" aria-label="Прямая ссылка на Composite Not Firing" title="Прямая ссылка на Composite Not Firing" translate="no">​</a></h3>
+<ol>
+<li class=""><strong>Check symbol availability</strong>: Use <code>rspamc symbols</code> to see available symbols</li>
+<li class=""><strong>Verify execution stage</strong>: If the composite depends on post-filter symbols, it runs in the second pass</li>
+<li class=""><strong>Check for typos</strong>: Symbol names are case-sensitive</li>
+<li class=""><strong>Test expression logic</strong>: Simplify the expression to isolate the issue</li>
+</ol>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="unexpected-symbol-removal">Unexpected Symbol Removal<a href="#unexpected-symbol-removal" class="hash-link" aria-label="Прямая ссылка на Unexpected Symbol Removal" title="Прямая ссылка на Unexpected Symbol Removal" translate="no">​</a></h3>
+<ol>
+<li class=""><strong>Check all composites</strong>: Search for the symbol across all composite definitions</li>
+<li class=""><strong>Look for <code>^</code> prefix</strong>: Force removal overrides keep (<code>-</code>) requests</li>
+<li class=""><strong>Consider pass ordering</strong>: Second-pass composites see results of first-pass removals</li>
+</ol>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="debugging">Debugging<a href="#debugging" class="hash-link" aria-label="Прямая ссылка на Debugging" title="Прямая ссылка на Debugging" translate="no">​</a></h3>
+<p>Use <code>rspamc</code> to test composites:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain"># Check which composites matched</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">rspamc -v &lt; test_message.eml | grep -i composite</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># See all symbols including removed ones (pass all symbols through)</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">rspamc -p &lt; test_message.eml</span><br></span></code></pre></div></div>
+<p>The <code>-p</code> flag (or HTTP header <code>Pass: all</code>) shows all symbols including those that were removed by composites, which helps trace removal decisions.</p></div><footer class="theme-doc-footer docusaurus-mt-lg"><div class="row margin-top--sm theme-doc-footer-edit-meta-row"><div class="col noPrint_WFHX"><a href="https://github.com/rspamd/docs.rspamd.com/edit/master/docs/configuration/composites.md" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>Отредактировать эту страницу</a></div><div class="col lastUpdated_JAkA"></div></div></footer></article><nav class="docusaurus-mt-lg pagination-nav" aria-label="Страница документа"><a class="pagination-nav__link pagination-nav__link--prev" href="/docs.rspamd.com/branches/master/ru/configuration/options"><div class="pagination-nav__sublabel">Предыдущая страница</div><div class="pagination-nav__label">Common options</div></a><a class="pagination-nav__link pagination-nav__link--next" href="/docs.rspamd.com/branches/master/ru/configuration/maps"><div class="pagination-nav__sublabel">Следующая страница</div><div class="pagination-nav__label">Rspamd maps</div></a></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#quick-reference" class="table-of-contents__link toc-highlight">Quick Reference</a></li><li><a href="#configuration" class="table-of-contents__link toc-highlight">Configuration</a><ul><li><a href="#composite-properties" class="table-of-contents__link toc-highlight">Composite Properties</a></li></ul></li><li><a href="#execution-architecture" class="table-of-contents__link toc-highlight">Execution Architecture</a><ul><li><a href="#task-processing-stages" class="table-of-contents__link toc-highlight">Task Processing Stages</a></li><li><a href="#two-pass-evaluation" class="table-of-contents__link toc-highlight">Two-Pass Evaluation</a></li><li><a href="#symbol-removal-timing" class="table-of-contents__link toc-highlight">Symbol Removal Timing</a></li><li><a href="#inverted-index-optimization" class="table-of-contents__link toc-highlight">Inverted Index Optimization</a></li></ul></li><li><a href="#expression-syntax" class="table-of-contents__link toc-highlight">Expression Syntax</a><ul><li><a href="#boolean-operators" class="table-of-contents__link toc-highlight">Boolean Operators</a></li><li><a href="#composites-referencing-composites" class="table-of-contents__link toc-highlight">Composites Referencing Composites</a></li></ul></li><li><a href="#symbol-removal-policies" class="table-of-contents__link toc-highlight">Symbol Removal Policies</a><ul><li><a href="#prefix-modifiers" class="table-of-contents__link toc-highlight">Prefix Modifiers</a></li><li><a href="#how-removal-works" class="table-of-contents__link toc-highlight">How Removal Works</a></li><li><a href="#conflict-resolution" class="table-of-contents__link toc-highlight">Conflict Resolution</a></li><li><a href="#policy-setting" class="table-of-contents__link toc-highlight">Policy Setting</a></li><li><a href="#weight-calculation-examples" class="table-of-contents__link toc-highlight">Weight Calculation Examples</a></li></ul></li><li><a href="#symbol-groups" class="table-of-contents__link toc-highlight">Symbol Groups</a></li><li><a href="#symbol-options" class="table-of-contents__link toc-highlight">Symbol Options</a><ul><li><a href="#option-matching" class="table-of-contents__link toc-highlight">Option Matching</a></li></ul></li><li><a href="#whitelist-composites" class="table-of-contents__link toc-highlight">Whitelist Composites</a></li><li><a href="#disabling-composites" class="table-of-contents__link toc-highlight">Disabling Composites</a></li><li><a href="#common-patterns" class="table-of-contents__link toc-highlight">Common Patterns</a><ul><li><a href="#combine-related-signals" class="table-of-contents__link toc-highlight">Combine Related Signals</a></li><li><a href="#whitelist-exception" class="table-of-contents__link toc-highlight">Whitelist Exception</a></li><li><a href="#escalate-when-multiple-signals" class="table-of-contents__link toc-highlight">Escalate When Multiple Signals</a></li><li><a href="#remove-noise-keep-score" class="table-of-contents__link toc-highlight">Remove Noise, Keep Score</a></li></ul></li><li><a href="#troubleshooting" class="table-of-contents__link toc-highlight">Troubleshooting</a><ul><li><a href="#composite-not-firing" class="table-of-contents__link toc-highlight">Composite Not Firing</a></li><li><a href="#unexpected-symbol-removal" class="table-of-contents__link toc-highlight">Unexpected Symbol Removal</a></li><li><a href="#debugging" class="table-of-contents__link toc-highlight">Debugging</a></li></ul></li></ul></div></div></div></div></main></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="row footer__links"><div class="theme-layout-footer-column col footer__col"><div class="footer__title">Documentation</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/master/ru/tutorials/quickstart">Getting Started</a></li><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/master/ru/configuration">Configuration</a></li><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/master/ru/modules">Modules</a></li><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/master/ru/tutorials">Tutorials</a></li></ul></div><div class="theme-layout-footer-column col footer__col"><div class="footer__title">Resources</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/master/ru/downloads">Downloads</a></li><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/master/ru/faq">FAQ</a></li><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/master/ru/support">Support</a></li><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/master/ru/changelog">Changelog</a></li></ul></div><div class="theme-layout-footer-column col footer__col"><div class="footer__title">Community</div><ul class="footer__items clean-list"><li class="footer__item"><a href="https://github.com/rspamd/rspamd" target="_blank" rel="noopener noreferrer" class="footer__link-item">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a></li><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/master/ru/tutorials/site_contributing">Contributing</a></li><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/master/ru/blog">Blog</a></li></ul></div><div class="theme-layout-footer-column col footer__col"><div class="footer__title">Subscribe</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/master/ru/rss/changelog.xml">Changelog RSS</a></li><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/master/ru/blog/rss.xml">Blog RSS</a></li><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/master/ru/blog/atom.xml">Blog Atom</a></li></ul></div></div><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2026 Rspamd Project. Built with Docusaurus.</div></div></div></footer></div>
+</body>
+</html>

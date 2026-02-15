@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="ru" dir="ltr" class="docs-wrapper plugin-docs plugin-id-default docs-version-current docs-doc-page docs-doc-id-guides/configuration/fundamentals" data-has-hydrated="false">
+<head>
+<meta charset="UTF-8">
+<meta name="generator" content="Docusaurus v3.9.2">
+<title data-rh="true">Configuration Fundamentals | Rspamd Documentation</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://rspamd.com/docs.rspamd.com/branches/docs/arc-update/ru/guides/configuration/fundamentals"><meta data-rh="true" property="og:locale" content="ru"><meta data-rh="true" property="og:locale:alternate" content="en"><meta data-rh="true" name="docusaurus_locale" content="ru"><meta data-rh="true" name="docsearch:language" content="ru"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Configuration Fundamentals | Rspamd Documentation"><meta data-rh="true" name="description" content="Now that you have working spam filtering, let&#x27;s understand what you can configure and how to configure it effectively. This knowledge will help you customize Rspamd for your specific needs."><meta data-rh="true" property="og:description" content="Now that you have working spam filtering, let&#x27;s understand what you can configure and how to configure it effectively. This knowledge will help you customize Rspamd for your specific needs."><link data-rh="true" rel="icon" href="/docs.rspamd.com/branches/docs/arc-update/ru/img/favicon.png"><link data-rh="true" rel="canonical" href="https://rspamd.com/docs.rspamd.com/branches/docs/arc-update/ru/guides/configuration/fundamentals"><link data-rh="true" rel="alternate" href="https://rspamd.com/docs.rspamd.com/branches/docs/arc-update/guides/configuration/fundamentals" hreflang="en"><link data-rh="true" rel="alternate" href="https://rspamd.com/docs.rspamd.com/branches/docs/arc-update/ru/guides/configuration/fundamentals" hreflang="ru"><link data-rh="true" rel="alternate" href="https://rspamd.com/docs.rspamd.com/branches/docs/arc-update/guides/configuration/fundamentals" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Getting Started","item":"https://rspamd.com/docs.rspamd.com/branches/docs/arc-update/ru/getting-started/"},{"@type":"ListItem","position":2,"name":"Configuration Fundamentals","item":"https://rspamd.com/docs.rspamd.com/branches/docs/arc-update/ru/guides/configuration/fundamentals"}]}</script><link rel="alternate" type="application/rss+xml" href="/docs.rspamd.com/branches/docs/arc-update/ru/blog/rss.xml" title="Rspamd Blog RSS Feed">
+<link rel="alternate" type="application/atom+xml" href="/docs.rspamd.com/branches/docs/arc-update/ru/blog/atom.xml" title="Rspamd Blog Atom Feed">
+
+
+
+
+<script>window.SEARCH_BACKEND_CONFIG={endpoint:"/api"}</script>
+
+<link rel="alternate" type="application/rss+xml" title="Rspamd Changelog RSS" href="/rss/changelog.xml">
+<link rel="alternate" type="application/rss+xml" title="Rspamd Blog RSS" href="/blog/rss.xml">
+<link rel="alternate" type="application/atom+xml" title="Rspamd Blog Atom" href="/blog/atom.xml"><link rel="stylesheet" href="/docs.rspamd.com/branches/docs/arc-update/ru/assets/css/styles.10e2e935.css">
+<script src="/docs.rspamd.com/branches/docs/arc-update/ru/assets/js/runtime~main.36f317d0.js" defer="defer"></script>
+<script src="/docs.rspamd.com/branches/docs/arc-update/ru/assets/js/main.865ec247.js" defer="defer"></script>
+</head>
+<body class="navigation-with-keyboard">
+<svg style="display: none;"><defs>
+<symbol id="theme-svg-external-link" viewBox="0 0 24 24"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/></symbol>
+</defs></svg>
+<script>!function(){var t=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();document.documentElement.setAttribute("data-theme",t||(window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")),document.documentElement.setAttribute("data-theme-choice",t||"system")}(),function(){try{const c=new URLSearchParams(window.location.search).entries();for(var[t,e]of c)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><link rel="preload" as="image" href="/docs.rspamd.com/branches/docs/arc-update/ru/img/rspamd_logo_black.png"><link rel="preload" as="image" href="/docs.rspamd.com/branches/docs/arc-update/ru/img/rspamd_logo_navbar.png"><div role="region" aria-label="Перейти к основному содержимому"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">Перейти к основному содержимому</a></div><nav aria-label="Main" class="theme-layout-navbar navbar navbar--fixed-top"><div class="navbar__inner"><div class="theme-layout-navbar-left navbar__items"><button aria-label="Переключить навигационную панель" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a href="https://www.rspamd.com" target="_self" rel="noopener noreferrer" class="navbar__brand"><div class="navbar__logo"><img src="/docs.rspamd.com/branches/docs/arc-update/ru/img/rspamd_logo_black.png" alt="Rspamd Logo" class="themedComponent_mlkZ themedComponent--light_NVdE"><img src="/docs.rspamd.com/branches/docs/arc-update/ru/img/rspamd_logo_navbar.png" alt="Rspamd Logo" class="themedComponent_mlkZ themedComponent--dark_xIcU"></div><b class="navbar__title text--truncate"></b></a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/docs.rspamd.com/branches/docs/arc-update/ru/">Documentation</a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/docs.rspamd.com/branches/docs/arc-update/ru/about/">About</a><a class="navbar__item navbar__link" href="/docs.rspamd.com/branches/docs/arc-update/ru/tutorials/">Tutorials</a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/docs.rspamd.com/branches/docs/arc-update/ru/modules/">Modules</a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/docs.rspamd.com/branches/docs/arc-update/ru/other/usage_policy">Usage Policy</a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/docs.rspamd.com/branches/docs/arc-update/ru/faq">FAQ</a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/docs.rspamd.com/branches/docs/arc-update/ru/support">Support</a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/docs.rspamd.com/branches/docs/arc-update/ru/downloads">Downloads</a><a class="navbar__item navbar__link" href="/docs.rspamd.com/branches/docs/arc-update/ru/blog">Blog</a><a class="navbar__item navbar__link" href="/docs.rspamd.com/branches/docs/arc-update/ru/changelog">Changelog</a></div><div class="theme-layout-navbar-right navbar__items navbar__items--right"><div><div class="elasticsearch-search-container"><form class="elasticsearch-search-form"><div class="elasticsearch-search-input-container"><input type="text" placeholder="Search documentation..." class="elasticsearch-search-input" aria-label="Search documentation" value=""><div class="elasticsearch-search-shortcut"><span>⌘K</span></div></div></form></div></div><div class="navbar__item"><div id="font-size-control-mount"></div></div><a href="https://github.com/rspamd/rspamd" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="system mode" aria-label="Переключение между темным и светлым режимом (сейчас используется system mode)"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP systemToggleIcon_QzmC"><path fill="currentColor" d="m12 21c4.971 0 9-4.029 9-9s-4.029-9-9-9-9 4.029-9 9 4.029 9 9 9zm4.95-13.95c1.313 1.313 2.05 3.093 2.05 4.95s-0.738 3.637-2.05 4.95c-1.313 1.313-3.093 2.05-4.95 2.05v-14c1.857 0 3.637 0.737 4.95 2.05z"></path></svg></button></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="theme-layout-main main-wrapper mainWrapper_z2l0"><div class="docsWrapper_hBAB"><button aria-label="Прокрутка к началу" class="clean-btn theme-back-to-top-button backToTopButton_sjWU" type="button"></button><div class="docRoot_UBD9"><aside class="theme-doc-sidebar-container docSidebarContainer_YfHR"><div class="sidebarViewport_aRkj"><div class="sidebar_njMd"><nav aria-label="Docs sidebar" class="menu thin-scrollbar menu_SIkG"><ul class="theme-doc-sidebar-menu menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/docs.rspamd.com/branches/docs/arc-update/ru/"><span title="About Rspamd" class="linkLabel_WmDU">About Rspamd</span></a></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--active" href="/docs.rspamd.com/branches/docs/arc-update/ru/getting-started/"><span title="Getting Started" class="categoryLinkLabel_W154">Getting Started</span></a><button aria-label="Collapse sidebar category &#x27;Getting Started&#x27;" aria-expanded="true" type="button" class="clean-btn menu__caret"></button></div><ul class="menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs.rspamd.com/branches/docs/arc-update/ru/getting-started/understanding-rspamd"><span title="Understanding Rspamd" class="linkLabel_WmDU">Understanding Rspamd</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs.rspamd.com/branches/docs/arc-update/ru/getting-started/installation"><span title="Installation Guide" class="linkLabel_WmDU">Installation Guide</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs.rspamd.com/branches/docs/arc-update/ru/getting-started/first-setup"><span title="First Setup" class="linkLabel_WmDU">First Setup</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link menu__link--active" aria-current="page" tabindex="0" href="/docs.rspamd.com/branches/docs/arc-update/ru/guides/configuration/fundamentals"><span title="Configuration Fundamentals" class="linkLabel_WmDU">Configuration Fundamentals</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs.rspamd.com/branches/docs/arc-update/ru/guides/configuration/tool-selection"><span title="Tool Selection Guide" class="linkLabel_WmDU">Tool Selection Guide</span></a></li></ul></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs.rspamd.com/branches/docs/arc-update/ru/tutorials/migration"><span title="How-To Guides" class="categoryLinkLabel_W154">How-To Guides</span></a></div></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/docs.rspamd.com/branches/docs/arc-update/ru/faq"><span title="Frequently asked questions" class="linkLabel_WmDU">Frequently asked questions</span></a></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist" href="/docs.rspamd.com/branches/docs/arc-update/ru/about/"><span title="About" class="categoryLinkLabel_W154">About</span></a><button aria-label="Expand sidebar category &#x27;About&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/docs.rspamd.com/branches/docs/arc-update/ru/support"><span title="Rspamd Support" class="linkLabel_WmDU">Rspamd Support</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/docs.rspamd.com/branches/docs/arc-update/ru/downloads"><span title="Downloads" class="linkLabel_WmDU">Downloads</span></a></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist" href="/docs.rspamd.com/branches/docs/arc-update/ru/configuration/"><span title="Configuration" class="categoryLinkLabel_W154">Configuration</span></a><button aria-label="Expand sidebar category &#x27;Configuration&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist" href="/docs.rspamd.com/branches/docs/arc-update/ru/workers/"><span title="Workers" class="categoryLinkLabel_W154">Workers</span></a><button aria-label="Expand sidebar category &#x27;Workers&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist" href="/docs.rspamd.com/branches/docs/arc-update/ru/modules/"><span title="Modules" class="categoryLinkLabel_W154">Modules</span></a><button aria-label="Expand sidebar category &#x27;Modules&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist" href="/docs.rspamd.com/branches/docs/arc-update/ru/lua/"><span title="Lua API" class="categoryLinkLabel_W154">Lua API</span></a><button aria-label="Expand sidebar category &#x27;Lua API&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist" href="/docs.rspamd.com/branches/docs/arc-update/ru/developers/architecture"><span title="Developers" class="categoryLinkLabel_W154">Developers</span></a><button aria-label="Expand sidebar category &#x27;Developers&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist" href="/docs.rspamd.com/branches/docs/arc-update/ru/administration/rspamadm/"><span title="Administration Tools" class="categoryLinkLabel_W154">Administration Tools</span></a><button aria-label="Expand sidebar category &#x27;Administration Tools&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs.rspamd.com/branches/docs/arc-update/ru/other/gtube_patterns"><span title="Other" class="categoryLinkLabel_W154">Other</span></a></div></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/docs.rspamd.com/branches/docs/arc-update/ru/blog"><span title="Blog" class="linkLabel_WmDU">Blog</span></a></li></ul></nav><button type="button" title="Свернуть сайдбар" aria-label="Свернуть сайдбар" class="button button--secondary button--outline collapseSidebarButton_PEFL"><svg width="20" height="20" aria-hidden="true" class="collapseSidebarButtonIcon_kv0_"><g fill="#7a7a7a"><path d="M9.992 10.023c0 .2-.062.399-.172.547l-4.996 7.492a.982.982 0 01-.828.454H1c-.55 0-1-.453-1-1 0-.2.059-.403.168-.551l4.629-6.942L.168 3.078A.939.939 0 010 2.528c0-.548.45-.997 1-.997h2.996c.352 0 .649.18.828.45L9.82 9.472c.11.148.172.347.172.55zm0 0"></path><path d="M19.98 10.023c0 .2-.058.399-.168.547l-4.996 7.492a.987.987 0 01-.828.454h-3c-.547 0-.996-.453-.996-1 0-.2.059-.403.168-.551l4.625-6.942-4.625-6.945a.939.939 0 01-.168-.55 1 1 0 01.996-.997h3c.348 0 .649.18.828.45l4.996 7.492c.11.148.168.347.168.55zm0 0"></path></g></svg></button></div></div></aside><main class="docMainContainer_TBSr"><div class="container padding-top--md padding-bottom--lg"><div class="row"><div class="col docItemCol_VOVn"><div class="docItemContainer_Djhp"><article><nav class="theme-doc-breadcrumbs breadcrumbsContainer_Z_bl" aria-label="Навигационная цепочка текущей страницы"><ul class="breadcrumbs"><li class="breadcrumbs__item"><a aria-label="Главная страница" class="breadcrumbs__link" href="/docs.rspamd.com/branches/docs/arc-update/ru/"><svg viewBox="0 0 24 24" class="breadcrumbHomeIcon_YNFT"><path d="M10 19v-5h4v5c0 .55.45 1 1 1h3c.55 0 1-.45 1-1v-7h1.7c.46 0 .68-.57.33-.87L12.67 3.6c-.38-.34-.96-.34-1.34 0l-8.36 7.53c-.34.3-.13.87.33.87H5v7c0 .55.45 1 1 1h3c.55 0 1-.45 1-1z" fill="currentColor"></path></svg></a></li><li class="breadcrumbs__item"><a class="breadcrumbs__link" href="/docs.rspamd.com/branches/docs/arc-update/ru/getting-started/"><span>Getting Started</span></a></li><li class="breadcrumbs__item breadcrumbs__item--active"><span class="breadcrumbs__link">Configuration Fundamentals</span></li></ul></nav><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_ITEo"><button type="button" class="clean-btn tocCollapsibleButton_TO0P">Содержание этой страницы</button></div><div class="theme-doc-markdown markdown"><header><h1>Configuration Fundamentals</h1></header>
+<p>Now that you have <a class="" href="/docs.rspamd.com/branches/docs/arc-update/ru/getting-started/first-setup">working spam filtering</a>, let&#x27;s understand <strong>what you can configure</strong> and <strong>how to configure it effectively</strong>. This knowledge will help you customize Rspamd for your specific needs.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="the-what-and-how-framework">The &quot;What and How&quot; Framework<a href="#the-what-and-how-framework" class="hash-link" aria-label="Прямая ссылка на The &quot;What and How&quot; Framework" title="Прямая ссылка на The &quot;What and How&quot; Framework" translate="no">​</a></h2>
+<p>Based on user feedback and common questions, here&#x27;s what there is to configure in Rspamd:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Configuration Area</th><th>What It Controls</th><th>How to Configure</th><th>When to Modify</th><th>Common Pitfalls</th></tr></thead><tbody><tr><td><strong><a href="#modules-what-tests-to-run" class="">Modules</a></strong></td><td>Which tests run on messages</td><td><code>local.d/</code> files</td><td>Different security needs</td><td>Disabling core modules</td></tr><tr><td><strong><a href="#scores-how-much-tests-matter" class="">Scores</a></strong></td><td>Symbol weights in spam calculation</td><td>Actions &amp; metrics files</td><td>Fine-tuning accuracy</td><td>Score inflation</td></tr><tr><td><strong><a href="#actions-what-to-do-with-scores" class="">Actions</a></strong></td><td>Response at different score levels</td><td>Actions configuration</td><td>Setting spam tolerance</td><td>Missing greylisting</td></tr><tr><td><strong><a href="#workers-how-rspamd-operates" class="">Workers</a></strong></td><td>Process behavior and integration</td><td>Worker-specific configs</td><td>MTA integration, performance</td><td>Port conflicts</td></tr><tr><td><strong><a href="#general-options-system-behavior" class="">General Options</a></strong></td><td>System timeouts, DNS, logging</td><td>Global settings</td><td>Infrastructure adaptation</td><td>DNS timeouts</td></tr></tbody></table>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="modules-what-tests-to-run">Modules: What Tests to Run<a href="#modules-what-tests-to-run" class="hash-link" aria-label="Прямая ссылка на Modules: What Tests to Run" title="Прямая ссылка на Modules: What Tests to Run" translate="no">​</a></h2>
+<p><strong>Modules</strong> are the workhorses of Rspamd - they analyze messages and produce symbols when tests match.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="understanding-module-types">Understanding Module Types<a href="#understanding-module-types" class="hash-link" aria-label="Прямая ссылка на Understanding Module Types" title="Прямая ссылка на Understanding Module Types" translate="no">​</a></h3>
+<!-- -->
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="essential-modules-you-should-know">Essential Modules You Should Know<a href="#essential-modules-you-should-know" class="hash-link" aria-label="Прямая ссылка на Essential Modules You Should Know" title="Прямая ссылка на Essential Modules You Should Know" translate="no">​</a></h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Module</th><th>Purpose</th><th>Configuration File</th><th>Default Status</th></tr></thead><tbody><tr><td><strong><a class="" href="/docs.rspamd.com/branches/docs/arc-update/ru/modules/bayes">bayes</a></strong></td><td>Statistical classification</td><td>N/A (core module)</td><td>✅ Enabled</td></tr><tr><td><strong><a class="" href="/docs.rspamd.com/branches/docs/arc-update/ru/modules/rbl">rbl</a></strong></td><td>DNS blacklist checks</td><td><code>rbl.conf</code></td><td>✅ Enabled</td></tr><tr><td><strong><a class="" href="/docs.rspamd.com/branches/docs/arc-update/ru/modules/dkim">dkim</a></strong></td><td>DKIM signature validation</td><td><code>dkim.conf</code></td><td>✅ Enabled</td></tr><tr><td><strong><a class="" href="/docs.rspamd.com/branches/docs/arc-update/ru/modules/spf">spf</a></strong></td><td>SPF record validation</td><td><code>spf.conf</code></td><td>✅ Enabled</td></tr><tr><td><strong><a class="" href="/docs.rspamd.com/branches/docs/arc-update/ru/modules/dmarc">dmarc</a></strong></td><td>DMARC policy validation</td><td><code>dmarc.conf</code></td><td>✅ Enabled</td></tr><tr><td><strong><a class="" href="/docs.rspamd.com/branches/docs/arc-update/ru/modules/fuzzy_check">fuzzy_check</a></strong></td><td>Fuzzy hash matching</td><td><code>fuzzy_check.conf</code></td><td>✅ Enabled (check usage policies)</td></tr><tr><td><strong><a class="" href="/docs.rspamd.com/branches/docs/arc-update/ru/modules/multimap">multimap</a></strong></td><td>Custom rule engine</td><td><code>multimap.conf</code></td><td>⚠️ Requires setup</td></tr><tr><td><strong><a class="" href="/docs.rspamd.com/branches/docs/arc-update/ru/modules/antivirus">antivirus</a></strong></td><td>Virus scanning integration</td><td><code>antivirus.conf</code></td><td>❌ Manual setup</td></tr></tbody></table>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="how-to-configure-modules">How to Configure Modules<a href="#how-to-configure-modules" class="hash-link" aria-label="Прямая ссылка на How to Configure Modules" title="Прямая ссылка на How to Configure Modules" translate="no">​</a></h3>
+<p><strong>Enable/Disable Modules</strong>:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain"># Disable a module (create empty file)</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">sudo touch /etc/rspamd/local.d/module_name.conf</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">echo &#x27;enabled = false;&#x27; | sudo tee /etc/rspamd/local.d/module_name.conf</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># Enable with custom settings</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">sudo nano /etc/rspamd/local.d/module_name.conf</span><br></span></code></pre></div></div>
+<p><strong>Example: Configure RBL Module</strong>:</p>
+<div class="language-hcl codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-hcl codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain"># /etc/rspamd/local.d/rbl.conf</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># Add custom DNS blacklist</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">rbls {</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  &quot;CUSTOM_RBL&quot; {</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    symbol = &quot;CUSTOM_RBL&quot;;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    rbl = &quot;custom.blocklist.example.com&quot;;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    ipv6 = true;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    score = 2.0;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  }</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">}</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># Exclude internal networks from RBL checks</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">local_networks = &quot;192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12&quot;;</span><br></span></code></pre></div></div>
+<p><strong>Important: Fuzzy Check Usage Policies</strong></p>
+<p>The fuzzy_check module connects to external fuzzy storage servers. Be aware of usage policies:</p>
+<ul>
+<li class=""><strong>Public fuzzy servers</strong> (like rspamd.com) have usage limits and policies</li>
+<li class=""><strong>Commercial environments</strong> should consider running private fuzzy storage</li>
+<li class=""><strong>High-volume sites</strong> may need to configure custom fuzzy servers</li>
+<li class=""><strong>Privacy concerns</strong> - fuzzy hashes are sent to external servers</li>
+</ul>
+<div class="language-hcl codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-hcl codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain"># /etc/rspamd/local.d/fuzzy_check.conf</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># Configure custom fuzzy server for privacy/policy compliance</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">rule &quot;local&quot; {</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  servers = &quot;fuzzy.internal.example.com:11335&quot;;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  symbol = &quot;LOCAL_FUZZY_DENIED&quot;;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  mime_types = [&quot;*&quot;];</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  read_only = false;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  skip_unknown = true;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">}</span><br></span></code></pre></div></div>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="when-to-modify-modules">When to Modify Modules<a href="#when-to-modify-modules" class="hash-link" aria-label="Прямая ссылка на When to Modify Modules" title="Прямая ссылка на When to Modify Modules" translate="no">​</a></h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Scenario</th><th>Action</th><th>Example</th></tr></thead><tbody><tr><td><strong>Performance issues</strong></td><td>Disable expensive modules</td><td>Disable antivirus if external scanning exists</td></tr><tr><td><strong>False positives</strong></td><td>Adjust module sensitivity</td><td>Lower RBL scores, exclude internal networks</td></tr><tr><td><strong>Custom requirements</strong></td><td>Add specialized modules</td><td>Enable multimap for custom business rules</td></tr><tr><td><strong>Compliance needs</strong></td><td>Enable specific checks</td><td>Add antivirus for regulatory requirements</td></tr></tbody></table>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="scores-how-much-tests-matter">Scores: How Much Tests Matter<a href="#scores-how-much-tests-matter" class="hash-link" aria-label="Прямая ссылка на Scores: How Much Tests Matter" title="Прямая ссылка на Scores: How Much Tests Matter" translate="no">​</a></h2>
+<p><strong>Scores</strong> (also called weights) determine how much each test contributes to the message&#x27;s spam score.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="understanding-the-scoring-system">Understanding the Scoring System<a href="#understanding-the-scoring-system" class="hash-link" aria-label="Прямая ссылка на Understanding the Scoring System" title="Прямая ссылка на Understanding the Scoring System" translate="no">​</a></h3>
+<!-- -->
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="default-score-categories">Default Score Categories<a href="#default-score-categories" class="hash-link" aria-label="Прямая ссылка на Default Score Categories" title="Прямая ссылка на Default Score Categories" translate="no">​</a></h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Score Range</th><th>Meaning</th><th>Examples</th><th>Typical Actions</th></tr></thead><tbody><tr><td><strong>+5.0 to +15.0</strong></td><td>Strong spam indicators</td><td><code>BAYES_SPAM</code>, <code>FORGED_SENDER</code></td><td>Major score contribution</td></tr><tr><td><strong>+1.0 to +4.9</strong></td><td>Moderate indicators</td><td><code>R_SPF_FAIL</code>, <code>RBL hits</code></td><td>Moderate score contribution</td></tr><tr><td><strong>+0.1 to +0.9</strong></td><td>Minor indicators</td><td><code>MISSING_DATE</code>, formatting issues</td><td>Small score contribution</td></tr><tr><td><strong>0.0</strong></td><td>Informational only</td><td><code>R_DKIM_ALLOW</code></td><td>No score impact</td></tr><tr><td><strong>-0.1 to -2.0</strong></td><td>Ham indicators</td><td><code>BAYES_HAM</code>, <code>DKIM_VALID</code></td><td>Reduce spam score</td></tr></tbody></table>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="how-to-adjust-scores">How to Adjust Scores<a href="#how-to-adjust-scores" class="hash-link" aria-label="Прямая ссылка на How to Adjust Scores" title="Прямая ссылка на How to Adjust Scores" translate="no">​</a></h3>
+<p><strong>Method 1: Actions Configuration</strong> (Recommended for beginners)</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">sudo nano /etc/rspamd/local.d/actions.conf</span><br></span></code></pre></div></div>
+<div class="language-hcl codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-hcl codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain"># Adjust thresholds instead of individual scores</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">reject = 15;        # Increase to reduce false positives</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">add_header = 6;     # Decrease to catch more spam</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">greylist = 4;       # Adjust based on tolerance for delays</span><br></span></code></pre></div></div>
+<p><strong>Method 2: Metrics Configuration</strong> (Advanced users)</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">sudo nano /etc/rspamd/local.d/metrics.conf</span><br></span></code></pre></div></div>
+<div class="language-hcl codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-hcl codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain"># Override specific symbol scores</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">symbol &quot;FORGED_SENDER&quot; {</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  score = 1.0;     # Increase from default 0.3</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">}</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">symbol &quot;BAYES_SPAM&quot; {</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  score = 4.0;     # Adjust Bayesian spam weight</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">}</span><br></span></code></pre></div></div>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="score-tuning-strategy">Score Tuning Strategy<a href="#score-tuning-strategy" class="hash-link" aria-label="Прямая ссылка на Score Tuning Strategy" title="Прямая ссылка на Score Tuning Strategy" translate="no">​</a></h3>
+<p><strong>Step 1: Collect Data</strong></p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain"># Analyze current scoring patterns</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">rspamc stat | grep &quot;Total messages&quot;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># Review recent message scores in web interface</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># Look for patterns in false positives/negatives</span><br></span></code></pre></div></div>
+<p><strong>Step 2: Identify Problem Areas</strong></p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain"># Find messages with wrong classifications</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># Check web interface History tab</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># Look for common symbols in misclassified messages</span><br></span></code></pre></div></div>
+<p><strong>Step 3: Make Incremental Adjustments</strong></p>
+<div class="language-hcl codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-hcl codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain"># Example: Reducing false positives from SPF failures</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># /etc/rspamd/local.d/metrics.conf</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">symbol &quot;R_SPF_FAIL&quot; {</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  score = 0.5;     # Reduced from default 1.0</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">}</span><br></span></code></pre></div></div>
+<p><strong>Step 4: Test and Monitor</strong></p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain"># Restart Rspamd after changes  </span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">sudo systemctl restart rspamd</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># Monitor for 24-48 hours before further adjustments</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># Use web interface to track effectiveness</span><br></span></code></pre></div></div>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="actions-what-to-do-with-scores">Actions: What to Do with Scores<a href="#actions-what-to-do-with-scores" class="hash-link" aria-label="Прямая ссылка на Actions: What to Do with Scores" title="Прямая ссылка на Actions: What to Do with Scores" translate="no">​</a></h2>
+<p><strong>Actions</strong> define what happens when messages reach certain spam score thresholds.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="standard-action-types">Standard Action Types<a href="#standard-action-types" class="hash-link" aria-label="Прямая ссылка на Standard Action Types" title="Прямая ссылка на Standard Action Types" translate="no">​</a></h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Action</th><th>Purpose</th><th>When It Triggers</th><th>Effect</th></tr></thead><tbody><tr><td><strong>no action</strong></td><td>Clean message</td><td>Score below greylist threshold</td><td>Normal delivery</td></tr><tr><td><strong>greylist</strong></td><td>Temporary delay</td><td>Score between greylist and add_header</td><td>Message delayed, legitimate senders retry</td></tr><tr><td><strong>add_header</strong></td><td>Mark as spam</td><td>Score between add_header and reject</td><td>Headers added, usually filed to spam folder</td></tr><tr><td><strong>reject</strong></td><td>Refuse message</td><td>Score above reject threshold</td><td>Message bounced back to sender</td></tr></tbody></table>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="how-actions-work">How Actions Work<a href="#how-actions-work" class="hash-link" aria-label="Прямая ссылка на How Actions Work" title="Прямая ссылка на How Actions Work" translate="no">​</a></h3>
+<!-- -->
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="configuration-examples">Configuration Examples<a href="#configuration-examples" class="hash-link" aria-label="Прямая ссылка на Configuration Examples" title="Прямая ссылка на Configuration Examples" translate="no">​</a></h3>
+<p><strong>Conservative Setup</strong> (Avoid false positives):</p>
+<div class="language-hcl codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-hcl codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain"># /etc/rspamd/local.d/actions.conf</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">reject = 20;        # Very high threshold</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">add_header = 8;     # Conservative spam marking</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">greylist = 5;       # Moderate greylisting</span><br></span></code></pre></div></div>
+<p><strong>Aggressive Setup</strong> (Catch more spam):</p>
+<div class="language-hcl codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-hcl codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain"># /etc/rspamd/local.d/actions.conf  </span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">reject = 12;        # Lower reject threshold</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">add_header = 4;     # Mark more messages as spam</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">greylist = 3;       # More aggressive greylisting</span><br></span></code></pre></div></div>
+<p><strong>Balanced Setup</strong> (Default recommendation):</p>
+<div class="language-hcl codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-hcl codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain"># /etc/rspamd/local.d/actions.conf</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">reject = 15;        # Standard threshold</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">add_header = 6;     # Balanced spam detection  </span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">greylist = 4;       # Standard greylisting</span><br></span></code></pre></div></div>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="action-tuning-guidelines">Action Tuning Guidelines<a href="#action-tuning-guidelines" class="hash-link" aria-label="Прямая ссылка на Action Tuning Guidelines" title="Прямая ссылка на Action Tuning Guidelines" translate="no">​</a></h3>
+<p><strong>Adjust <code>reject</code> threshold when</strong>:</p>
+<ul>
+<li class="">⬆️ <strong>Increase</strong> if you&#x27;re getting false positive rejections</li>
+<li class="">⬇️ <strong>Decrease</strong> if obvious spam is getting through</li>
+</ul>
+<p><strong>Adjust <code>add_header</code> threshold when</strong>:</p>
+<ul>
+<li class="">⬆️ <strong>Increase</strong> if too many legitimate messages marked as spam</li>
+<li class="">⬇️ <strong>Decrease</strong> if spam is reaching inboxes</li>
+</ul>
+<p><strong>Adjust <code>greylist</code> threshold when</strong>:</p>
+<ul>
+<li class="">⬆️ <strong>Increase</strong> if legitimate senders complain about delays</li>
+<li class="">⬇️ <strong>Decrease</strong> if you want more aggressive spam blocking</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="workers-how-rspamd-operates">Workers: How Rspamd Operates<a href="#workers-how-rspamd-operates" class="hash-link" aria-label="Прямая ссылка на Workers: How Rspamd Operates" title="Прямая ссылка на Workers: How Rspamd Operates" translate="no">​</a></h2>
+<p><strong>Workers</strong> are different processes that handle specific Rspamd functions.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="worker-types-and-their-roles">Worker Types and Their Roles<a href="#worker-types-and-their-roles" class="hash-link" aria-label="Прямая ссылка на Worker Types and Their Roles" title="Прямая ссылка на Worker Types and Their Roles" translate="no">​</a></h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Worker</th><th>Purpose</th><th>Configuration File</th><th>Default Port</th></tr></thead><tbody><tr><td><strong>normal</strong></td><td>Message scanning</td><td><code>worker-normal.inc</code></td><td>11333</td></tr><tr><td><strong>controller</strong></td><td>Web interface, API</td><td><code>worker-controller.inc</code></td><td>11334</td></tr><tr><td><strong>proxy</strong></td><td>MTA integration</td><td><code>worker-proxy.inc</code></td><td>11332</td></tr><tr><td><strong>fuzzy</strong></td><td>Fuzzy hash storage</td><td><code>worker-fuzzy.inc</code></td><td>11335</td></tr></tbody></table>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="essential-worker-configurations">Essential Worker Configurations<a href="#essential-worker-configurations" class="hash-link" aria-label="Прямая ссылка на Essential Worker Configurations" title="Прямая ссылка на Essential Worker Configurations" translate="no">​</a></h3>
+<p><strong>Controller Worker</strong> (Web Interface):</p>
+<div class="language-hcl codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-hcl codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain"># /etc/rspamd/local.d/worker-controller.inc</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">password = &quot;$2$your_password_hash&quot;;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">bind_socket = &quot;localhost:11334&quot;;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">secure_ip = &quot;127.0.0.1&quot;;  # Restrict access</span><br></span></code></pre></div></div>
+<p><strong>Proxy Worker</strong> (MTA Integration):</p>
+<div class="language-hcl codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-hcl codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain"># /etc/rspamd/local.d/worker-proxy.inc</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">milter = yes;                    # Enable milter protocol</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">timeout = 120s;                  # MTA timeout</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># For small installations, proxy can work in self-scan mode</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># (combines proxy and scanner functionality)</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">upstream &quot;local&quot; {</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  default = yes;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  self_scan = yes;               # Enable self-scan for small setups</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">}</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># Benefits of self-scan mode:</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># - Reduces process overhead for small installations</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># - Simplifies configuration (no separate scanner worker needed)</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># - Maintains full scanning functionality</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># - Suitable for installations with &lt; 1000 messages/day</span><br></span></code></pre></div></div>
+<p><strong>Normal Worker</strong> (Scanning):</p>
+<div class="language-hcl codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-hcl codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain"># /etc/rspamd/local.d/worker-normal.inc</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">bind_socket = &quot;localhost:11333&quot;;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">task_timeout = 8s;               # Per-message timeout</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">max_tasks = 0;                   # Unlimited concurrent tasks</span><br></span></code></pre></div></div>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="when-to-modify-worker-configuration">When to Modify Worker Configuration<a href="#when-to-modify-worker-configuration" class="hash-link" aria-label="Прямая ссылка на When to Modify Worker Configuration" title="Прямая ссылка на When to Modify Worker Configuration" translate="no">​</a></h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Scenario</th><th>Worker</th><th>Modification</th><th>Example</th></tr></thead><tbody><tr><td><strong>Performance tuning</strong></td><td>normal</td><td>Adjust timeouts, limits</td><td>Increase <code>max_tasks</code> for high volume</td></tr><tr><td><strong>Security hardening</strong></td><td>controller</td><td>Restrict access</td><td>Bind to specific IP addresses</td></tr><tr><td><strong>MTA integration</strong></td><td>proxy</td><td>Configure milter settings, self-scan mode</td><td>Set appropriate timeouts, enable self-scan for small installations</td></tr><tr><td><strong>High availability</strong></td><td>all</td><td>Multiple instances</td><td>Configure load balancing</td></tr></tbody></table>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="general-options-system-behavior">General Options: System Behavior<a href="#general-options-system-behavior" class="hash-link" aria-label="Прямая ссылка на General Options: System Behavior" title="Прямая ссылка на General Options: System Behavior" translate="no">​</a></h2>
+<p><strong>General options</strong> control system-wide behavior like DNS resolution, logging, and timeouts.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="key-general-options">Key General Options<a href="#key-general-options" class="hash-link" aria-label="Прямая ссылка на Key General Options" title="Прямая ссылка на Key General Options" translate="no">​</a></h3>
+<div class="language-hcl codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-hcl codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain"># /etc/rspamd/local.d/options.inc</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># DNS Configuration</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">dns {</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  timeout = 1s;                  # DNS query timeout</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  sockets = 16;                  # Concurrent DNS queries</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  # Use local resolver - avoid public DNS servers like 8.8.8.8</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  # Public DNS servers can cause:</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  # - Higher latency and timeouts</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  # - Rate limiting issues</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  # - Different RBL responses than your ISP expects</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  # - Privacy concerns (DNS queries visible to third parties)</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  # nameserver = [&quot;127.0.0.1&quot;];  # Use system resolver (recommended)</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">}</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># Logging</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">logging {</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  level = &quot;info&quot;;                # Logging verbosity</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  log_file = &quot;/var/log/rspamd/rspamd.log&quot;;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">}</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># Performance</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">tempdir = &quot;/tmp&quot;;                # Temporary files location</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">max_message = 50M;               # Maximum message size</span><br></span></code></pre></div></div>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="common-configuration-scenarios">Common Configuration Scenarios<a href="#common-configuration-scenarios" class="hash-link" aria-label="Прямая ссылка на Common Configuration Scenarios" title="Прямая ссылка на Common Configuration Scenarios" translate="no">​</a></h3>
+<p><strong>Slow Network Environment</strong>:</p>
+<div class="language-hcl codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-hcl codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain"># Increase timeouts for slow networks</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">dns {</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  timeout = 3s;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  retransmits = 5;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  # Still use local resolver even with increased timeouts</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  # nameserver = [&quot;127.0.0.1&quot;];</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">}</span><br></span></code></pre></div></div>
+<p><strong>High Security Environment</strong>:</p>
+<div class="language-hcl codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-hcl codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain"># Restrict message size</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">max_message = 10M;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># Note: Debug logging is very verbose and not recommended for production</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># Use &quot;info&quot; level for normal operations</span><br></span></code></pre></div></div>
+<p><strong>Performance Optimization</strong>:</p>
+<div class="language-hcl codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-hcl codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain"># Optimize for high volume</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">dns {</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  sockets = 32;                  # More concurrent queries</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">}</span><br></span></code></pre></div></div>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="configuration-file-structure">Configuration File Structure<a href="#configuration-file-structure" class="hash-link" aria-label="Прямая ссылка на Configuration File Structure" title="Прямая ссылка на Configuration File Structure" translate="no">​</a></h2>
+<p>Understanding where and how to place configuration files:</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="directory-structure">Directory Structure<a href="#directory-structure" class="hash-link" aria-label="Прямая ссылка на Directory Structure" title="Прямая ссылка на Directory Structure" translate="no">​</a></h3>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">/etc/rspamd/</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">├── rspamd.conf                  # Main config (don&#x27;t edit)</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">├── local.d/                     # Your customizations</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│   ├── actions.conf</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│   ├── metrics.conf</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│   └── worker-*.inc</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">├── override.d/                  # Complete replacements</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">└── modules.d/                   # Module defaults (don&#x27;t edit)</span><br></span></code></pre></div></div>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="configuration-precedence">Configuration Precedence<a href="#configuration-precedence" class="hash-link" aria-label="Прямая ссылка на Configuration Precedence" title="Прямая ссылка на Configuration Precedence" translate="no">​</a></h3>
+<ol>
+<li class=""><strong><code>override.d/</code></strong> - Completely replaces default configuration</li>
+<li class=""><strong><code>local.d/</code></strong> - Merges with default configuration</li>
+<li class=""><strong><code>modules.d/</code></strong> - Default module configuration</li>
+<li class=""><strong><code>rspamd.conf</code></strong> - Main configuration file</li>
+</ol>
+<p><strong>Best Practice</strong>: Always use <code>local.d/</code> unless you need to completely replace a configuration section.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="configuration-testing-and-validation">Configuration Testing and Validation<a href="#configuration-testing-and-validation" class="hash-link" aria-label="Прямая ссылка на Configuration Testing and Validation" title="Прямая ссылка на Configuration Testing and Validation" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="test-configuration-syntax">Test Configuration Syntax<a href="#test-configuration-syntax" class="hash-link" aria-label="Прямая ссылка на Test Configuration Syntax" title="Прямая ссылка на Test Configuration Syntax" translate="no">​</a></h3>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain"># Check configuration for syntax errors</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">sudo rspamadm configtest</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># Check configuration with verbose output</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">sudo rspamadm configtest -v</span><br></span></code></pre></div></div>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="monitor-configuration-changes">Monitor Configuration Changes<a href="#monitor-configuration-changes" class="hash-link" aria-label="Прямая ссылка на Monitor Configuration Changes" title="Прямая ссылка на Monitor Configuration Changes" translate="no">​</a></h3>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain"># View configuration dump</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">rspamc configdump</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># Check specific symbols and scores</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">rspamc configdump | grep -A5 -B5 &quot;symbol_name&quot;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># Monitor real-time changes</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">tail -f /var/log/rspamd/rspamd.log</span><br></span></code></pre></div></div>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="validate-changes-with-test-messages">Validate Changes with Test Messages<a href="#validate-changes-with-test-messages" class="hash-link" aria-label="Прямая ссылка на Validate Changes with Test Messages" title="Прямая ссылка на Validate Changes with Test Messages" translate="no">​</a></h3>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain"># Test message processing after configuration changes</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">echo &quot;Test message&quot; | rspamc</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># Check specific symbols are working</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">echo &quot;Test message with suspicious content&quot; | rspamc | grep &quot;SYMBOL_NAME&quot;</span><br></span></code></pre></div></div>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="common-configuration-patterns">Common Configuration Patterns<a href="#common-configuration-patterns" class="hash-link" aria-label="Прямая ссылка на Common Configuration Patterns" title="Прямая ссылка на Common Configuration Patterns" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="the-minimal-configuration-pattern">The Minimal Configuration Pattern<a href="#the-minimal-configuration-pattern" class="hash-link" aria-label="Прямая ссылка на The Minimal Configuration Pattern" title="Прямая ссылка на The Minimal Configuration Pattern" translate="no">​</a></h3>
+<ul>
+<li class="">Only modify action thresholds</li>
+<li class="">Use default modules and scores</li>
+<li class="">Focus on MTA integration</li>
+</ul>
+<p><strong>Files to modify</strong>:</p>
+<ul>
+<li class=""><code>local.d/actions.conf</code></li>
+<li class=""><code>local.d/worker-proxy.inc</code></li>
+<li class=""><code>local.d/worker-controller.inc</code></li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="the-tuned-environment-pattern">The Tuned Environment Pattern<a href="#the-tuned-environment-pattern" class="hash-link" aria-label="Прямая ссылка на The Tuned Environment Pattern" title="Прямая ссылка на The Tuned Environment Pattern" translate="no">​</a></h3>
+<ul>
+<li class="">Customize scores based on testing</li>
+<li class="">Enable/disable specific modules</li>
+<li class="">Adjust learning mechanisms</li>
+</ul>
+<p><strong>Additional files</strong>:</p>
+<ul>
+<li class=""><code>local.d/metrics.conf</code></li>
+<li class=""><code>local.d/rbl.conf</code></li>
+<li class=""><code>local.d/multimap.conf</code></li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="the-high-performance-pattern">The High Performance Pattern<a href="#the-high-performance-pattern" class="hash-link" aria-label="Прямая ссылка на The High Performance Pattern" title="Прямая ссылка на The High Performance Pattern" translate="no">​</a></h3>
+<ul>
+<li class="">Optimize worker configuration</li>
+<li class="">Tune system limits</li>
+<li class="">Focus on speed over features</li>
+</ul>
+<p><strong>Additional considerations</strong>:</p>
+<ul>
+<li class="">Worker timeouts and limits</li>
+<li class="">DNS configuration optimization</li>
+<li class="">Memory and CPU tuning</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="whats-next">What&#x27;s Next?<a href="#whats-next" class="hash-link" aria-label="Прямая ссылка на What&#x27;s Next?" title="Прямая ссылка на What&#x27;s Next?" translate="no">​</a></h2>
+<p>Now that you understand configuration fundamentals:</p>
+<ol>
+<li class=""><strong><a class="" href="/docs.rspamd.com/branches/docs/arc-update/ru/configuration/tool-selection">Choose the right tools</a></strong> for your specific tasks</li>
+<li class=""><strong><a class="" href="/docs.rspamd.com/branches/docs/arc-update/ru/scenarios/">Apply scenario-specific configurations</a></strong> for your environment</li>
+<li class=""><strong><a class="" href="/docs.rspamd.com/branches/docs/arc-update/ru/developers/writing_rules">Learn rule writing</a></strong> for custom detection logic</li>
+<li class=""><strong><a class="" href="/docs.rspamd.com/branches/docs/arc-update/ru/maintenance/monitoring/">Set up monitoring</a></strong> to track configuration effectiveness</li>
+</ol>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="key-takeaways">Key Takeaways<a href="#key-takeaways" class="hash-link" aria-label="Прямая ссылка на Key Takeaways" title="Прямая ссылка на Key Takeaways" translate="no">​</a></h2>
+<p>✅ <strong>Configuration has five main areas</strong>: modules, scores, actions, workers, and general options
+✅ <strong>Start with actions and thresholds</strong> before diving into detailed score tuning<br>
+✅ <strong>Use <code>local.d/</code> for customizations</strong> to preserve upgradeability
+✅ <strong>Test configuration changes</strong> before applying to production
+✅ <strong>Monitor effectiveness</strong> and adjust based on real-world performance</p></div><footer class="theme-doc-footer docusaurus-mt-lg"><div class="row margin-top--sm theme-doc-footer-edit-meta-row"><div class="col noPrint_WFHX"><a href="https://github.com/rspamd/docs.rspamd.com/edit/master/docs/guides/configuration/fundamentals.md" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>Отредактировать эту страницу</a></div><div class="col lastUpdated_JAkA"></div></div></footer></article><nav class="docusaurus-mt-lg pagination-nav" aria-label="Страница документа"><a class="pagination-nav__link pagination-nav__link--prev" href="/docs.rspamd.com/branches/docs/arc-update/ru/getting-started/first-setup"><div class="pagination-nav__sublabel">Предыдущая страница</div><div class="pagination-nav__label">First Setup</div></a><a class="pagination-nav__link pagination-nav__link--next" href="/docs.rspamd.com/branches/docs/arc-update/ru/guides/configuration/tool-selection"><div class="pagination-nav__sublabel">Следующая страница</div><div class="pagination-nav__label">Tool Selection Guide</div></a></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#the-what-and-how-framework" class="table-of-contents__link toc-highlight">The &quot;What and How&quot; Framework</a></li><li><a href="#modules-what-tests-to-run" class="table-of-contents__link toc-highlight">Modules: What Tests to Run</a><ul><li><a href="#understanding-module-types" class="table-of-contents__link toc-highlight">Understanding Module Types</a></li><li><a href="#essential-modules-you-should-know" class="table-of-contents__link toc-highlight">Essential Modules You Should Know</a></li><li><a href="#how-to-configure-modules" class="table-of-contents__link toc-highlight">How to Configure Modules</a></li><li><a href="#when-to-modify-modules" class="table-of-contents__link toc-highlight">When to Modify Modules</a></li></ul></li><li><a href="#scores-how-much-tests-matter" class="table-of-contents__link toc-highlight">Scores: How Much Tests Matter</a><ul><li><a href="#understanding-the-scoring-system" class="table-of-contents__link toc-highlight">Understanding the Scoring System</a></li><li><a href="#default-score-categories" class="table-of-contents__link toc-highlight">Default Score Categories</a></li><li><a href="#how-to-adjust-scores" class="table-of-contents__link toc-highlight">How to Adjust Scores</a></li><li><a href="#score-tuning-strategy" class="table-of-contents__link toc-highlight">Score Tuning Strategy</a></li></ul></li><li><a href="#actions-what-to-do-with-scores" class="table-of-contents__link toc-highlight">Actions: What to Do with Scores</a><ul><li><a href="#standard-action-types" class="table-of-contents__link toc-highlight">Standard Action Types</a></li><li><a href="#how-actions-work" class="table-of-contents__link toc-highlight">How Actions Work</a></li><li><a href="#configuration-examples" class="table-of-contents__link toc-highlight">Configuration Examples</a></li><li><a href="#action-tuning-guidelines" class="table-of-contents__link toc-highlight">Action Tuning Guidelines</a></li></ul></li><li><a href="#workers-how-rspamd-operates" class="table-of-contents__link toc-highlight">Workers: How Rspamd Operates</a><ul><li><a href="#worker-types-and-their-roles" class="table-of-contents__link toc-highlight">Worker Types and Their Roles</a></li><li><a href="#essential-worker-configurations" class="table-of-contents__link toc-highlight">Essential Worker Configurations</a></li><li><a href="#when-to-modify-worker-configuration" class="table-of-contents__link toc-highlight">When to Modify Worker Configuration</a></li></ul></li><li><a href="#general-options-system-behavior" class="table-of-contents__link toc-highlight">General Options: System Behavior</a><ul><li><a href="#key-general-options" class="table-of-contents__link toc-highlight">Key General Options</a></li><li><a href="#common-configuration-scenarios" class="table-of-contents__link toc-highlight">Common Configuration Scenarios</a></li></ul></li><li><a href="#configuration-file-structure" class="table-of-contents__link toc-highlight">Configuration File Structure</a><ul><li><a href="#directory-structure" class="table-of-contents__link toc-highlight">Directory Structure</a></li><li><a href="#configuration-precedence" class="table-of-contents__link toc-highlight">Configuration Precedence</a></li></ul></li><li><a href="#configuration-testing-and-validation" class="table-of-contents__link toc-highlight">Configuration Testing and Validation</a><ul><li><a href="#test-configuration-syntax" class="table-of-contents__link toc-highlight">Test Configuration Syntax</a></li><li><a href="#monitor-configuration-changes" class="table-of-contents__link toc-highlight">Monitor Configuration Changes</a></li><li><a href="#validate-changes-with-test-messages" class="table-of-contents__link toc-highlight">Validate Changes with Test Messages</a></li></ul></li><li><a href="#common-configuration-patterns" class="table-of-contents__link toc-highlight">Common Configuration Patterns</a><ul><li><a href="#the-minimal-configuration-pattern" class="table-of-contents__link toc-highlight">The Minimal Configuration Pattern</a></li><li><a href="#the-tuned-environment-pattern" class="table-of-contents__link toc-highlight">The Tuned Environment Pattern</a></li><li><a href="#the-high-performance-pattern" class="table-of-contents__link toc-highlight">The High Performance Pattern</a></li></ul></li><li><a href="#whats-next" class="table-of-contents__link toc-highlight">What&#39;s Next?</a></li><li><a href="#key-takeaways" class="table-of-contents__link toc-highlight">Key Takeaways</a></li></ul></div></div></div></div></main></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="row footer__links"><div class="theme-layout-footer-column col footer__col"><div class="footer__title">Documentation</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/docs/arc-update/ru/tutorials/quickstart">Getting Started</a></li><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/docs/arc-update/ru/configuration">Configuration</a></li><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/docs/arc-update/ru/modules">Modules</a></li><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/docs/arc-update/ru/tutorials">Tutorials</a></li></ul></div><div class="theme-layout-footer-column col footer__col"><div class="footer__title">Resources</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/docs/arc-update/ru/downloads">Downloads</a></li><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/docs/arc-update/ru/faq">FAQ</a></li><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/docs/arc-update/ru/support">Support</a></li><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/docs/arc-update/ru/changelog">Changelog</a></li></ul></div><div class="theme-layout-footer-column col footer__col"><div class="footer__title">Community</div><ul class="footer__items clean-list"><li class="footer__item"><a href="https://github.com/rspamd/rspamd" target="_blank" rel="noopener noreferrer" class="footer__link-item">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a></li><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/docs/arc-update/ru/tutorials/site_contributing">Contributing</a></li><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/docs/arc-update/ru/blog">Blog</a></li></ul></div><div class="theme-layout-footer-column col footer__col"><div class="footer__title">Subscribe</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/docs/arc-update/ru/rss/changelog.xml">Changelog RSS</a></li><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/docs/arc-update/ru/blog/rss.xml">Blog RSS</a></li><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/docs/arc-update/ru/blog/atom.xml">Blog Atom</a></li></ul></div></div><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2025 Rspamd Project. Built with Docusaurus.</div></div></div></footer></div>
+</body>
+</html>
