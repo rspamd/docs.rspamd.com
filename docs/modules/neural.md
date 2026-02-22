@@ -107,9 +107,168 @@ This mode enables **true content-based classification** because the embedding ve
 
 **Important:** When LLM providers are configured, automatic training is disabled. You must use manual training via the `ANN-Train` header to control training quality.
 
+### FastText embedding mode
+
+*Available since Rspamd 3.15*
+
+The `fasttext_embed` provider integrates FastText word vector models into the neural network. Instead of (or alongside) symbol-based features, the ANN learns from text content via FastText sentence embeddings:
+
+```hcl
+providers = [
+  {
+    type = "fasttext_embed";
+    language_models = {
+      en = "/var/lib/rspamd/fasttext/cc.en.300.q.ftz";
+      ru = "/var/lib/rspamd/fasttext/cc.ru.300.q.ftz";
+    };
+  }
+];
+```
+
+This enables **content-based spam detection** using pre-trained language models. The provider extracts words from the message body (and optionally subject), computes word vectors, and feeds the resulting embedding vector into the neural network.
+
+#### How it works
+
+1. **Text extraction**: Words are extracted from message text parts (optionally including subject)
+2. **Word normalization**: Words are normalized based on `word_form` setting (`norm`, `stem`, or `raw`)
+3. **Vector computation**: Each word's FastText vector is retrieved from the model
+4. **Pooling**: Word vectors are combined into a sentence embedding via pooling
+5. **Fusion**: If multiple models are configured, vectors are concatenated
+
+#### Multi-model mode (default: enabled)
+
+By default (`multi_model = true`), the provider uses **all configured language models** for every message, regardless of detected language. Vectors from each model are concatenated, producing cross-lingual representations.
+
+For example, with English and Russian 50-dim models:
+- Every message gets a 100-dim vector (50 from each model)
+- Same text produces different "signatures" in different embedding spaces
+- The ANN receives more discriminative features
+
+This approach outperforms single-model selection because cross-lingual signatures help distinguish spam patterns that transcend language boundaries.
+
+Set `multi_model = false` to use legacy behavior: select one model based on the message's detected language.
+
+#### Pooling modes (default: mean_max)
+
+Pooling determines how word vectors become a sentence embedding:
+
+| Mode | Description | Dimensions |
+|------|-------------|------------|
+| `"mean"` | Average of word vectors, L2-normalized | 1× model dim |
+| `"mean_max"` | Concatenate mean pooling AND element-wise max pooling, each L2-normalized | 2× model dim |
+
+**Why mean_max?** Max pooling captures the most prominent semantic dimensions that averaging would dilute. If a message contains strong spam signals in certain words, max pooling preserves those signals even if most words are neutral.
+
+**Example dimensionality**: 2 models × mean_max pooling × 50-dim = 200-dimensional input vectors.
+
+#### Configuration options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `type` | (required) | Must be `"fasttext_embed"` |
+| `model` | nil | Path to default FastText model (fallback) |
+| `language_models` | {} | Table mapping language codes to model paths |
+| `multi_model` | true | Use all language models for every message |
+| `pooling` | `"mean_max"` | Pooling strategy: `"mean"` or `"mean_max"` |
+| `weight` | 1.0 | Provider weight in fusion layer |
+| `word_form` | `"norm"` | Word normalization: `"norm"`, `"stem"`, `"raw"` |
+| `include_subject` | true | Prepend subject words to body text |
+| `all_parts` | false | Use all text parts vs only displayed part |
+
+#### Obtaining FastText models
+
+FastText provides pre-trained word vector models for 157 languages. **Quantized models** are recommended for Rspamd — much smaller (~100-200MB vs ~4-7GB) with minimal accuracy loss.
+
+Download from: https://fasttext.cc/docs/en/crawl-vectors.html
+
+Each language offers:
+- `cc.XX.300.bin` — full model, 300 dimensions, ~4-7GB
+- `cc.XX.300.bin.gz` — compressed full model
+
+**Creating quantized models:**
+
+```bash
+# Download and extract a full model
+wget https://dl.fbaipublicfiles.com/fasttext/vectors-crawl/cc.en.300.bin.gz
+gunzip cc.en.300.bin.gz
+
+# Quantize to reduce size and dimensions
+./fasttext quantize -input cc.en.300 -output cc.en.300.q
+```
+
+Quantized models (`.ftz`) typically reduce to 50-100 dimensions using product quantization. With multi-model + mean_max pooling, even 50-dim quantized models achieve strong results.
+
+**Recommended**: Download quantized models for your two most common email languages.
+
+#### Example configuration
+
+```hcl
+# local.d/neural.conf
+servers = "127.0.0.1:6379";
+enabled = true;
+
+rules {
+  NEURAL {
+    train {
+      max_trains = 300;
+      max_iterations = 250;
+      learning_rate = 0.001;
+    }
+    watch_interval = 30.0;
+    providers = [
+      {
+        type = "fasttext_embed";
+        language_models = {
+          en = "/var/lib/rspamd/fasttext/cc.en.300.q.ftz";
+          ru = "/var/lib/rspamd/fasttext/cc.ru.300.q.ftz";
+        };
+        weight = 1.0;
+      }
+    ];
+    activation = "gelu";
+    use_layernorm = true;
+    spam_score_threshold = 0.1;
+    ham_score_threshold = 0.1;
+  }
+}
+```
+
+Multi-model and mean_max pooling are enabled by default — no explicit configuration needed.
+
+#### Testing performance
+
+Evaluate FastText + neural performance with `rspamadm classifier_test`:
+
+```bash
+rspamadm classifier_test --classifier neural \
+  --ham /path/to/ham_corpus \
+  --spam /path/to/spam_corpus \
+  --train-wait 60
+```
+
+This submits training data, waits for ANN training, then evaluates with cross-validation showing F1/precision/recall metrics.
+
+#### Performance benchmarks
+
+Testing with quantized 50-dimension models:
+
+| Configuration | Dimensions | F1 Score | Classified |
+|--------------|------------|----------|------------|
+| Single model, mean pooling | 50 | ~0.51 | 70% |
+| Two models, mean+max pooling | 200 | ~0.87 | 96% |
+| Two models + symbols provider | 200+ | higher | 98%+ |
+
+**Key finding**: Multi-model mode is the single biggest improvement over single-model selection.
+
+#### Requirements
+
+- Redis (for ANN training data and model storage)
+- FastText models (downloaded separately, not bundled with Rspamd)
+- Rspamd 3.15+ (includes built-in FastText implementation, no external dependencies)
+
 ### Fusion mode
 
-Multiple providers can be combined:
+Multiple providers can be combined for hybrid classification:
 
 ```hcl
 providers = [
@@ -123,6 +282,27 @@ fusion {
 ```
 
 Vectors from all providers are concatenated. Use `normalization` to scale vectors to comparable ranges.
+
+#### FastText + symbols fusion
+
+Combine FastText embeddings with traditional symbol-based features for best results:
+
+```hcl
+providers = [
+  {
+    type = "fasttext_embed";
+    language_models = {
+      en = "/var/lib/rspamd/fasttext/cc.en.300.q.ftz";
+    };
+  }
+];
+fusion {
+  include_meta = true;
+  normalization = "zscore";
+}
+```
+
+With `include_meta = true`, the input vector includes FastText embeddings plus metatokens. If `disable_symbols_input = false` (default), symbol scores are also included, creating a hybrid content+filter classifier.
 
 ## Symbol profiles
 
@@ -492,6 +672,35 @@ symbols = {
 | `providers` | nil | List of feature provider configs |
 | `disable_symbols_input` | false | Don't use symbols provider |
 
+#### FastText provider options
+
+These options apply when `type = "fasttext_embed"`:
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `type` | (required) | Must be `"fasttext_embed"` |
+| `model` | nil | Path to default FastText model (fallback) |
+| `language_models` | {} | Table mapping language codes to model paths |
+| `multi_model` | true | Use all language models for every message |
+| `pooling` | `"mean_max"` | Pooling strategy: `"mean"` or `"mean_max"` |
+| `weight` | 1.0 | Provider weight in fusion layer |
+| `word_form` | `"norm"` | Word normalization: `"norm"`, `"stem"`, `"raw"` |
+| `include_subject` | true | Prepend subject words to body text |
+| `all_parts` | false | Use all text parts vs only displayed part |
+
+#### LLM provider options
+
+These options apply when `type = "llm"`:
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `type` | (required) | Must be `"llm"` |
+| `llm_type` | (required) | `"openai"` or `"ollama"` |
+| `model` | (required) | Embedding model name |
+| `url` | (required) | API endpoint URL |
+| `api_key` | nil | API key (required for OpenAI) |
+| `cache_ttl` | 86400 | Embedding cache TTL in seconds |
+
 ### Fusion options
 
 | Option | Default | Description |
@@ -574,6 +783,66 @@ rules {
     }
     train {
       autotrain = false;  # Required for LLM - use manual training
+      max_trains = 500;
+    }
+  }
+}
+```
+
+### FastText embedding mode
+
+```hcl
+# local.d/neural.conf
+servers = "127.0.0.1:6379";
+enabled = true;
+
+rules {
+  NEURAL {
+    train {
+      max_trains = 300;
+      max_iterations = 250;
+      learning_rate = 0.001;
+    }
+    watch_interval = 30.0;
+    providers = [
+      {
+        type = "fasttext_embed";
+        language_models = {
+          en = "/var/lib/rspamd/fasttext/cc.en.300.q.ftz";
+          ru = "/var/lib/rspamd/fasttext/cc.ru.300.q.ftz";
+        };
+        weight = 1.0;
+      }
+    ];
+    activation = "gelu";
+    use_layernorm = true;
+    spam_score_threshold = 0.1;
+    ham_score_threshold = 0.1;
+  }
+}
+```
+
+### FastText + symbols hybrid
+
+Combine FastText embeddings with symbol-based features:
+
+```hcl
+rules {
+  NEURAL {
+    providers = [
+      {
+        type = "fasttext_embed";
+        language_models = {
+          en = "/var/lib/rspamd/fasttext/cc.en.300.q.ftz";
+        };
+      }
+    ];
+    fusion {
+      include_meta = true;
+      normalization = "zscore";
+    }
+    # disable_symbols_input = false is the default, so symbols are included
+    train {
       max_trains = 500;
     }
   }
