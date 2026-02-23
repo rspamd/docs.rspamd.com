@@ -161,6 +161,61 @@ Pooling determines how word vectors become a sentence embedding:
 
 **Example dimensionality**: 2 models × mean_max pooling × 50-dim = 200-dimensional input vectors.
 
+SIF word weighting (enabled by default): Words are weighted by a / (a + p(word)) where p(word) is the word's frequency in the FastText model vocabulary. Common words like "the", "is", "a" get near-zero weight while distinctive content words get high weight. This significantly improves embedding quality. Disable with sif_weight = false.
+
+#### Conv1d output mode
+
+*Available since Rspamd 3.15*
+
+The conv1d output mode (`output_mode = "conv1d"`) applies multi-scale max-over-time pooling to capture local word patterns at different scales. Instead of collapsing all words into a single mean/max vector, it slides windows of different sizes over word positions and pools features per scale.
+
+**How it works:**
+
+1. For each kernel size k in `kernel_sizes` (default {1, 3, 5}):
+   - Slide a window of k consecutive words over the text
+   - Average the word vectors within each window
+   - Max-pool (or mean-pool) across all window positions per channel
+2. Each scale's features are L2-normalized independently
+3. All scales are concatenated into a flat feature vector
+
+**Why use conv1d?** Standard pooling (mean/max) captures global text semantics but loses word order and local patterns. Conv1d preserves local n-gram patterns:
+- k=1 captures individual word importance (similar to global max pooling)
+- k=3 captures short phrases and bigram/trigram patterns
+- k=5 captures longer contextual patterns
+
+**Output dimensions:** `n_scales × pools_per_scale × total_channels`. For example, with 2 language models (100-dim each), kernel_sizes={1,3,5}, conv_pooling="max": 3 × 1 × 200 = 600 features.
+
+**Configuration:**
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `output_mode` | nil | Set to `"conv1d"` to enable multi-scale pooling |
+| `kernel_sizes` | [1, 3, 5] | Window sizes for multi-scale pooling |
+| `conv_pooling` | `"max"` | Per-scale pooling: `"max"`, `"mean"`, or `"mean_max"` |
+| `max_words` | 32 | Maximum word positions to process |
+
+**Example configuration:**
+```hcl
+providers = [
+  {
+    type = "fasttext_embed";
+    output_mode = "conv1d";
+    language_models = {
+      en = "/var/lib/rspamd/fasttext/cc.en.300.q.ftz";
+      ru = "/var/lib/rspamd/fasttext/cc.ru.300.q.ftz";
+    };
+  }
+];
+```
+
+Tuning tips:
+- conv_pooling = "max" (default) produces the most compact features and works well with limited training data
+- conv_pooling = "mean_max" doubles the feature count but may improve accuracy with sufficient training data (increase max_trains accordingly)
+- Fewer kernel sizes = fewer features = faster training convergence. Try kernel_sizes = [1, 3] if training data is limited
+- max_words = 32 is usually sufficient; increase for long-form messages
+
+Important: Conv1d settings (kernel_sizes, conv_pooling, max_words) are included in the provider config digest. Changing them triggers automatic retraining.
+
 #### Configuration options
 
 | Option | Default | Description |
@@ -174,6 +229,8 @@ Pooling determines how word vectors become a sentence embedding:
 | `word_form` | `"norm"` | Word normalization: `"norm"`, `"stem"`, `"raw"` |
 | `include_subject` | true | Prepend subject words to body text |
 | `all_parts` | false | Use all text parts vs only displayed part |
+| `sif_weight` | true | Enable SIF (Smooth Inverse Frequency) word weighting |
+| `sif_a` | 1e-3 | SIF smoothing parameter (lower = stronger weighting) |
 
 #### Obtaining FastText models
 
@@ -256,6 +313,7 @@ Testing with quantized 50-dimension models:
 |--------------|------------|----------|------------|
 | Single model, mean pooling | 50 | ~0.51 | 70% |
 | Two models, mean+max pooling | 200 | ~0.87 | 96% |
+| Two models, conv1d (k=1,3,5) | 600 | ~0.90 | 96% |
 | Two models + symbols provider | 200+ | higher | 98%+ |
 
 **Key finding**: Multi-model mode is the single biggest improvement over single-model selection.
@@ -683,6 +741,12 @@ These options apply when `type = "fasttext_embed"`:
 | `language_models` | {} | Table mapping language codes to model paths |
 | `multi_model` | true | Use all language models for every message |
 | `pooling` | `"mean_max"` | Pooling strategy: `"mean"` or `"mean_max"` |
+| `output_mode` | nil | Output mode: nil (standard pooling) or `"conv1d"` |
+| `kernel_sizes` | [1, 3, 5] | Conv1d window sizes (only when output_mode="conv1d") |
+| `conv_pooling` | `"max"` | Conv1d per-scale pooling (only when output_mode="conv1d") |
+| `max_words` | 32 | Max words for conv1d (only when output_mode="conv1d") |
+| `sif_weight` | true | Enable SIF word weighting |
+| `sif_a` | 1e-3 | SIF smoothing parameter |
 | `weight` | 1.0 | Provider weight in fusion layer |
 | `word_form` | `"norm"` | Word normalization: `"norm"`, `"stem"`, `"raw"` |
 | `include_subject` | true | Prepend subject words to body text |
@@ -817,6 +881,45 @@ rules {
     activation = "gelu";
     use_layernorm = true;
     spam_score_threshold = 0.1;
+    ham_score_threshold = 0.1;
+  }
+}
+```
+
+### FastText conv1d mode
+
+```hcl
+# local.d/neural.conf
+servers = "127.0.0.1:6379";
+enabled = true;
+
+rules {
+  NEURAL {
+    train {
+      max_trains = 300;
+      max_iterations = 250;
+      learning_rate = 0.001;
+    }
+    watch_interval = 30.0;
+    providers = [
+      {
+        type = "fasttext_embed";
+        output_mode = "conv1d";
+        language_models = {
+          en = "/var/lib/rspamd/fasttext/cc.en.300.q.ftz";
+          ru = "/var/lib/rspamd/fasttext/cc.ru.300.q.ftz";
+        };
+        weight = 1.0;
+      }
+    ];
+    activation = "gelu";
+    use_layernorm = true;
+    fusion {
+      include_meta = true;
+      normalization = "unit";
+      meta_weight = 0.3;
+    }
+    spam_score_threshold = 0.2;
     ham_score_threshold = 0.1;
   }
 }
