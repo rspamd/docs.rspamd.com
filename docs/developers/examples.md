@@ -8,7 +8,7 @@ title: Lua rules examples
 
 Here is the collection of the useful Lua rules snippets that are not the official rules but could be used to filter specific spam.
 
-To enable these snippets, you can place them to the `rspamd.local.lua` file. Typically it will be `/etc/rspamd/rspamd.local.lua` file for the Linux distros (or `/usr/local/etc/rspamd/rspamd.local.lua` for others).
+To enable these snippets, you can place them to any `.lua` file located under the `lua.local.d` directory. Typically the path will be `/etc/rspamd/lua.local.d/` for the Linux distros (or `/usr/local/etc/rspamd/lua.local.d/` for others).
 
 
 

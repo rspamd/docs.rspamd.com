@@ -266,7 +266,7 @@ enabled = false;
 
 ### How do I disable a specific rule?
 
-Add a condition in `/etc/rspamd/rspamd.local.lua`:
+Create a `.lua` file in `/etc/rspamd/lua.local.d/` and add a condition:
 
 ```lua
 rspamd_config:add_condition('SOME_SYMBOL', function(task) return false end)
