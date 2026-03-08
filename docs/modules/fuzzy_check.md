@@ -484,7 +484,7 @@ To test connectivity to the public fuzzy storage:
 rspamadm fuzzyping
 ```
 
-If you see packet loss or no replies, check your firewall allows **UDP port 1335** outbound.
+If you see packet loss or no replies, check your firewall allows **UDP port 11335** outbound.
 
 ## Complete Example
 
