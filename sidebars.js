@@ -73,7 +73,8 @@ const sidebars = {
         "configuration/statistic",
         "configuration/redis",
         "configuration/upstream",
-        "configuration/ucl"
+        "configuration/ucl",
+        "configuration/templates"
       ]
     },
     {
