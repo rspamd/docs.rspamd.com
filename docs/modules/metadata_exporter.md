@@ -64,7 +64,7 @@ metadata_exporter {
 
  - `http`: sends content over HTTP POST
  - `redis_pubsub`: sends content over Redis Pub/Sub
- - `redis_stream` (3.15+): sends content to a Redis Stream
+ - `redis_stream` (4.0+): sends content to a Redis Stream
  - `send_mail`: sends content over SMTP
 
 ### Stock selectors
@@ -84,7 +84,7 @@ metadata_exporter {
  - `multipart` (3.14.2+): Sends metadata as JSON part + raw message as `message/rfc822` part using standard `multipart/form-data`
  - `msgpack` (3.14.2+): Binary MessagePack format with embedded message (efficient for binary data)
  - `json_with_message` (3.14.2+): JSON with base64-encoded message
- - `structured` (3.15+): Rich structured export with UUID v7 correlation, extracted text, attachments, images, URLs in MessagePack format
+ - `structured` (4.0+): Rich structured export with UUID v7 correlation, extracted text, attachments, images, URLs in MessagePack format
 
 ### Settings: general
 
@@ -115,7 +115,7 @@ See [here](/configuration/redis) for information on configuring Redis servers.
 
 ### Settings: `redis_stream` backend
 
-*Available since version 3.15*
+*Available since version 4.0*
 
  - `stream_key` (required): defines Redis Stream key to append content to
  - `max_len`: optional maximum length for the stream (uses `MAXLEN ~` for approximate trimming)
@@ -350,7 +350,7 @@ metadata_exporter {
 }
 ```
 
-### Structured formatter (3.15+)
+### Structured formatter (4.0+)
 
 The `structured` formatter provides rich, analysis-ready metadata in MessagePack format with native UUID v7 correlation:
 

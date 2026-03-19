@@ -472,7 +472,7 @@ zstd -c message.eml | curl --data-binary @- \
 
 ## Protocol v3 (Multipart)
 
-**Available from Rspamd 3.15**
+**Available from Rspamd 4.0**
 
 Protocol v3 introduces a modern multipart-based wire protocol that replaces the legacy header-based request format with a structured multipart approach. It addresses limitations of the v2 protocol while maintaining backward compatibility.
 
@@ -1251,7 +1251,7 @@ rspamc -3 -z message.eml
 The following endpoints are valid on the normal worker and accept `POST`:
 
 * `/checkv2` - Checks message and return action (v2 protocol)
-* `/checkv3` - Checks message and return action (v3 multipart protocol, from Rspamd 3.15)
+* `/checkv3` - Checks message and return action (v3 multipart protocol, from Rspamd 4.0)
 
 The below endpoints all use `GET`:
 

@@ -66,7 +66,7 @@ In addition to user-defined `RSPAMD_` variables, the `env` table always contains
 | Variable | Description | Example value |
 |----------|-------------|---------------|
 | `env.hostname` | System hostname | `mail.example.com` |
-| `env.version` | Full Rspamd version string | `3.15.0` |
+| `env.version` | Full Rspamd version string | `4.0.0` |
 | `env.ver_major` | Major version | `3` |
 | `env.ver_minor` | Minor version | `15` |
 | `env.ver_id` | Build identifier | `abc1234` |
@@ -302,7 +302,7 @@ Multiple filters can be chained: `{= value | filter1 | filter2 =}`.
 |--------|-------------|
 | `pbkdf` | Compute PBKDF2 hash (for password configuration) |
 
-### Validation filters (Rspamd 3.15+) {#validation-filters}
+### Validation filters (Rspamd 4.0+) {#validation-filters}
 
 These filters are designed for validating environment variable inputs in containerized deployments. They return the value unchanged if valid, or **abort Rspamd startup** with a clear error message if validation fails. This eliminates the need for shell entrypoint scripts that validate configuration before starting Rspamd.
 
@@ -391,7 +391,7 @@ Tests are boolean functions used in conditions. In Lupa, they are called with th
 | `is_even(n)` | n is even |
 | `is_divisibleby(n, d)` | n is divisible by d |
 
-:::info Rspamd 3.15 changes
+:::info Rspamd 4.0 changes
 `is_true` and `is_false` were updated to recognize UCL-style boolean strings (`yes`/`no`, `on`/`off`, `1`/`0`), making them practical for testing environment variable values which are always strings. Similarly, `is_number`, `is_integer`, and `is_float` now attempt string-to-number conversion.
 :::
 
@@ -410,7 +410,7 @@ Tests are boolean functions used in conditions. In Lupa, they are called with th
 | `is_lower(s)` / `is_upper(s)` | All lowercase / uppercase | |
 | `is_sameas(a, b)` | Alias for `is_eq` | |
 
-### JSON test (Rspamd 3.15+)
+### JSON test (Rspamd 4.0+)
 
 | Test | Description | Example |
 |------|-------------|---------|

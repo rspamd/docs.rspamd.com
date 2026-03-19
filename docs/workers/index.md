@@ -24,7 +24,7 @@ learning, adding fuzzy hashes and serving web interface requests
 
 All client applications should interact with two main workers: `normal` and `controller`.
 Both of these workers utilize the `HTTP` protocol for all operations and depend on HTTP headers
-to retrieve additional information from a client. Starting from Rspamd 3.15, workers can also serve HTTPS directly (see [HTTPS support](#https-support) below). Depending on your network configuration, it might be
+to retrieve additional information from a client. Starting from Rspamd 4.0, workers can also serve HTTPS directly (see [HTTPS support](#https-support) below). Depending on your network configuration, it might be
 beneficial to bind all workers to the loopback interface to prevent any external interactions.
 It's important to note that Rspamd workers are **not** meant to operate in an unprotected environment, such as
 the Internet without proper TLS encryption. When using plain HTTP, sensitive information might potentially be leaked.
@@ -91,7 +91,7 @@ You can specify multiple `bind_socket` options to listen on as many addresses as
 
 ## HTTPS support
 
-Starting from version 3.15, Rspamd workers can serve HTTPS natively without requiring a TLS-terminating reverse proxy (e.g. nginx) in front. This simplifies deployments where Rspamd's HTTP API or web UI must be exposed over an encrypted connection.
+Starting from version 4.0, Rspamd workers can serve HTTPS natively without requiring a TLS-terminating reverse proxy (e.g. nginx) in front. This simplifies deployments where Rspamd's HTTP API or web UI must be exposed over an encrypted connection.
 
 :::note
 A reverse proxy may still be preferred for advanced TLS features such as client certificate authentication, OCSP stapling, or centralised certificate management.

@@ -326,9 +326,9 @@ end)
 | `get_row` | Function | Returns row data for a task (single row or array) |
 | `retention` | Table | Optional retention settings: `enable`, `period_months`, `method` |
 
-### Task UUID (3.15+)
+### Task UUID (4.0+)
 
-*Available since version 3.15*
+*Available since version 4.0*
 
 The module can store a native UUID v7 (RFC 9562) for each task, enabling efficient cross-system correlation and time-based queries:
 
@@ -349,7 +349,7 @@ The module creates a `rspamd` table with the following columns:
 |--------|------|-------------|
 | `Date` | Date | Date (used for partitioning) |
 | `TS` | DateTime | Timestamp (UTC) |
-| `TaskUUID` | UUID | Native UUID v7 for task identification (3.15+, Delta+LZ4 codec) |
+| `TaskUUID` | UUID | Native UUID v7 for task identification (4.0+, Delta+LZ4 codec) |
 | `From` | String | Envelope sender domain |
 | `MimeFrom` | String | MIME From domain |
 | `IP` | String | Sender IP (masked) |

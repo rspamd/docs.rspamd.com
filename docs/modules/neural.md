@@ -109,7 +109,7 @@ This mode enables **true content-based classification** because the embedding ve
 
 ### FastText embedding mode
 
-*Available since Rspamd 3.15*
+*Available since Rspamd 4.0*
 
 The `fasttext_embed` provider integrates FastText word vector models into the neural network. Instead of (or alongside) symbol-based features, the ANN learns from text content via FastText sentence embeddings:
 
@@ -165,7 +165,7 @@ SIF word weighting (enabled by default): Words are weighted by a / (a + p(word))
 
 #### Conv1d output mode
 
-*Available since Rspamd 3.15*
+*Available since Rspamd 4.0*
 
 The conv1d output mode (`output_mode = "conv1d"`) applies multi-scale max-over-time pooling to capture local word patterns at different scales. Instead of collapsing all words into a single mean/max vector, it slides windows of different sizes over word positions and pools features per scale.
 
@@ -322,7 +322,7 @@ Testing with quantized 50-dimension models:
 
 - Redis (for ANN training data and model storage)
 - FastText models (downloaded separately, not bundled with Rspamd)
-- Rspamd 3.15+ (includes built-in FastText implementation, no external dependencies)
+- Rspamd 4.0+ (includes built-in FastText implementation, no external dependencies)
 
 ### Fusion mode
 
