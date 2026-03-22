@@ -224,6 +224,59 @@ acl_check_spam:
   accept
 ```
 
+### Milter headers in Exim (Rspamd 4.0+)
+
+Starting with Rspamd 4.0, the legacy RSPAMC protocol (used by Exim via `variant=rspamd`) exposes milter header operations and extended symbol information directly in `$spam_report`. This allows Exim to access custom headers added by Rspamd modules (e.g., `milter_headers`, Cyren/CTASD, Cloudmark) that were previously only available to milter-based MTAs like Postfix.
+
+#### New protocol lines
+
+The `$spam_report` variable now includes the following additional lines:
+
+**Milter header operations:**
+
+```
+X-Milter-Add: Header-Name: value             # append header
+X-Milter-Add: Header-Name[N]: value          # insert at position N
+X-Milter-Del: Header-Name                    # remove all instances
+X-Milter-Del: Header-Name[N]                 # remove Nth instance
+```
+
+**Extended symbol information:**
+
+```
+X-Symbol: BAYES_SPAM(5.00); Bayes spam probability
+X-Symbol: RBL_SPAMHAUS(3.00); Spamhaus RBL [127.0.0.2, sbl.spamhaus.org]
+X-Symbol: CTCH_SPAM(5.00); Cyren CTCH [refid:str123]
+```
+
+The `X-Symbol` format is: `NAME(SCORE); DESCRIPTION [OPT1, OPT2, ...]`
+
+These new lines are backward compatible — existing `Symbol:` lines remain unchanged.
+
+#### Applying milter headers in Exim
+
+To extract and apply milter-added headers in your Exim ACL, parse the `X-Milter-Add` and `X-Milter-Del` lines from `$spam_report`:
+
+```sh
+  warn
+    spam = nobody:true
+    set acl_m_report = ${sg{$spam_report}{\\v\\s+}{\\n}}
+
+    # Add milter headers: filter X-Milter-Add lines, strip prefix + optional [N]
+    set acl_m_milter_add = ${sg{\
+      ${sg{$acl_m_report}{(?m)^(?!X-Milter-Add: ).*(\\n|$)}{}}}\
+      {(?m)^X-Milter-Add: ([^\\[:\\n]+)(?:\\[\\d+\\])?: }{$1: }}
+    add_header = $acl_m_milter_add
+
+    # Remove milter headers: filter X-Milter-Del lines, strip prefix + optional [N]
+    set acl_m_milter_del = ${sg{\
+      ${sg{$acl_m_report}{(?m)^(?!X-Milter-Del: ).*(\\n|$)}{}}}\
+      {(?m)^X-Milter-Del: ([^\\[\\n]+).*}{$1}}
+    remove_header = $acl_m_milter_del
+```
+
+This effectively gives Exim the same header-manipulation capabilities that were previously exclusive to milter-based integrations (Postfix, Sendmail).
+
 For further information please refer to the [Exim specification](https://www.exim.org/exim-html-current/doc/html/spec_html/), especially the [chapter about content scanning](https://www.exim.org/exim-html-current/doc/html/spec_html/ch-content_scanning_at_acl_time.html).
 
 ## Using Rspamd with Sendmail MTA
