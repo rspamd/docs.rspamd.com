@@ -193,6 +193,7 @@ const sidebars = {
         "administration/rspamadm/dkim-management",
         "administration/rspamadm/cryptography",
         "administration/rspamadm/statistics-ml",
+        "administration/rspamadm/log-analysis",
         "administration/rspamadm/operations",
         "administration/rspamadm/configuration",
         "administration/rspamadm/development"
