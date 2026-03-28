@@ -192,6 +192,7 @@ acl_check_spam:
   # $spam_score is the message score (we unlikely need it)
   # $spam_score_int is spam score multiplied by 10
   # $spam_report lists symbols matched & protocol messages
+  #              (Rspamd 4.0+: also contains X-Milter-Add/Del/Symbol lines)
   # $spam_bar is a visual indicator of spam/ham level
 
   # use greylisting available in rspamd v1.3+
@@ -253,29 +254,84 @@ The `X-Symbol` format is: `NAME(SCORE); DESCRIPTION [OPT1, OPT2, ...]`
 
 These new lines are backward compatible — existing `Symbol:` lines remain unchanged.
 
-#### Applying milter headers in Exim
+#### Complete ACL with milter header support
 
-To extract and apply milter-added headers in your Exim ACL, parse the `X-Milter-Add` and `X-Milter-Del` lines from `$spam_report`:
+The following is a full Exim configuration snippet that scans the message once, extracts milter header operations, and applies both custom module headers and standard spam headers:
 
 ```sh
-  warn
-    spam = nobody:true
-    set acl_m_report = ${sg{$spam_report}{\\v\\s+}{\\n}}
+# Global section
+spamd_address = 127.0.0.1 11333 variant=rspamd
+acl_smtp_data = acl_check_spam
 
-    # Add milter headers: filter X-Milter-Add lines, strip prefix + optional [N]
+begin acl
+
+acl_check_spam:
+  # do not scan messages submitted from our own hosts
+  # +relay_from_hosts is assumed to be a list of hosts in configuration
+  accept hosts = +relay_from_hosts
+
+  # skip scanning for authenticated users (if desired?)
+  accept authenticated = *
+
+  # scan the message with rspamd (sets $spam_action, $spam_score,
+  # $spam_score_int, $spam_report, $spam_bar)
+  warn spam = nobody:true
+
+  # Parse milter header operations from $spam_report (Rspamd 4.0+)
+  # Normalise vertical whitespace, then extract X-Milter-Add / X-Milter-Del lines
+  warn
+    set acl_m_report     = ${sg{$spam_report}{\\v\\s+}{\\n}}
     set acl_m_milter_add = ${sg{\
       ${sg{$acl_m_report}{(?m)^(?!X-Milter-Add: ).*(\\n|$)}{}}}\
       {(?m)^X-Milter-Add: ([^\\[:\\n]+)(?:\\[\\d+\\])?: }{$1: }}
-    add_header = $acl_m_milter_add
-
-    # Remove milter headers: filter X-Milter-Del lines, strip prefix + optional [N]
     set acl_m_milter_del = ${sg{\
       ${sg{$acl_m_report}{(?m)^(?!X-Milter-Del: ).*(\\n|$)}{}}}\
       {(?m)^X-Milter-Del: ([^\\[\\n]+).*}{$1}}
-    remove_header = $acl_m_milter_del
+
+  # use greylisting available in rspamd v1.3+
+  defer message    = Please try again later
+        condition  = ${if eq{$spam_action}{soft reject}}
+
+  deny  message    = Message discarded as high-probability spam
+        condition  = ${if eq{$spam_action}{reject}}
+
+  # Remove foreign headers
+  warn remove_header = x-spam-bar : x-spam-score : x-spam-report : x-spam-status
+
+  # Apply milter header additions from Rspamd modules (e.g. milter_headers, ARC)
+  warn
+    condition  = ${if def:acl_m_milter_add}
+    add_header = $acl_m_milter_add
+
+  # Apply milter header removals from Rspamd modules
+  warn
+    condition      = ${if def:acl_m_milter_del}
+    remove_header  = $acl_m_milter_del
+
+  # add spam-score and spam-report header when "add header" action is recommended
+  warn
+    condition  = ${if eq{$spam_action}{add header}}
+    add_header = X-Spam-Score: $spam_score ($spam_bar)
+    add_header = X-Spam-Report: $spam_report
+
+  # add x-spam-status header if message is not ham
+  # do not match when $spam_action is empty (e.g. when rspamd is not running)
+  warn
+    ! condition  = ${if match{$spam_action}{^no action\$|^greylist\$|^\$}}
+    add_header = X-Spam-Status: Yes
+
+  # add x-spam-bar header if score is positive
+  warn
+    condition = ${if >{$spam_score_int}{0}}
+    add_header = X-Spam-Bar: $spam_bar
+
+  accept
 ```
 
-This effectively gives Exim the same header-manipulation capabilities that were previously exclusive to milter-based integrations (Postfix, Sendmail).
+Key points:
+- The message is scanned **once** by `warn spam = nobody:true`. All subsequent blocks read from `$spam_report` and `$spam_action` without rescanning.
+- `acl_m_milter_add` / `acl_m_milter_del` are only applied when non-empty (the `${if def:...}` guard prevents adding a blank header line).
+- This gives Exim the same header-manipulation capabilities previously exclusive to milter-based integrations (Postfix, Sendmail).
 
 For further information please refer to the [Exim specification](https://www.exim.org/exim-html-current/doc/html/spec_html/), especially the [chapter about content scanning](https://www.exim.org/exim-html-current/doc/html/spec_html/ch-content_scanning_at_acl_time.html).
 

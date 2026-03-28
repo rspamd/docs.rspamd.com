@@ -32,6 +32,116 @@ Discover a reliable step-by-step process for upgrading your Rspamd cluster while
 
 10. Repeat the entire process starting from `step 1` for future updates. This approach ensures a smooth and controlled upgrade process that minimizes potential downtime and issues in your production environment.
 
+## Migration to Rspamd 4.0.0
+
+### 1. Bayes Per-User Resharding (Required for sharded Redis deployments)
+
+Rspamd 4.0 replaces Jump Hash with Ring Hash (Ketama) for consistent upstream selection in Redis-sharded Bayes deployments ([4ea7504](https://github.com/rspamd/rspamd/commit/4ea750466)). After upgrade, per-user Bayes keys will be looked up on different shards than where they were written.
+
+**Who is affected:** Only users with multiple `write_servers` configured for Bayes Redis backends. Single-server deployments are not affected.
+
+**Migration procedure:**
+
+1. Back up all Redis Bayes databases before proceeding.
+2. While still running the old version, dump the statistics:
+```bash
+rspamadm statistics_dump dump -o /path/to/bayes-backup.bin
+```
+3. Upgrade Rspamd to 4.0.
+4. Run the migration tool to redistribute keys to the correct shards under Ring Hash:
+```bash
+rspamadm statistics_dump migrate
+```
+5. Verify with `rspamc stat` that token counts look reasonable.
+
+If you skip the migration, existing Bayes data will not be lost — it will simply be on the wrong shard and accuracy will degrade until messages are re-learned naturally. ([36325c5](https://github.com/rspamd/rspamd/commit/36325c5c5))
+
+### 2. Content URLs Included by Default
+
+`include_content_urls` now defaults to `true`, meaning `task:get_urls()` returns URLs extracted from PDF and other computed parts ([840e74d](https://github.com/rspamd/rspamd/commit/840e74db4)). This may trigger new RBL or URL reputation hits on messages with PDF attachments.
+
+To restore the previous behavior, add to `local.d/options.inc`:
+
+~~~hcl
+include_content_urls = false;
+~~~
+
+### 3. SSL Worker Option Removed
+
+The `ssl = true` option in worker configuration blocks has been removed ([4674408](https://github.com/rspamd/rspamd/commit/4674408f6)). SSL is now auto-detected from bind socket flags.
+
+**Before:**
+~~~hcl
+worker "controller" {
+  bind_socket = "localhost:11334";
+  ssl = true;
+  ssl_cert = "/path/to/cert.pem";
+  ssl_key = "/path/to/key.pem";
+}
+~~~
+
+**After:**
+~~~hcl
+worker "controller" {
+  bind_socket = "localhost:11334 ssl";
+  ssl_cert = "/path/to/cert.pem";
+  ssl_key = "/path/to/key.pem";
+}
+~~~
+
+Remove `ssl = true` from all worker sections and append the `ssl` suffix to the relevant `bind_socket` lines. `rspamadm configtest` will flag any remaining `ssl = true` occurrences.
+
+### 4. Proxy Load Balancing Default Changed
+
+Token bucket load balancing is now the default algorithm for proxy upstreams ([728f19f](https://github.com/rspamd/rspamd/commit/728f19f20)), replacing simple round-robin. The change is generally transparent but alters request distribution under burst conditions.
+
+To restore round-robin, remove the `token_bucket` block from your proxy upstream configuration in `local.d/rspamd_proxy.inc`:
+
+~~~hcl
+upstream "scan" {
+  # remove token_bucket { ... } block if present
+  hosts = "backend1:11333,backend2:11333";
+}
+~~~
+
+### 5. SenderScore RBLs Disabled
+
+`senderscore_reputation` is disabled by default because it requires a MyValidity account registration and was returning blocked results for all unregistered IPs ([ce71021](https://github.com/rspamd/rspamd/commit/ce71021ae)).
+
+Users with a registered MyValidity account who wish to keep using SenderScore should explicitly re-enable it in `local.d/reputation.conf`:
+
+~~~hcl
+senderscore_reputation {
+  enabled = true;
+}
+~~~
+
+### 6. DKIM Unknown Key Handling
+
+Unknown and broken DKIM keys are now handled strictly per RFC ([e9e6bac](https://github.com/rspamd/rspamd/commit/e9e6bac43)). Messages with malformed DKIM keys may receive different DKIM result symbols than before. No configuration change is required; review DKIM scores if you notice unexpected changes in classification.
+
+### 7. Suspicious TLDs Now Map-Based
+
+The hardcoded suspicious TLD list has been replaced with a map file at `conf/maps.d/suspicious_tlds.inc` ([614e68c](https://github.com/rspamd/rspamd/commit/614e68c8b)).
+
+- To **override** the list entirely, create `local.d/maps.d/suspicious_tlds.inc` with your own entries.
+- To **extend** the default list, create `local.d/maps.d/suspicious_tlds.inc.local` and add extra TLDs there.
+
+Any TLDs previously maintained via hardcoded patches to the source or custom rules should be migrated to the map file.
+
+### 8. Neural Module Autolearn Option Renames
+
+Autolearn-related options in the neural module have been renamed to align with RBL module naming conventions ([71dac51](https://github.com/rspamd/rspamd/commit/71dac5167)).
+
+If you have custom neural configuration in `local.d/neural.conf` or `override.d/neural.conf`, review the [neural module documentation](/modules/neural) for the updated option names and update accordingly. Run `rspamadm configtest` to surface any unknown options.
+
+### 9. libfasttext Dependency Removed (Packagers)
+
+The external libfasttext C++ shared library is no longer required or used ([d96ee36](https://github.com/rspamd/rspamd/commit/d96ee3610)). The `ENABLE_FASTTEXT` cmake option has been removed — Fasttext support is always compiled in via the built-in shim.
+
+- **Packagers**: Remove libfasttext from build dependencies and runtime dependencies.
+- **Users**: No action required. Existing `.bin` and `.ftz` model files continue to work without modification.
+
 ## Migration to Rspamd 3.13.0
 
 ### Multi-class Bayes
