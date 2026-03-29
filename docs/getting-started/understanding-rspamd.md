@@ -444,11 +444,9 @@ Rspamd uses a **layered configuration system** with clear precedence:
 **File**: `/etc/rspamd/local.d/actions.conf`
 
 ```nginx
-actions {
-    reject = 15.0;          # Refuse message
-    add_header = 6.0;       # Mark as spam
-    greylist = 4.0;         # Temporary delay
-}
+reject = 15.0;          # Refuse message
+add_header = 6.0;       # Mark as spam
+greylist = 4.0;         # Temporary delay
 ```
 
 **When to adjust:**
