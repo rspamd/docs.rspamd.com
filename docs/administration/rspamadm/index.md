@@ -98,6 +98,18 @@ Tools for managing statistical classifiers and neural networks.
 
 [Learn more →](statistics-ml.md)
 
+### Log Analysis
+
+Tools for analyzing rspamd log files.
+
+| Command | Purpose |
+|---------|---------|
+| `logstats` | Analyze rules by parsing log files |
+| `mapstats` | Count multimap matches by parsing log files |
+| `autolearnstats` | Report Bayes autolearn events |
+
+[Learn more →](log-analysis.md)
+
 ### Operations & Monitoring
 
 Tools for operational tasks and monitoring.
