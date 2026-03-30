@@ -61,6 +61,15 @@
   color: var(--ifm-color-primary);
 }
 
+.versionLink {
+  color: var(--ifm-color-primary);
+  text-decoration: none;
+}
+
+.versionLink:hover {
+  text-decoration: underline;
+}
+
 .date {
   font-size: 0.9rem;
   color: var(--ifm-color-content-secondary);

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Link from '@docusaurus/Link';
 import { marked } from 'marked';
 import styles from './ChangelogEntry.module.css';
 
@@ -84,7 +85,15 @@ export default function ChangelogEntry({ release, typeInfo }) {
             >
               {typeInfo.icon} {typeInfo.label}
             </span>
-            <h2 className={styles.version}>v{release.version}</h2>
+            <h2 className={styles.version}>
+              <Link
+                to={`/changelog/${release.version}`}
+                className={styles.versionLink}
+                onClick={e => e.stopPropagation()}
+              >
+                v{release.version}
+              </Link>
+            </h2>
             <span className={styles.date}>{formatDate(release.date)}</span>
           </div>
           <div className={styles.titleSection}>

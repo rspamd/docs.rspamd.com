@@ -124,11 +124,12 @@ const config = {
       path.resolve(__dirname, './src/plugins/elasticsearch-search'),
       {
         searchBackend: {
-          endpoint: process.env.SEARCH_BACKEND_ENDPOINT || 
+          endpoint: process.env.SEARCH_BACKEND_ENDPOINT ||
                    (process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:3001'),
         },
       },
     ],
+    path.resolve(__dirname, './src/plugins/changelogPagesPlugin'),
   ],
 
   themeConfig:

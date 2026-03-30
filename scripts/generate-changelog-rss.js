@@ -119,7 +119,7 @@ function generateRssDescription(release) {
 
 function generateRssItem(release) {
   const pubDate = new Date(release.date).toUTCString();
-  const link = `${SITE_URL}/changelog#version-${release.version.replace(/\./g, '-')}`;
+  const link = `${SITE_URL}/changelog/${release.version}`;
   const guid = `${SITE_URL}/changelog/${release.version}`;
   
   return `    <item>

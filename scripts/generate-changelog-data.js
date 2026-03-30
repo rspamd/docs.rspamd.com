@@ -57,10 +57,20 @@ function parseChangelogFile(content, filename) {
   if (currentSection) {
     sections.push(currentSection);
   }
-  
+
+  // Extract trailing summary paragraph (text after the last list item, before EOF)
+  let summaryLines = [];
+  for (let i = contentLines.length - 1; i >= 0; i--) {
+    const line = contentLines[i].trim();
+    if (!line) continue;
+    if (line.startsWith('- ') || line.startsWith('#')) break;
+    summaryLines.unshift(line);
+  }
+  const summary = summaryLines.join(' ');
+
   // Extract version from filename if not in frontmatter
   const version = frontmatter.version || filename.replace('.md', '');
-  
+
   // Determine release type from version if not specified
   let releaseType = frontmatter.type;
   if (!releaseType) {
@@ -75,13 +85,14 @@ function parseChangelogFile(content, filename) {
       }
     }
   }
-  
+
   return {
     version,
     date: frontmatter.date || new Date().toISOString().split('T')[0],
     type: releaseType || 'patch',
     title: frontmatter.title || `Version ${version}`,
-    sections
+    sections,
+    summary,
   };
 }
 
