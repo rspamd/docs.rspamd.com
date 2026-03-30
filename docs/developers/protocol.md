@@ -47,8 +47,8 @@ keypair {
 }
 ```
 
-Regrettably, the HTTPCrypt protocol hasn't gained widespread adoption among popular libraries. Nonetheless, you can effectively utilize it with the `rspamc` client and various internal clients, including Rspamd's proxy, which can serve as an encryption bridge for conducting spam scans via Rspamd. 
-Moreover, you have the option to employ Nginx for SSL termination on behalf of Rspamd. While Rspamd's client-side components (e.g., proxy or `rspamc`) offer native support for SSL encryption, it's important to note that SSL support on the server side is not currently available.
+Regrettably, the HTTPCrypt protocol hasn't gained widespread adoption among popular libraries. Nonetheless, you can effectively utilize it with the `rspamc` client and various internal clients, including Rspamd's proxy, which can serve as an encryption bridge for conducting spam scans via Rspamd.
+Starting from Rspamd 4.0, workers can also serve HTTPS natively — see [HTTPS support](/workers/#https-support) for configuration details. For earlier versions, or when advanced TLS features (OCSP stapling, client certificates) are needed, nginx can be used for SSL termination in front of Rspamd.
 
 ### HTTP request
 

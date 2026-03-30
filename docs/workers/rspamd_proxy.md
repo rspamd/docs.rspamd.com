@@ -55,6 +55,7 @@ The `hosts` option for the `upstream` and `mirror` can specify IP addresses or U
 | `ssl` | false | Use SSL/TLS for connection to upstream |
 | `keepalive` | false | Use HTTP keepalive (also accepted as `keep_alive`) |
 | `extra_headers` | - | Additional headers to send |
+| `token_bucket` | enabled (4.0+) | Token bucket load balancing sub-block; see [Token bucket load balancing](#token-bucket-load-balancing) |
 
 For a full list of options, please refer to `rspamadm confighelp workers.rspamd_proxy`.
 
@@ -135,6 +136,36 @@ upstream "scan" {
   settings_id = "name"; # Apply a custom setting from the user settings module (optional)
 }
 ~~~
+
+## Token bucket load balancing
+
+Starting from Rspamd 4.0, the proxy uses **token bucket** load balancing for upstream selection by default, replacing the previous round-robin algorithm. Token bucket distributes requests proportionally to available capacity and handles burst traffic more gracefully than round-robin.
+
+Each upstream maintains a bucket of tokens. Tokens are replenished at a configurable rate. Each forwarded request consumes tokens proportional to its cost. When a bucket is empty, the upstream is temporarily deprioritised.
+
+The token bucket behaviour is controlled per-upstream via the `token_bucket` sub-block:
+
+~~~hcl
+# local.d/worker-proxy.inc
+upstream "scan" {
+  default = yes;
+  hosts = "host1:11333,host2:11333";
+
+  token_bucket {
+    max_tokens = 100;  # bucket capacity (default: 100)
+    scale      = 1.0;  # replenishment rate multiplier (default: 1.0)
+    base_cost  = 1.0;  # tokens consumed per request (default: 1.0)
+  }
+}
+~~~
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `max_tokens` | 100 | Maximum bucket capacity |
+| `scale` | 1.0 | Token replenishment rate multiplier relative to request rate |
+| `base_cost` | 1.0 | Base token cost per request |
+
+To restore the pre-4.0 round-robin behaviour, remove the `token_bucket` block from the upstream configuration entirely.
 
 ## Mirroring
 
