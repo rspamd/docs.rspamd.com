@@ -75,6 +75,10 @@ Then Rspamd will only check the DKIM rules and skip the other rules. Alternative
 rspamc --header="settings-id=dkim" message.eml
 ~~~
 
+:::tip Available from Rspamd 4.0.1
+`Settings-ID` and `Settings:` can now be used **together** in the same request. Rspamd merges them according to the [layered settings merge](#layered-settings-merge-401) rules, with the inline `Settings:` header taking precedence over the named rule. This allows an MTA to select a named profile via `Settings-ID` and then fine-tune individual values via `Settings:` without duplicating the entire profile inline.
+:::
+
 ## Settings structure
 
 The settings file should contain a single section called "settings":
@@ -124,7 +128,7 @@ authenticated {
 So each setting has the following attributes:
 
 - `name` - section name that identifies this specific setting (e.g. `some_users`)
-- `priority` - `high` (3), `medium` (2), `low` (1) or any positive integer value (default priority is `low`). Rules with greater priorities are matched first. Starting from version 1.4, Rspamd checks rules with equal priorities in **alphabetical** order. Once a rule matches, only that rule is applied, and the rest are ignored.
+- `priority` - `high` (3), `medium` (2), `low` (1) or any positive integer value (default priority is `low`). Rules with greater priorities are matched first. Starting from version 1.4, Rspamd checks rules with equal priorities in **alphabetical** order. Within a single settings source, once a rule matches, only that rule is applied from that source and the rest are ignored. Settings arriving from multiple independent sources (config rules, Redis, HTTP header) are merged — see [Layered settings merge](#layered-settings-merge-401).
 - `match list` - list of rules which this rule matches:
 	+ `from` - match SMTP sender
 	+ `from_mime` - match MIME sender
@@ -214,6 +218,108 @@ EOD;
 ~~~
 
 Redis servers are configured as per usual - see [here](/configuration/redis) for details.
+
+## Layered settings merge (4.0.1+) {#layered-settings-merge-401}
+
+Prior to Rspamd 4.0.1, settings from different sources were mutually exclusive: the first source that produced a result won and all others were discarded. Starting from 4.0.1, settings collected from **different sources** are merged in a fixed priority hierarchy before being applied to the task.
+
+### Layer hierarchy
+
+Each settings source is assigned a numbered layer. Layers are merged in ascending order so that higher-numbered layers take precedence:
+
+| Layer | Name | Source |
+|-------|------|--------|
+| 0 | CONFIG | Baseline applied unconditionally from configuration |
+| 1 | PROFILE | Settings profiles (reserved for future use) |
+| 2 | RULE | The matched rule from `local.d/settings.conf` (or a dynamic map) |
+| 3 | PER_USER | Redis settings returned by `settings_redis` handlers |
+| 4 | HTTP | Inline settings passed via `Settings:` HTTP header |
+
+Within a single source (e.g. the config file), the existing first-match-wins rule still applies — only one rule is collected per source. Once collected, layers are merged in the order above.
+
+### How layers are applied
+
+Rspamd runs a dedicated `SETTINGS_APPLY` prefilter that fires after all settings collectors have completed (including async Redis lookups). If only one layer matched, it is applied immediately as before. If multiple layers are present, they are merged and the result is applied atomically.
+
+**Typical multi-layer scenarios:**
+
+- **Settings-ID + Settings header**: `Settings-ID: dkim` selects a named config rule (RULE layer); `Settings: {actions {reject = 999.0;}}` adds an override (HTTP layer). Both are applied, with the HTTP layer overriding the reject threshold only.
+- **Config rule + Redis**: A config rule disables certain symbol groups (RULE layer); a Redis handler returns per-user score overrides (PER_USER layer). Both take effect, with Redis values winning on any overlapping keys.
+- **Config rule + HTTP**: An MTA selects a scanning profile via `Settings-ID` (RULE layer) and then injects a request-specific setting via `Settings:` (HTTP layer) without needing to reproduce the full profile inline.
+
+### Conflict resolution rules
+
+When the same key appears in multiple layers, these rules are applied in order:
+
+1. **Higher layer wins**: HTTP (4) beats PER_USER (3) beats RULE (2) beats CONFIG (0).
+2. **Per-symbol specificity beats per-group**: if one layer disables a group and another layer explicitly enables a specific symbol within that group, the symbol remains enabled regardless of layer order.
+3. **At equal specificity and equal layer, disable wins** (safety-first).
+4. **Explicit enable beats implicit omission**: a symbol not mentioned by a layer is not treated as disabled by it.
+
+### Merge semantics per field
+
+| Field | Merge behavior |
+|-------|----------------|
+| `actions`, `scores`, `symbols` (score overrides), `variables` | Per-key: higher-layer value replaces lower-layer value for that key only |
+| `symbols_enabled` / `symbols_disabled` | Union across layers; conflict resolved by specificity then layer priority |
+| `groups_enabled` / `groups_disabled` | Union across layers; per-symbol entries override per-group entries |
+| `subject` | Scalar: highest-layer value wins |
+| `whitelist` / `want_spam` | Boolean OR: any layer setting this to `true` activates it for the task |
+| `add_headers` / `remove_headers` | Union: entries from all layers are collected |
+| `messages` | Per-key: higher-layer value wins |
+
+### Example: per-user threshold over a shared profile
+
+```hcl
+# local.d/settings.conf
+
+# Shared outbound profile: disable reputation checks, lower thresholds
+outbound {
+  id = "outbound";
+  priority = high;
+  request_header { "X-Flow" = "^outbound$"; }
+  apply {
+    groups_disabled = ["rbl", "surbl", "bayes"];
+    actions {
+      reject    = 20.0;
+      "add header" = 8.0;
+    }
+  }
+}
+```
+
+```hcl
+# Redis: per-user override for a known VIP sender
+# Key "rspamd:settings:vip@example.com" →  {actions {reject = 999.0;}}
+settings_redis {
+  handlers {
+    per_user_settings = <<EOD
+return function(task)
+  local from = task:get_from('smtp')
+  if from and from[1] then
+    return 'rspamd:settings:' .. from[1]['addr']
+  end
+end
+EOD;
+  }
+}
+```
+
+When Rspamd processes a message from `vip@example.com` with `X-Flow: outbound`:
+
+- **RULE layer** (from `outbound` rule): disables RBL/SURBL/Bayes, sets `reject = 20.0` and `add header = 8.0`.
+- **PER_USER layer** (from Redis): sets `reject = 999.0`.
+
+Merged result: RBL/SURBL/Bayes disabled, `reject = 999.0` (Redis wins), `add header = 8.0` (only in RULE layer, kept as-is).
+
+### Interaction with symcache dependencies
+
+The layered merge also introduces a distinction between **hard** and **weak** symbol dependencies:
+
+- **Hard dependency**: if the dependency symbol is disabled by settings, the dependent symbol is also disabled (cascade). Used when a symbol's result is meaningless without its dependency (e.g. `ARC_SIGNED` → `ARC_CHECK`).
+- **Weak dependency** (default): if the dependency is disabled, the dependent symbol may still run. Used when the dependency is optional context (e.g. `DMARC_CHECK` → `SPF_CHECK`).
+
+This distinction matters when settings `symbols_disabled` or `groups_disabled` disable part of a dependency chain — hard deps cascade the disable while weak deps let the dependent proceed independently.
 
 ## External Map for Dynamic Settings
 
