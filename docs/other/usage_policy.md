@@ -36,6 +36,19 @@ For example, there was an [incident](https://www.reddit.com/r/synology/comments/
 
 Hence, we are kindly asking to [contact us](mailto:hi@rspamd.com) before embedding Rspamd in any sort of commercial or open source project. In this way, we could decide about the strategy to avoid issues with the embedded solution in future.
 
+## Blocking and termination
+
+We reserve the right to block or restrict access to our services at any time, at our sole discretion, without prior notice and without liability. Reasons may include, but are not limited to:
+
+- **Suspicious traffic patterns**: automated abuse, unusual query distribution, or behaviour inconsistent with legitimate mail filtering
+- **Network neighbourhood**: your IP address shares a network block (e.g. a cloud provider subnet, hosting range, or AS) with sources of known abuse or high-volume misuse, even if your own traffic appears benign
+- **Collateral blocking**: your address is part of a range that has been blocked due to the actions of other parties on the same network
+- **Unverifiable use case**: we are unable to confirm that your use meets the non-commercial or volume criteria above
+
+If you believe you have been blocked in error and meet the free-usage criteria, you may contact us at <mailto:hi@rspamd.com>. We will review requests on a best-effort basis but make no commitment to restore access.
+
+We provide this service on an **as-is, best-effort basis** with no guarantees of availability, accuracy, or fitness for any particular purpose. We accept no liability for any consequences arising from the unavailability or inaccuracy of the service.
+
 ## Premium service
 
 If you do not meet these criteria, you can either stop using this service or contact us for a [premium service](https://www.rspamd.com/#commercial) that covers our costs for providing free access. Please use the following email address for inquiries: <mailto:hi@rspamd.com>
