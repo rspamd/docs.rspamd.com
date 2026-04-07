@@ -3,6 +3,105 @@
 
 export const changelogData = [
   {
+    "version": "4.0.1",
+    "date": "2026-04-05",
+    "type": "patch",
+    "title": "Patch Release with Layered Settings Merge, Fuzzy Dynamic Blocks, and Critical Bug Fixes",
+    "sections": [
+      {
+        "title": "Added",
+        "items": [
+          "**Layered settings merge**: Collect-then-merge flow replaces first-match-wins; layers are merged with per-field semantics (actions/scores override by higher layer, symbols union with conflict resolution); `force_actions` and `force_symbols` provide explicit override when layers conflict ([#5959](https://github.com/rspamd/rspamd/pull/5959))",
+          "**Weak dependencies in symcache**: New `disabled` status distinguishes \"disabled by settings\" from \"finished\"; hard deps cascade-disable dependents while weak deps let them proceed — seven plugins annotated with correct dependency classification ([#5959](https://github.com/rspamd/rspamd/pull/5959))",
+          "**Fuzzy dynamic block API**: `worker:block_fuzzy_client(addr, prefix_len[, expire_ts[, reason]])` Lua method for runtime IP/CIDR blocking in fuzzy storage without config changes or restarts; custom response codes — 403 for ratelimits vs 503 for bans; `ratelimit_whitelist` check exposed to Lua ([#5962](https://github.com/rspamd/rspamd/pull/5962))"
+        ]
+      },
+      {
+        "title": "Fixed",
+        "items": [
+          "**Proxy milter fd leak**: Original fd was not closed after milter `dup()`, leaking one fd per milter connection and causing unbounded `CLOSE_WAIT` accumulation in production (regression in 4.0.0)",
+          "**Proxy self-scan task timeout**: Self-scan tasks incorrectly used the upstream wire timeout (e.g. 120s) instead of `task_timeout` (8s default), masking hung tasks",
+          "**ARC AAR header parsing**: Replace naive semicolon split with LPeg grammar that respects RFC 8601 comments `(...)` and quoted strings — fixes `cv=fail` on multi-hop ARC chains where `i=N` appeared inside comments ([#5963](https://github.com/rspamd/rspamd/issues/5963), [#5966](https://github.com/rspamd/rspamd/pull/5966))",
+          "**Dynamic ban expiry**: Fix `ev_now()` usage for correct monotonic time in dynamic block expiry",
+          "**Settings flow**: Fix dependency ordering in pre/postfilters and settings apply phase",
+          "**Redis backend build**: Add missing `#include <memory>` in `redis_backend.cxx` ([#5960](https://github.com/rspamd/rspamd/pull/5960))"
+        ]
+      }
+    ],
+    "summary": ""
+  },
+  {
+    "version": "4.0.0",
+    "date": "2026-03-28",
+    "type": "major",
+    "title": "Major Release with checkv3 Protocol, Built-in Fasttext, Multi-Flag Fuzzy Hashes, and Ring Hash Consistent Hashing",
+    "sections": [
+      {
+        "title": "Breaking Changes",
+        "items": [
+          "**Bayes per-user resharding**: Jump Hash replaced with Ring Hash (Ketama) for consistent upstream hashing; per-user Bayes data on sharded Redis deployments will be on wrong shards after upgrade. Run `rspamadm statistics_dump migrate` before upgrading. Single-server deployments are unaffected. ([#5914](https://github.com/rspamd/rspamd/pull/5914), [4ea7504](https://github.com/rspamd/rspamd/commit/4ea750466))",
+          "**Content URLs included by default**: `include_content_urls` now defaults to `true`; URLs extracted from PDF and computed parts are returned by `task:get_urls()` by default, which may trigger new symbol hits on messages with PDF attachments. Restore old behavior with `include_content_urls = false` in `local.d/options.inc`. ([#5853](https://github.com/rspamd/rspamd/pull/5853))",
+          "**SSL worker option removed**: The `ssl = true` worker option has been removed; SSL is now auto-detected from bind socket flags. Remove `ssl = true` from worker configs and use the `ssl` suffix on bind lines instead. ([#5884](https://github.com/rspamd/rspamd/pull/5884))",
+          "**Proxy load balancing default changed**: Token bucket load balancing is now enabled by default for proxy upstreams, replacing simple round-robin. Remove the `token_bucket` key from proxy upstream config to restore round-robin behavior. ([#5874](https://github.com/rspamd/rspamd/pull/5874))",
+          "**SenderScore RBLs disabled by default**: `senderscore_reputation` is disabled by default as it requires a MyValidity account and was returning blocked results for all unregistered IPs. Users with registered accounts must explicitly re-enable the rule. ([#5907](https://github.com/rspamd/rspamd/pull/5907))",
+          "**DKIM unknown key handling per RFC**: Unknown and broken DKIM keys are now handled strictly per RFC, which may change DKIM results for messages with malformed keys. ([e9e6bac](https://github.com/rspamd/rspamd/commit/e9e6bac43))",
+          "**Suspicious TLDs now map-based**: The hardcoded suspicious TLD list has been replaced with `conf/maps.d/suspicious_tlds.inc`. Customize by creating `local.d/maps.d/suspicious_tlds.inc` (override) or `local.d/maps.d/suspicious_tlds.inc.local` (extend). ([614e68c](https://github.com/rspamd/rspamd/commit/614e68c8b))",
+          "**Neural module autolearn option renames**: Autolearn options in the neural module have been renamed to match RBL module naming conventions. Review custom neural configurations for use of old option names. ([#5835](https://github.com/rspamd/rspamd/pull/5835))",
+          "**libfasttext external dependency removed**: The external libfasttext C++ library has been replaced with a built-in mmap-based shim. The `ENABLE_FASTTEXT` cmake option is removed (always enabled). Packagers must remove the libfasttext build dependency. ([#5897](https://github.com/rspamd/rspamd/pull/5897))"
+        ]
+      },
+      {
+        "title": "Added",
+        "items": [
+          "**Jinja2 configuration templates**: Configuration files are now preprocessed by the [Lupa Jinja2-compatible template engine](/configuration/templates) before UCL parsing. Environment variables prefixed with `RSPAMD_` are exposed as the `env` table in templates; modified delimiters (`{= =}` for expressions, `{% %}` for control structures) avoid conflicts with UCL syntax. New validation filters (`mandatory`, `require_int`, `require_number`, `require_bool`, `require_duration`, `require_json`, `fromjson`) abort startup with a clear error on invalid input, enabling container-ready configuration validation without shell entrypoint scripts. ([#5938](https://github.com/rspamd/rspamd/pull/5938), [#5941](https://github.com/rspamd/rspamd/pull/5941))",
+          "**checkv3 multipart protocol**: New `/checkv3` endpoint using `multipart/form-data` requests and `multipart/mixed` responses; metadata sent as structured JSON/msgpack instead of HTTP headers, per-part zstd compression, optional body part for rewritten messages, and zero-copy piecewise writev for responses. Use `rspamc --protocol-v3` or `rspamc --msgpack` to activate. ([#5880](https://github.com/rspamd/rspamd/pull/5880))",
+          "**Pluggable Hyperscan cache backend**: Hyperscan compilation and caching moved to an async Lua backend with Redis-based shared database support across workers and hosts. Async compilation prevents blocking the main event loop; self-healing cache auto-detects stale blobs and triggers recompile; small databases compiled in-memory without file caching. ([#5813](https://github.com/rspamd/rspamd/pull/5813), [#5952](https://github.com/rspamd/rspamd/pull/5952))",
+          "**Multi-flag fuzzy hashes**: A single fuzzy hash can now carry up to 8 flags simultaneously, allowing multiple rules to match the same digest with independent flag/value pairs. Redis update path rewritten in Lua with EVALSHA and NOSCRIPT recovery. Backward-compatible epoch 12 wire protocol with highest-value flag promoted to the primary slot. Fuzzy hashes now stored in Redis history. ([#5894](https://github.com/rspamd/rspamd/pull/5894), [#5860](https://github.com/rspamd/rspamd/pull/5860))",
+          "**HTML fuzzy phishing detection**: Dual-mode fuzzy matching — template matching and domain-sensitive matching. New `FUZZY_HTML_PHISHING` symbol fires when an HTML template matches but domains differ, detecting reused phishing templates with swapped links. ([173058061](https://github.com/rspamd/rspamd/commit/173058061))",
+          "**Built-in Fasttext shim**: External C++ libfasttext replaced with a zero-dependency mmap-based reader providing shared memory across workers via `MAP_SHARED`, eliminating per-worker heap copies and saving approximately 500MB–7GB RAM. No more C++ exception ABI issues. Existing `.bin`/`.ftz` models continue to work unchanged. Fasttext wired through maps infrastructure for hot-reloading. ([#5897](https://github.com/rspamd/rspamd/pull/5897), [#5909](https://github.com/rspamd/rspamd/pull/5909))",
+          "**Neural network and LLM embedding improvements**: External pretrained neural model support; LLM embedding providers with multi-model support, mean+max pooling, and SIF word weighting; multi-layer funnel architecture; language-based model and URL selection; expression-based autolearn for neural LLM providers; GPT module with configurable consensus thresholds, `context_augment` hook, and mempool variable storage. ([#5924](https://github.com/rspamd/rspamd/pull/5924), [#5903](https://github.com/rspamd/rspamd/pull/5903), [#5897](https://github.com/rspamd/rspamd/pull/5897), [#5835](https://github.com/rspamd/rspamd/pull/5835))",
+          "**HTTPS server support**: Workers can now serve HTTPS natively with SSL auto-detected from bind socket configuration, enabling secure WebUI and API without a reverse proxy. ([#5884](https://github.com/rspamd/rspamd/pull/5884), [d04b367](https://github.com/rspamd/rspamd/commit/d04b367db))",
+          "**Ring Hash (Ketama) consistent hashing**: Proper consistent hashing with virtual nodes ensures only ~1/n keys redistribute when an upstream fails, and keys return to their original upstream on recovery. ([4ea7504](https://github.com/rspamd/rspamd/commit/4ea750466))",
+          "**Token bucket proxy load balancing**: New load balancing algorithm for proxy upstreams with configurable `max_tokens`, `scale`, and `base_cost` parameters for better burst traffic handling. ([#5874](https://github.com/rspamd/rspamd/pull/5874))",
+          "**Multiclass Bayes support**: Classifiers now support arbitrary classes beyond binary spam/ham. WebUI learning interface updated for multi-class workflows. `/stat` and `/bayes/classifiers` endpoints extended with classifier metadata. `rspamadm statistics_dump` supports multi-class dump and restore. ([#5900](https://github.com/rspamd/rspamd/pull/5900), [#5893](https://github.com/rspamd/rspamd/pull/5893), [#5914](https://github.com/rspamd/rspamd/pull/5914))",
+          "**Structured metadata exporter**: New structured formatter for the metadata exporter module with zstd compression option and detected MIME types for attachments. ([#5890](https://github.com/rspamd/rspamd/pull/5890))",
+          "**UUID v7 per task**: Native UUID v7 generation per scanning task synced with the `Log-Tag` header and ClickHouse UUID v7 column support. ([#5890](https://github.com/rspamd/rspamd/pull/5890))",
+          "**ARC trusted_authserv_id**: Reuse upstream authentication results via trusted `Authentication-Results` headers from known authentication servers. ([506ef44](https://github.com/rspamd/rspamd/commit/506ef44b8))",
+          "**Legacy protocol milter headers**: Milter `add_headers` and `remove_headers` exposed in the RSPAMC/SPAMC text protocol with extended symbol info including descriptions and options, enabling Exim to access milter headers via `$spam_report`. ([#5948](https://github.com/rspamd/rspamd/pull/5948))",
+          "**rspamadm new subcommands**: `rspamadm autolearnstats` for autolearn statistics analysis; `rspamadm logstats` and `rspamadm mapstats` as rewrites of legacy Perl scripts; `rspamadm statistics_dump migrate` for Bayes shard migration. ([#5946](https://github.com/rspamd/rspamd/pull/5946), [#5885](https://github.com/rspamd/rspamd/pull/5885), [#5914](https://github.com/rspamd/rspamd/pull/5914))",
+          "**HTTP content negotiation**: Framework for content negotiation on API endpoints; `/stat` endpoint supports zstd-compressed responses. ([#5832](https://github.com/rspamd/rspamd/pull/5832))",
+          "**PDF improvements**: ASCII85 decode support, ligature substitution fix, object padding evasion defeat, and small objects no longer counted toward processing limits. ([73a37be](https://github.com/rspamd/rspamd/commit/73a37be63), [eb1acde](https://github.com/rspamd/rspamd/commit/eb1acde80), [2b91e5e](https://github.com/rspamd/rspamd/commit/2b91e5ef5), [1f02010](https://github.com/rspamd/rspamd/commit/1f020105e))",
+          "**Reply-To validity checks**: New header checks for `Reply-To` address validity. ([e95533f](https://github.com/rspamd/rspamd/commit/e95533f1f))"
+        ]
+      },
+      {
+        "title": "Fixed",
+        "items": [
+          "**Fuzzy UDP use-after-free** (critical): Fixed use-after-free on ev_io watcher in fuzzy UDP sessions. ([4557166](https://github.com/rspamd/rspamd/commit/455716621))",
+          "**Fuzzy TCP CPU busy-loop**: Fixed CPU spin in fuzzy TCP client under certain error conditions. ([06dba44](https://github.com/rspamd/rspamd/commit/06dba4495))",
+          "**SPF address family flag inheritance**: Correct propagation of address family flags in SPF resolution. ([2a8643e](https://github.com/rspamd/rspamd/commit/2a8643e5e))",
+          "**DKIM RSA signing memory leak**: Fixed memory leak in RSA path of DKIM signing. ([9608160](https://github.com/rspamd/rspamd/commit/9608160b1))",
+          "**RHEL/CentOS 10 SHA-1 DKIM policy bypass**: Fixed crypto-policy bypass for SHA-1 DKIM signatures on RHEL/CentOS 10. ([7a38a8e](https://github.com/rspamd/rspamd/commit/7a38a8e33))",
+          "**Ratelimit compatibility with old records**: Fixed backward compatibility with legacy ratelimit bucket records. ([#5842](https://github.com/rspamd/rspamd/pull/5842))",
+          "**Weighted round-robin not respecting weights**: Fixed upstream selection ignoring configured weights. ([f563e25](https://github.com/rspamd/rspamd/commit/f563e25a0))",
+          "**SVG misdetection**: Fixed incorrect HTML detection for messages with embedded SVG content. ([170c4c5](https://github.com/rspamd/rspamd/commit/170c4c5d6))",
+          "**Hyperscan use-after-free on config reload**: Multiple use-after-free issues in Hyperscan cache handling during live configuration reload resolved. ([#5813](https://github.com/rspamd/rspamd/pull/5813))",
+          "**Jemalloc tuning**: Jemalloc tuned for Rspamd's single-threaded multi-process architecture, reducing memory overhead. ([#5949](https://github.com/rspamd/rspamd/pull/5949))"
+        ]
+      },
+      {
+        "title": "Improved",
+        "items": [
+          "**Consistent hash distribution**: Ring Hash with virtual nodes provides true minimal disruption on upstream failure and guarantees key return to original upstream on recovery, replacing the previous Jump Hash algorithm.",
+          "**Hyperscan async compilation**: Compilation no longer blocks the main event loop; self-healing blob detection ensures cache correctness after Hyperscan version changes.",
+          "**Fasttext memory efficiency**: Built-in shim shares model data across all worker processes via shared memory, eliminating 500MB–7GB of duplicate heap allocations typical in multi-worker deployments.",
+          "**Fuzzy hash expressiveness**: Multi-flag support allows a single stored digest to satisfy multiple independent rule checks simultaneously without duplication in storage."
+        ]
+      }
+    ],
+    "summary": "Rspamd 4.0 is a landmark release delivering foundational infrastructure improvements alongside major new capabilities. The new `/checkv3` multipart protocol modernizes the scanning API with structured metadata, per-part compression, and zero-copy response paths. The built-in Fasttext shim eliminates a heavyweight C++ dependency while dramatically reducing per-worker memory usage. Multi-flag fuzzy hashes unlock more expressive detection rules, and HTML fuzzy phishing detection brings template-aware link-swap detection to the fuzzy engine. The move to Ring Hash consistent hashing corrects shard distribution behavior for Redis-backed deployments — users with sharded Bayes **must** run the migration tool before upgrading. This release is recommended for all users; users running sharded Redis Bayes backends should follow the migration procedure before upgrading."
+  },
+  {
     "version": "3.14.3",
     "date": "2026-01-08",
     "type": "patch",
@@ -42,7 +141,8 @@ export const changelogData = [
           "**SDK headers**: Avoid SDK headers in include path when package ROOT is specified"
         ]
       }
-    ]
+    ],
+    "summary": "This patch release introduces PDF text extraction capabilities for enhanced content analysis, improves stability through the new task registry that prevents use-after-free bugs in async Lua callbacks, and adds ClickHouse extensibility for custom table registration. Multiple bug fixes address neural network symbol handling, symcache determinism, URL processing, and language detection. Recommended upgrade for all users."
   },
   {
     "version": "3.14.2",
@@ -70,7 +170,8 @@ export const changelogData = [
           "**Metadata Exporter**: `meta_headers` option is deprecated; use `multipart` or `msgpack` formatters instead"
         ]
       }
-    ]
+    ],
+    "summary": ""
   },
   {
     "version": "3.14.1",
@@ -117,7 +218,8 @@ export const changelogData = [
           "**Plugins registry**: Centralized plugins registry with reworked mixins and documentation ([#5754](https://github.com/rspamd/rspamd/pull/5754))"
         ]
       }
-    ]
+    ],
+    "summary": "This minor release focuses on performance improvements and code modernization. The composites optimization with inverted index and bloom filter significantly speeds up composite rule evaluation. The new lua_shape library replaces the external tableshape dependency with a more integrated solution. URL processing has been enhanced with deep processing architecture and better obfuscated URL detection. Several critical bugs have been fixed including url_suspect false positives and an infinite loop in network processing."
   },
   {
     "version": "3.14.0",
@@ -205,7 +307,8 @@ export const changelogData = [
           "**Docker configuration**: Add explicit console logging and runtime flags ([#5701](https://github.com/rspamd/rspamd/pull/5701))"
         ]
       }
-    ]
+    ],
+    "summary": "This major release introduces groundbreaking features including HTML fuzzy hashing for structural similarity detection, TCP protocol support for fuzzy storage with improved reliability, and advanced URL processing with CTA extraction and deduplication. The release includes comprehensive memory leak fixes, improved BSD platform support, enhanced WebUI with dark mode, and better integration capabilities through ESMTP argument parsing and Postfix wizard. Critical DNS fixes prevent packet truncation, while DMARC reporting improvements solve Redis connection exhaustion. This is a significant upgrade recommended for all users, especially those processing HTML-heavy email or requiring advanced fuzzy matching capabilities."
   },
   {
     "version": "3.13.2",
@@ -247,7 +350,8 @@ export const changelogData = [
           "**Development workflow**: Added cursor rules for improved development experience ([#5665](https://github.com/rspamd/rspamd/pull/5665))"
         ]
       }
-    ]
+    ],
+    "summary": "This release introduces significant security enhancements with separate encryption keys for fuzzy operations, modern cryptographic support with ED25519 DKIM keys, improved infrastructure integration with Vault KV v2, and enhanced anti-malware capabilities with MetaDefender. The release also includes important fixes for DKIM compliance, HTTP map behavior, and various stability improvements. This is recommended as a security and feature update."
   },
   {
     "version": "3.13.1",
@@ -284,7 +388,8 @@ export const changelogData = [
           "**Compatibility**: Minor compatibility improvements and bugfixes (buffer allocation, missing cmath include, etc.)"
         ]
       }
-    ]
+    ],
+    "summary": "This release introduces archive module extensibility with full encrypted archive support including AES, new map distribution capabilities, secure integration options with Redis TLS, robust email and message processing improvements, and bugfixes for broader platform compatibility. This is recommended as a major stability and feature update."
   },
   {
     "version": "3.13.0",
@@ -333,7 +438,8 @@ export const changelogData = [
           "Numerous minor bug fixes and CI/build improvements."
         ]
       }
-    ]
+    ],
+    "summary": ""
   },
   {
     "version": "3.12.1",
@@ -409,7 +515,8 @@ export const changelogData = [
           "**Header Testing**: Better testing for header processing and duplication scenarios"
         ]
       }
-    ]
+    ],
+    "summary": "This minor release focuses on stability improvements, bug fixes, and performance enhancements. The elimination of maps locking provides significant performance improvements for high-concurrency environments, while the enhanced attachment security and header processing improvements make Rspamd more robust and secure."
   },
   {
     "version": "3.12.0",
@@ -533,7 +640,8 @@ export const changelogData = [
           "**HEIC Recognition**: Add tests for HEIC file recognition"
         ]
       }
-    ]
+    ],
+    "summary": "This release includes significant security improvements, enhanced functionality, and better performance across all components of Rspamd. The addition of Contextal integration, improved fuzzy storage, and enhanced WebUI features make this a major release with substantial improvements for users."
   },
   {
     "version": "3.11.1",
@@ -609,7 +717,8 @@ export const changelogData = [
           "Remove nixspam"
         ]
       }
-    ]
+    ],
+    "summary": ""
   },
   {
     "version": "3.11.0",
@@ -669,6 +778,7 @@ export const changelogData = [
           "Various configuration and logging improvements"
         ]
       }
-    ]
+    ],
+    "summary": ""
   }
 ];
