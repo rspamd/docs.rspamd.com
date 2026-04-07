@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkrspamd_docs=self.webpackChunkrspamd_docs||[]).push([[8644],{98644(e,s,c){c.d(s,{createArchitectureServices:()=>r.S});var r=c(85877);c(6902)}}]);

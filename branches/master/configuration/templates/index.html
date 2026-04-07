@@ -1,0 +1,960 @@
+<!doctype html>
+<html lang="en" dir="ltr" class="docs-wrapper plugin-docs plugin-id-default docs-version-current docs-doc-page docs-doc-id-configuration/templates" data-has-hydrated="false">
+<head>
+<meta charset="UTF-8">
+<meta name="generator" content="Docusaurus v3.9.2">
+<title data-rh="true">Configuration templates | Rspamd Documentation</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://rspamd.com/docs.rspamd.com/branches/master/configuration/templates"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" property="og:locale:alternate" content="ru"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Configuration templates | Rspamd Documentation"><meta data-rh="true" name="description" content="Introduction"><meta data-rh="true" property="og:description" content="Introduction"><link data-rh="true" rel="icon" href="/docs.rspamd.com/branches/master/img/favicon.png"><link data-rh="true" rel="canonical" href="https://rspamd.com/docs.rspamd.com/branches/master/configuration/templates"><link data-rh="true" rel="alternate" href="https://rspamd.com/docs.rspamd.com/branches/master/configuration/templates" hreflang="en"><link data-rh="true" rel="alternate" href="https://rspamd.com/docs.rspamd.com/branches/master/ru/configuration/templates" hreflang="ru"><link data-rh="true" rel="alternate" href="https://rspamd.com/docs.rspamd.com/branches/master/configuration/templates" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Configuration","item":"https://rspamd.com/docs.rspamd.com/branches/master/configuration/"},{"@type":"ListItem","position":2,"name":"Configuration templates","item":"https://rspamd.com/docs.rspamd.com/branches/master/configuration/templates"}]}</script><link rel="alternate" type="application/rss+xml" href="/docs.rspamd.com/branches/master/blog/rss.xml" title="Rspamd Blog RSS Feed">
+<link rel="alternate" type="application/atom+xml" href="/docs.rspamd.com/branches/master/blog/atom.xml" title="Rspamd Blog Atom Feed">
+
+
+
+
+<script>window.SEARCH_BACKEND_CONFIG={endpoint:"/api"}</script>
+
+
+<link rel="alternate" type="application/rss+xml" title="Rspamd Changelog RSS" href="/rss/changelog.xml">
+<link rel="alternate" type="application/rss+xml" title="Rspamd Blog RSS" href="/blog/rss.xml">
+<link rel="alternate" type="application/atom+xml" title="Rspamd Blog Atom" href="/blog/atom.xml"><link rel="stylesheet" href="/docs.rspamd.com/branches/master/assets/css/styles.ac2e41d7.css">
+<script src="/docs.rspamd.com/branches/master/assets/js/runtime~main.6c70bd7e.js" defer="defer"></script>
+<script src="/docs.rspamd.com/branches/master/assets/js/main.c3d67631.js" defer="defer"></script>
+</head>
+<body class="navigation-with-keyboard">
+<svg style="display: none;"><defs>
+<symbol id="theme-svg-external-link" viewBox="0 0 24 24"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/></symbol>
+</defs></svg>
+<script>!function(){var t=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();document.documentElement.setAttribute("data-theme",t||(window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")),document.documentElement.setAttribute("data-theme-choice",t||"system")}(),function(){try{const c=new URLSearchParams(window.location.search).entries();for(var[t,e]of c)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><link rel="preload" as="image" href="/docs.rspamd.com/branches/master/img/rspamd_logo_black.png"><link rel="preload" as="image" href="/docs.rspamd.com/branches/master/img/rspamd_logo_navbar.png"><div role="region" aria-label="Skip to main content"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">Skip to main content</a></div><nav aria-label="Main" class="theme-layout-navbar navbar navbar--fixed-top"><div class="navbar__inner"><div class="theme-layout-navbar-left navbar__items"><button aria-label="Toggle navigation bar" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a href="https://www.rspamd.com" target="_self" rel="noopener noreferrer" class="navbar__brand"><div class="navbar__logo"><img src="/docs.rspamd.com/branches/master/img/rspamd_logo_black.png" alt="Rspamd Logo" class="themedComponent_mlkZ themedComponent--light_NVdE"><img src="/docs.rspamd.com/branches/master/img/rspamd_logo_navbar.png" alt="Rspamd Logo" class="themedComponent_mlkZ themedComponent--dark_xIcU"></div><b class="navbar__title text--truncate"></b></a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/docs.rspamd.com/branches/master/">Documentation</a><a class="navbar__item navbar__link" href="/docs.rspamd.com/branches/master/about/">About</a><a class="navbar__item navbar__link" href="/docs.rspamd.com/branches/master/tutorials/">Tutorials</a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/docs.rspamd.com/branches/master/modules/">Modules</a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/docs.rspamd.com/branches/master/other/usage_policy">Usage Policy</a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/docs.rspamd.com/branches/master/faq">FAQ</a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/docs.rspamd.com/branches/master/support">Support</a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/docs.rspamd.com/branches/master/downloads">Downloads</a><a class="navbar__item navbar__link" href="/docs.rspamd.com/branches/master/blog">Blog</a><a class="navbar__item navbar__link" href="/docs.rspamd.com/branches/master/changelog">Changelog</a></div><div class="theme-layout-navbar-right navbar__items navbar__items--right"><div><div class="elasticsearch-search-container"><form class="elasticsearch-search-form"><div class="elasticsearch-search-input-container"><input type="text" placeholder="Search documentation..." class="elasticsearch-search-input" aria-label="Search documentation" value=""><div class="elasticsearch-search-shortcut"><span>⌘K</span></div></div></form></div></div><div class="navbar__item"><div id="font-size-control-mount"></div></div><a href="https://github.com/rspamd/rspamd" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="system mode" aria-label="Switch between dark and light mode (currently system mode)"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP systemToggleIcon_QzmC"><path fill="currentColor" d="m12 21c4.971 0 9-4.029 9-9s-4.029-9-9-9-9 4.029-9 9 4.029 9 9 9zm4.95-13.95c1.313 1.313 2.05 3.093 2.05 4.95s-0.738 3.637-2.05 4.95c-1.313 1.313-3.093 2.05-4.95 2.05v-14c1.857 0 3.637 0.737 4.95 2.05z"></path></svg></button></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="theme-layout-main main-wrapper mainWrapper_z2l0"><div class="docsWrapper_hBAB"><button aria-label="Scroll back to top" class="clean-btn theme-back-to-top-button backToTopButton_sjWU" type="button"></button><div class="docRoot_UBD9"><aside class="theme-doc-sidebar-container docSidebarContainer_YfHR"><div class="sidebarViewport_aRkj"><div class="sidebar_njMd"><nav aria-label="Docs sidebar" class="menu thin-scrollbar menu_SIkG"><ul class="theme-doc-sidebar-menu menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/docs.rspamd.com/branches/master/"><span title="About Rspamd" class="linkLabel_WmDU">About Rspamd</span></a></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist" href="/docs.rspamd.com/branches/master/getting-started/"><span title="Getting Started" class="categoryLinkLabel_W154">Getting Started</span></a><button aria-label="Expand sidebar category &#x27;Getting Started&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs.rspamd.com/branches/master/tutorials/migration"><span title="How-To Guides" class="categoryLinkLabel_W154">How-To Guides</span></a></div></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/docs.rspamd.com/branches/master/faq"><span title="Frequently Asked Questions" class="linkLabel_WmDU">Frequently Asked Questions</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/docs.rspamd.com/branches/master/support"><span title="Rspamd Support" class="linkLabel_WmDU">Rspamd Support</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/docs.rspamd.com/branches/master/downloads"><span title="Downloads" class="linkLabel_WmDU">Downloads</span></a></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--active" href="/docs.rspamd.com/branches/master/configuration/"><span title="Configuration" class="categoryLinkLabel_W154">Configuration</span></a><button aria-label="Collapse sidebar category &#x27;Configuration&#x27;" aria-expanded="true" type="button" class="clean-btn menu__caret"></button></div><ul class="menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs.rspamd.com/branches/master/configuration/settings"><span title="User settings" class="linkLabel_WmDU">User settings</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs.rspamd.com/branches/master/configuration/metrics"><span title="Actions and scores" class="linkLabel_WmDU">Actions and scores</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs.rspamd.com/branches/master/configuration/logging"><span title="Logging settings" class="linkLabel_WmDU">Logging settings</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs.rspamd.com/branches/master/configuration/options"><span title="Common options" class="linkLabel_WmDU">Common options</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs.rspamd.com/branches/master/configuration/composites"><span title="Composite symbols" class="linkLabel_WmDU">Composite symbols</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs.rspamd.com/branches/master/configuration/maps"><span title="Rspamd maps" class="linkLabel_WmDU">Rspamd maps</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs.rspamd.com/branches/master/configuration/selectors"><span title="Selectors" class="linkLabel_WmDU">Selectors</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs.rspamd.com/branches/master/configuration/statistic"><span title="Statistics settings" class="linkLabel_WmDU">Statistics settings</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs.rspamd.com/branches/master/configuration/redis"><span title="Redis configuration" class="linkLabel_WmDU">Redis configuration</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs.rspamd.com/branches/master/configuration/upstream"><span title="Upstreams configuration" class="linkLabel_WmDU">Upstreams configuration</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs.rspamd.com/branches/master/configuration/ucl"><span title="Universal configuration language (UCL)" class="linkLabel_WmDU">Universal configuration language (UCL)</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link menu__link--active" aria-current="page" tabindex="0" href="/docs.rspamd.com/branches/master/configuration/templates"><span title="Configuration templates" class="linkLabel_WmDU">Configuration templates</span></a></li></ul></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist" href="/docs.rspamd.com/branches/master/workers/"><span title="Workers" class="categoryLinkLabel_W154">Workers</span></a><button aria-label="Expand sidebar category &#x27;Workers&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist" href="/docs.rspamd.com/branches/master/modules/"><span title="Modules" class="categoryLinkLabel_W154">Modules</span></a><button aria-label="Expand sidebar category &#x27;Modules&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist" href="/docs.rspamd.com/branches/master/lua/"><span title="Lua API" class="categoryLinkLabel_W154">Lua API</span></a><button aria-label="Expand sidebar category &#x27;Lua API&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist" href="/docs.rspamd.com/branches/master/developers/architecture"><span title="Developers" class="categoryLinkLabel_W154">Developers</span></a><button aria-label="Expand sidebar category &#x27;Developers&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist" href="/docs.rspamd.com/branches/master/administration/rspamadm/"><span title="Administration Tools" class="categoryLinkLabel_W154">Administration Tools</span></a><button aria-label="Expand sidebar category &#x27;Administration Tools&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs.rspamd.com/branches/master/other/gtube_patterns"><span title="Other" class="categoryLinkLabel_W154">Other</span></a></div></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/docs.rspamd.com/branches/master/blog"><span title="Blog" class="linkLabel_WmDU">Blog</span></a></li></ul></nav><button type="button" title="Collapse sidebar" aria-label="Collapse sidebar" class="button button--secondary button--outline collapseSidebarButton_PEFL"><svg width="20" height="20" aria-hidden="true" class="collapseSidebarButtonIcon_kv0_"><g fill="#7a7a7a"><path d="M9.992 10.023c0 .2-.062.399-.172.547l-4.996 7.492a.982.982 0 01-.828.454H1c-.55 0-1-.453-1-1 0-.2.059-.403.168-.551l4.629-6.942L.168 3.078A.939.939 0 010 2.528c0-.548.45-.997 1-.997h2.996c.352 0 .649.18.828.45L9.82 9.472c.11.148.172.347.172.55zm0 0"></path><path d="M19.98 10.023c0 .2-.058.399-.168.547l-4.996 7.492a.987.987 0 01-.828.454h-3c-.547 0-.996-.453-.996-1 0-.2.059-.403.168-.551l4.625-6.942-4.625-6.945a.939.939 0 01-.168-.55 1 1 0 01.996-.997h3c.348 0 .649.18.828.45l4.996 7.492c.11.148.168.347.168.55zm0 0"></path></g></svg></button></div></div></aside><main class="docMainContainer_TBSr"><div class="container padding-top--md padding-bottom--lg"><div class="row"><div class="col docItemCol_VOVn"><div class="docItemContainer_Djhp"><article><nav class="theme-doc-breadcrumbs breadcrumbsContainer_Z_bl" aria-label="Breadcrumbs"><ul class="breadcrumbs"><li class="breadcrumbs__item"><a aria-label="Home page" class="breadcrumbs__link" href="/docs.rspamd.com/branches/master/"><svg viewBox="0 0 24 24" class="breadcrumbHomeIcon_YNFT"><path d="M10 19v-5h4v5c0 .55.45 1 1 1h3c.55 0 1-.45 1-1v-7h1.7c.46 0 .68-.57.33-.87L12.67 3.6c-.38-.34-.96-.34-1.34 0l-8.36 7.53c-.34.3-.13.87.33.87H5v7c0 .55.45 1 1 1h3c.55 0 1-.45 1-1z" fill="currentColor"></path></svg></a></li><li class="breadcrumbs__item"><a class="breadcrumbs__link" href="/docs.rspamd.com/branches/master/configuration/"><span>Configuration</span></a></li><li class="breadcrumbs__item breadcrumbs__item--active"><span class="breadcrumbs__link">Configuration templates</span></li></ul></nav><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_ITEo"><button type="button" class="clean-btn tocCollapsibleButton_TO0P">On this page</button></div><div class="theme-doc-markdown markdown"><header><h1>Configuration templates</h1></header>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="introduction">Introduction<a href="#introduction" class="hash-link" aria-label="Direct link to Introduction" title="Direct link to Introduction" translate="no">​</a></h2>
+<p>Rspamd uses a Jinja2-compatible template engine called <strong>Lupa</strong> to preprocess all configuration files before they are parsed by the UCL parser. Templates let you inject dynamic values -- such as environment variables, paths, and computed strings -- directly into your configuration without external tooling.</p>
+<p>Templates are evaluated at configuration load time. If a template expression fails (e.g. a validation filter rejects input), Rspamd aborts startup with a clear error message in the logs. This makes templates suitable not only for variable substitution but also for <strong>configuration validation</strong>.</p>
+<div class="theme-admonition theme-admonition-tip admonition_xJq3 alert alert--success"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>tip</div><div class="admonitionContent_BuS1"><p>This page documents the template engine itself. For UCL variable substitution using <code>$VARIABLE</code> / <code>${VARIABLE}</code> syntax, see <a class="" href="/docs.rspamd.com/branches/master/configuration/ucl#variables-support">UCL configuration language</a>. Both systems can be used together -- UCL variables are expanded after template processing.</p></div></div>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="template-delimiters">Template delimiters<a href="#template-delimiters" class="hash-link" aria-label="Direct link to Template delimiters" title="Direct link to Template delimiters" translate="no">​</a></h2>
+<p>Rspamd uses modified Jinja2 delimiters to avoid conflicts with UCL syntax:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Purpose</th><th>Syntax</th><th>Example</th></tr></thead><tbody><tr><td><strong>Expressions</strong> (output a value)</td><td><code>{= ... =}</code></td><td><code>{= env.hostname =}</code></td></tr><tr><td><strong>Statements</strong> (control flow)</td><td><code>{% ... %}</code></td><td><code>{% if env.REDIS_HOST %}</code></td></tr><tr><td><strong>Comments</strong> (ignored in output)</td><td><code>{# ... #}</code></td><td><code>{# Redis configuration #}</code></td></tr></tbody></table>
+<div class="theme-admonition theme-admonition-note admonition_xJq3 alert alert--secondary"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M6.3 5.69a.942.942 0 0 1-.28-.7c0-.28.09-.52.28-.7.19-.18.42-.28.7-.28.28 0 .52.09.7.28.18.19.28.42.28.7 0 .28-.09.52-.28.7a1 1 0 0 1-.7.3c-.28 0-.52-.11-.7-.3zM8 7.99c-.02-.25-.11-.48-.31-.69-.2-.19-.42-.3-.69-.31H6c-.27.02-.48.13-.69.31-.2.2-.3.44-.31.69h1v3c.02.27.11.5.31.69.2.2.42.31.69.31h1c.27 0 .48-.11.69-.31.2-.19.3-.42.31-.69H8V7.98v.01zM7 2.3c-3.14 0-5.7 2.54-5.7 5.68 0 3.14 2.56 5.7 5.7 5.7s5.7-2.55 5.7-5.7c0-3.15-2.56-5.69-5.7-5.69v.01zM7 .98c3.86 0 7 3.14 7 7s-3.14 7-7 7-7-3.12-7-7 3.14-7 7-7z"></path></svg></span>note</div><div class="admonitionContent_BuS1"><p>Standard Jinja2 <code>{{ }}</code> delimiters are <strong>not</strong> used in Rspamd configuration because curly braces conflict with UCL object syntax. Use <code>{= =}</code> for variable output and <code>{% %}</code> for control structures.</p></div></div>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="whitespace-control">Whitespace control<a href="#whitespace-control" class="hash-link" aria-label="Direct link to Whitespace control" title="Direct link to Whitespace control" translate="no">​</a></h3>
+<p>Add a dash (<code>-</code>) inside any delimiter to strip whitespace on that side:</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">{%- tag -%}   strips whitespace on both sides</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">{=- var -=}   strips whitespace on both sides</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">{#- comment -#}</span><br></span></code></pre></div></div>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="environment-variables">Environment variables<a href="#environment-variables" class="hash-link" aria-label="Direct link to Environment variables" title="Direct link to Environment variables" translate="no">​</a></h2>
+<p>The primary use case for templates in Rspamd is injecting environment variables into configuration. This is especially useful for containerized deployments (Docker, Kubernetes) where configuration is managed through environment variables.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="how-it-works">How it works<a href="#how-it-works" class="hash-link" aria-label="Direct link to How it works" title="Direct link to How it works" translate="no">​</a></h3>
+<p>At startup, Rspamd scans all OS environment variables. Variables whose names begin with the <code>RSPAMD_</code> prefix are collected into the <code>env</code> table, <strong>with the prefix stripped</strong>. This means:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>OS environment variable</th><th>Template access</th><th>Value</th></tr></thead><tbody><tr><td><code>RSPAMD_REDIS_HOST=10.0.0.1</code></td><td><code>{= env.REDIS_HOST =}</code></td><td><code>10.0.0.1</code></td></tr><tr><td><code>RSPAMD_PASSWORD=secret</code></td><td><code>{= env.PASSWORD =}</code></td><td><code>secret</code></td></tr><tr><td><code>RSPAMD_MAPS_MIRROR=https://example.com</code></td><td><code>{= env.MAPS_MIRROR =}</code></td><td><code>https://example.com</code></td></tr><tr><td><code>RSPAMD_ENABLE_GREYLIST=true</code></td><td><code>{= env.ENABLE_GREYLIST =}</code></td><td><code>true</code></td></tr></tbody></table>
+<p>The <code>RSPAMD_</code> prefix serves as a <strong>namespace filter</strong> -- only variables explicitly intended for Rspamd are exposed, preventing accidental leakage of unrelated environment variables (like <code>PATH</code> or <code>HOME</code>) into the template environment. The prefix is stripped purely for convenience, so you don&#x27;t need to write <code>env.RSPAMD_REDIS_HOST</code> everywhere.</p>
+<div class="theme-admonition theme-admonition-warning admonition_xJq3 alert alert--warning"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8.893 1.5c-.183-.31-.52-.5-.887-.5s-.703.19-.886.5L.138 13.499a.98.98 0 0 0 0 1.001c.193.31.53.501.886.501h13.964c.367 0 .704-.19.877-.5a1.03 1.03 0 0 0 .01-1.002L8.893 1.5zm.133 11.497H6.987v-2.003h2.039v2.003zm0-3.004H6.987V5.987h2.039v4.006z"></path></svg></span>warning</div><div class="admonitionContent_BuS1"><p>Environment variables without the <code>RSPAMD_</code> prefix are <strong>not</strong> accessible in templates. Setting <code>REDIS_HOST=10.0.0.1</code> alone will not work -- you must use <code>RSPAMD_REDIS_HOST=10.0.0.1</code>.</p></div></div>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="built-in-environment-variables">Built-in environment variables<a href="#built-in-environment-variables" class="hash-link" aria-label="Direct link to Built-in environment variables" title="Direct link to Built-in environment variables" translate="no">​</a></h3>
+<p>In addition to user-defined <code>RSPAMD_</code> variables, the <code>env</code> table always contains these built-in values:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Variable</th><th>Description</th><th>Example value</th></tr></thead><tbody><tr><td><code>env.hostname</code></td><td>System hostname</td><td><code>mail.example.com</code></td></tr><tr><td><code>env.version</code></td><td>Full Rspamd version string</td><td><code>4.0.0</code></td></tr><tr><td><code>env.ver_major</code></td><td>Major version</td><td><code>3</code></td></tr><tr><td><code>env.ver_minor</code></td><td>Minor version</td><td><code>15</code></td></tr><tr><td><code>env.ver_id</code></td><td>Build identifier</td><td><code>abc1234</code></td></tr><tr><td><code>env.ver_num</code></td><td>Numeric version (integer)</td><td><code>315</code></td></tr></tbody></table>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="practical-examples">Practical examples<a href="#practical-examples" class="hash-link" aria-label="Direct link to Practical examples" title="Direct link to Practical examples" translate="no">​</a></h3>
+<p><strong>Redis configuration via environment:</strong></p>
+<div class="language-hcl codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-hcl codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain"># Set RSPAMD_REDIS_HOST and RSPAMD_REDIS_PORT in environment</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">redis {</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    servers = &quot;{= env.REDIS_HOST | default &quot;127.0.0.1&quot; =}:{= env.REDIS_PORT | default &quot;6379&quot; =}&quot;;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    {%- if env.REDIS_PASSWORD %}</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    password = &quot;{= env.REDIS_PASSWORD =}&quot;;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    {%- endif %}</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    {%- if env.REDIS_DB %}</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    db = &quot;{= env.REDIS_DB =}&quot;;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    {%- endif %}</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">}</span><br></span></code></pre></div></div>
+<p><strong>Conditional module configuration:</strong></p>
+<div class="language-hcl codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-hcl codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain"># RSPAMD_ENABLE_GREYLIST=true</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">{%- if is_true(env.ENABLE_GREYLIST) %}</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">greylist {</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    enabled = true;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    expire = {= env.GREYLIST_EXPIRE | default &quot;1d&quot; =};</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">}</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">{%- else %}</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">greylist {</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    enabled = false;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">}</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">{%- endif %}</span><br></span></code></pre></div></div>
+<p><strong>Maps mirror override (used extensively in default Rspamd config):</strong></p>
+<div class="language-hcl codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-hcl codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain"># Override maps download source via RSPAMD_MAPS_MIRROR</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">map = &quot;{= env.MAPS_MIRROR | default &quot;https://maps.rspamd.com&quot; =}/rspamd/redirectors.inc.zst&quot;;</span><br></span></code></pre></div></div>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="the---lua-env-option">The <code>--lua-env</code> option<a href="#the---lua-env-option" class="hash-link" aria-label="Direct link to the---lua-env-option" title="Direct link to the---lua-env-option" translate="no">​</a></h3>
+<p>For complex environments, you can also load additional template variables from Lua files using the <code>--lua-env</code> command-line option (for both <code>rspamd</code> and <code>rspamadm</code>). Each file must return a table whose key-value pairs are merged into the <code>env</code> table:</p>
+<div class="language-lua codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-lua codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token comment" style="color:#999988;font-style:italic">-- /etc/rspamd/env.lua</span><span class="token plain"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"></span><span class="token keyword" style="color:rgb(222, 71, 0)">return</span><span class="token plain"> </span><span class="token punctuation" style="color:#393A34">{</span><span class="token plain"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    CUSTOM_THRESHOLD </span><span class="token operator" style="color:#393A34">=</span><span class="token plain"> </span><span class="token string" style="color:#e3116c">&quot;15.0&quot;</span><span class="token punctuation" style="color:#393A34">,</span><span class="token plain"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    CLUSTER_NAME </span><span class="token operator" style="color:#393A34">=</span><span class="token plain"> </span><span class="token string" style="color:#e3116c">&quot;production-eu&quot;</span><span class="token punctuation" style="color:#393A34">,</span><span class="token plain"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"></span><span class="token punctuation" style="color:#393A34">}</span><br></span></code></pre></div></div>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">rspamd --lua-env /etc/rspamd/env.lua</span><br></span></code></pre></div></div>
+<p>These values are then accessible as <code>{= env.CUSTOM_THRESHOLD =}</code> in templates.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="rspamd-path-variables">Rspamd path variables<a href="#rspamd-path-variables" class="hash-link" aria-label="Direct link to Rspamd path variables" title="Direct link to Rspamd path variables" translate="no">​</a></h2>
+<p>The <code>paths</code> table provides access to Rspamd&#x27;s compiled-in directory paths:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Variable</th><th>Typical default</th></tr></thead><tbody><tr><td><code>paths.CONFDIR</code></td><td><code>/etc/rspamd</code></td></tr><tr><td><code>paths.LOCAL_CONFDIR</code></td><td><code>/etc/rspamd</code></td></tr><tr><td><code>paths.DBDIR</code></td><td><code>/var/lib/rspamd</code></td></tr><tr><td><code>paths.RUNDIR</code></td><td><code>/run/rspamd</code></td></tr><tr><td><code>paths.LOGDIR</code></td><td><code>/var/log/rspamd</code></td></tr><tr><td><code>paths.WWWDIR</code></td><td><code>$PREFIX/share/rspamd/www</code></td></tr><tr><td><code>paths.PLUGINSDIR</code></td><td><code>$PREFIX/share/rspamd/plugins</code></td></tr><tr><td><code>paths.RULESDIR</code></td><td><code>$PREFIX/share/rspamd/rules</code></td></tr><tr><td><code>paths.LUALIBDIR</code></td><td><code>$PREFIX/share/rspamd/lualib</code></td></tr><tr><td><code>paths.SHAREDIR</code></td><td><code>$PREFIX/share/rspamd</code></td></tr><tr><td><code>paths.PREFIX</code></td><td><code>/usr</code></td></tr></tbody></table>
+<p>These paths can be overridden via environment variables of the same name (without <code>RSPAMD_</code> prefix), e.g. setting <code>DBDIR=/custom/path</code>.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="expression-syntax">Expression syntax<a href="#expression-syntax" class="hash-link" aria-label="Direct link to Expression syntax" title="Direct link to Expression syntax" translate="no">​</a></h2>
+<p>Template expressions use <strong>Lua syntax</strong>, not Python. This is the key difference from standard Jinja2:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Operation</th><th>Lua (Rspamd)</th><th>Python (Jinja2)</th></tr></thead><tbody><tr><td>String concatenation</td><td><code>..</code></td><td><code>+</code> or <code>~</code></td></tr><tr><td>Boolean values</td><td><code>true</code>, <code>false</code></td><td><code>True</code>, <code>False</code></td></tr><tr><td>Null value</td><td><code>nil</code></td><td><code>None</code></td></tr><tr><td>List literal</td><td><code>{1, 2, 3}</code></td><td><code>[1, 2, 3]</code></td></tr><tr><td>Dict literal</td><td><code>{key = &quot;val&quot;}</code></td><td><code>{&#x27;key&#x27;: &#x27;val&#x27;}</code></td></tr><tr><td>Not equal</td><td><code>~=</code></td><td><code>!=</code></td></tr><tr><td>Logical operators</td><td><code>and</code>, <code>or</code>, <code>not</code></td><td><code>and</code>, <code>or</code>, <code>not</code></td></tr><tr><td>Tests</td><td><code>is_defined(x)</code></td><td><code>x is defined</code></td></tr><tr><td>In operator</td><td><code>is_in(x, list)</code></td><td><code>x in list</code></td></tr><tr><td>Method calls</td><td>use filters: <code>s|upper</code></td><td><code>s.upper()</code></td></tr></tbody></table>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="control-structures">Control structures<a href="#control-structures" class="hash-link" aria-label="Direct link to Control structures" title="Direct link to Control structures" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="conditionals">Conditionals<a href="#conditionals" class="hash-link" aria-label="Direct link to Conditionals" title="Direct link to Conditionals" translate="no">​</a></h3>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">{%- if env.REDIS_HOST %}</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">servers = &quot;{= env.REDIS_HOST =}&quot;;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">{%- elseif env.REDIS_SOCKET %}</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">servers = &quot;{= env.REDIS_SOCKET =}&quot;;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">{%- else %}</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">servers = &quot;127.0.0.1&quot;;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">{%- endif %}</span><br></span></code></pre></div></div>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="loops">Loops<a href="#loops" class="hash-link" aria-label="Direct link to Loops" title="Direct link to Loops" translate="no">​</a></h3>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">{%- for item in {&quot;rbl&quot;, &quot;surbl&quot;, &quot;uribl&quot;} %}</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  &quot;{= item =}&quot;,</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">{%- endfor %}</span><br></span></code></pre></div></div>
+<p>The <code>loop</code> variable is available inside <code>for</code> blocks:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Property</th><th>Description</th></tr></thead><tbody><tr><td><code>loop.index</code></td><td>Current iteration (1-based)</td></tr><tr><td><code>loop.index0</code></td><td>Current iteration (0-based)</td></tr><tr><td><code>loop.first</code></td><td><code>true</code> on first iteration</td></tr><tr><td><code>loop.last</code></td><td><code>true</code> on last iteration</td></tr><tr><td><code>loop.length</code></td><td>Total number of items</td></tr></tbody></table>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="variable-assignment">Variable assignment<a href="#variable-assignment" class="hash-link" aria-label="Direct link to Variable assignment" title="Direct link to Variable assignment" translate="no">​</a></h3>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">{%- set timeout = env.TIMEOUT | default &quot;300&quot; %}</span><br></span></code></pre></div></div>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="macros">Macros<a href="#macros" class="hash-link" aria-label="Direct link to Macros" title="Direct link to Macros" translate="no">​</a></h3>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">{%- macro redis_config(host, port, db) %}</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  servers = &quot;{= host =}:{= port =}&quot;;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  db = &quot;{= db =}&quot;;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">{%- endmacro %}</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">redis {</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  {= redis_config(env.REDIS_HOST | default &quot;127.0.0.1&quot;, env.REDIS_PORT | default &quot;6379&quot;, &quot;0&quot;) =}</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">}</span><br></span></code></pre></div></div>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="raw-blocks">Raw blocks<a href="#raw-blocks" class="hash-link" aria-label="Direct link to Raw blocks" title="Direct link to Raw blocks" translate="no">​</a></h3>
+<p>To output template delimiters literally without processing:</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">{% raw %}</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  This {= is not processed =}</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">{% endraw %}</span><br></span></code></pre></div></div>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="filters-reference">Filters reference<a href="#filters-reference" class="hash-link" aria-label="Direct link to Filters reference" title="Direct link to Filters reference" translate="no">​</a></h2>
+<p>Filters transform values using the pipe (<code>|</code>) syntax: <code>{= value | filter =}</code>.
+Multiple filters can be chained: <code>{= value | filter1 | filter2 =}</code>.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="string-filters">String filters<a href="#string-filters" class="hash-link" aria-label="Direct link to String filters" title="Direct link to String filters" translate="no">​</a></h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Filter</th><th>Description</th><th>Example</th></tr></thead><tbody><tr><td><code>capitalize</code></td><td>Uppercase first char, lowercase rest</td><td><code>{= &quot;foo&quot;|capitalize =}</code> → <code>Foo</code></td></tr><tr><td><code>center(width)</code></td><td>Center in string of given width</td><td><code>{= &quot;foo&quot;|center(9) =}</code></td></tr><tr><td><code>escape</code> / <code>e</code></td><td>HTML-escape special characters</td><td><code>{= &quot;&lt;b&gt;&quot;|e =}</code> → <code>&amp;lt;b&amp;gt;</code></td></tr><tr><td><code>lower</code></td><td>Lowercase</td><td><code>{= &quot;FOO&quot;|lower =}</code> → <code>foo</code></td></tr><tr><td><code>upper</code></td><td>Uppercase</td><td><code>{= &quot;foo&quot;|upper =}</code> → <code>FOO</code></td></tr><tr><td><code>title</code></td><td>Titlecase each word</td><td><code>{= &quot;foo bar&quot;|title =}</code> → <code>Foo Bar</code></td></tr><tr><td><code>trim</code></td><td>Strip whitespace</td><td><code>{= &quot;  foo  &quot;|trim =}</code> → <code>foo</code></td></tr><tr><td><code>truncate(len, partial, delim)</code></td><td>Truncate to length</td><td><code>{= &quot;foo bar&quot;|truncate(4) =}</code> → <code>f...</code></td></tr><tr><td><code>replace(pattern, repl)</code></td><td>Replace (Lua patterns)</td><td><code>{= s|replace(&quot;old&quot;, &quot;new&quot;) =}</code></td></tr><tr><td><code>split(sep)</code></td><td>Split into list</td><td><code>{= &quot;a,b&quot;|split(&quot;,&quot;) =}</code></td></tr><tr><td><code>striptags</code></td><td>Remove HTML tags</td><td><code>{= &quot;&lt;b&gt;foo&lt;/b&gt;&quot;|striptags =}</code> → <code>foo</code></td></tr><tr><td><code>wordcount</code></td><td>Count words</td><td><code>{= &quot;foo bar&quot;|wordcount =}</code> → <code>2</code></td></tr><tr><td><code>wordwrap(width)</code></td><td>Wrap text at width</td><td><code>{= text|wordwrap(72) =}</code></td></tr><tr><td><code>urlencode</code></td><td>URL-encode</td><td><code>{= &quot;a b&quot;|urlencode =}</code> → <code>a%20b</code></td></tr><tr><td><code>indent(width)</code></td><td>Indent lines</td><td><code>{= text|indent(4) =}</code></td></tr><tr><td><code>format(...)</code></td><td>Printf-style formatting</td><td><code>{= &quot;%s=%d&quot;|format(&quot;a&quot;, 1) =}</code></td></tr></tbody></table>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="number-filters">Number filters<a href="#number-filters" class="hash-link" aria-label="Direct link to Number filters" title="Direct link to Number filters" translate="no">​</a></h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Filter</th><th>Description</th><th>Example</th></tr></thead><tbody><tr><td><code>abs</code></td><td>Absolute value</td><td><code>{= -5|abs =}</code> → <code>5</code></td></tr><tr><td><code>int</code></td><td>Convert to integer</td><td><code>{= 3.7|int =}</code> → <code>3</code></td></tr><tr><td><code>float</code></td><td>Convert to float</td><td><code>{= &quot;3&quot;|float =}</code> → <code>3.0</code></td></tr><tr><td><code>round(precision, method)</code></td><td>Round number</td><td><code>{= 2.5|round =}</code> → <code>3</code></td></tr><tr><td><code>filesizeformat</code></td><td>Human-readable file size</td><td><code>{= 1024|filesizeformat =}</code> → <code>1.0 kB</code></td></tr></tbody></table>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="collection-filters">Collection filters<a href="#collection-filters" class="hash-link" aria-label="Direct link to Collection filters" title="Direct link to Collection filters" translate="no">​</a></h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Filter</th><th>Description</th><th>Example</th></tr></thead><tbody><tr><td><code>first</code></td><td>First element</td><td><code>{= items|first =}</code></td></tr><tr><td><code>last</code></td><td>Last element</td><td><code>{= items|last =}</code></td></tr><tr><td><code>length</code></td><td>Length of string/table</td><td><code>{= items|length =}</code></td></tr><tr><td><code>join(sep)</code></td><td>Join elements</td><td><code>{= items|join(&quot;, &quot;) =}</code></td></tr><tr><td><code>sort</code></td><td>Sort elements</td><td><code>{= items|sort =}</code></td></tr><tr><td><code>unique</code></td><td>Remove duplicates</td><td><code>{= items|unique =}</code></td></tr><tr><td><code>reverse</code></td><td>Reverse order</td><td><code>{= items|reverse =}</code></td></tr><tr><td><code>map(filter)</code></td><td>Apply filter to each element</td><td><code>{= items|map(&quot;upper&quot;) =}</code></td></tr><tr><td><code>select(test)</code></td><td>Keep items passing test</td><td><code>{= items|select(&quot;is_defined&quot;) =}</code></td></tr><tr><td><code>reject(test)</code></td><td>Remove items passing test</td><td><code>{= items|reject(&quot;is_nil&quot;) =}</code></td></tr><tr><td><code>min</code></td><td>Smallest element</td><td><code>{= {3,1,2}|min =}</code> → <code>1</code></td></tr><tr><td><code>max</code></td><td>Largest element</td><td><code>{= {3,1,2}|max =}</code> → <code>3</code></td></tr><tr><td><code>sum</code></td><td>Sum of elements</td><td><code>{= {1,2,3}|sum =}</code> → <code>6</code></td></tr><tr><td><code>batch(size)</code></td><td>Split into batches</td><td><code>{= items|batch(3) =}</code></td></tr><tr><td><code>groupby(attr)</code></td><td>Group by attribute</td><td><code>{= items|groupby(&quot;type&quot;) =}</code></td></tr><tr><td><code>keys</code></td><td>Dict keys</td><td><code>{= d|keys =}</code></td></tr><tr><td><code>values</code></td><td>Dict values</td><td><code>{= d|values =}</code></td></tr><tr><td><code>items</code></td><td>Dict to key-value pairs</td><td><code>{= d|items =}</code></td></tr><tr><td><code>dictsort</code></td><td>Sort dict by key</td><td><code>{= d|dictsort =}</code></td></tr></tbody></table>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="default-and-serialization-filters">Default and serialization filters<a href="#default-and-serialization-filters" class="hash-link" aria-label="Direct link to Default and serialization filters" title="Direct link to Default and serialization filters" translate="no">​</a></h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Filter</th><th>Description</th><th>Example</th></tr></thead><tbody><tr><td><code>default(val)</code></td><td>Default value if nil</td><td><code>{= x|default(&quot;n/a&quot;) =}</code></td></tr><tr><td><code>tojson</code></td><td>Serialize to JSON</td><td><code>{= data|tojson =}</code></td></tr><tr><td><code>string</code></td><td>String representation</td><td><code>{= {1,2}|string =}</code> → <code>{1, 2}</code></td></tr></tbody></table>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="rspamd-specific-filters">Rspamd-specific filters<a href="#rspamd-specific-filters" class="hash-link" aria-label="Direct link to Rspamd-specific filters" title="Direct link to Rspamd-specific filters" translate="no">​</a></h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Filter</th><th>Description</th></tr></thead><tbody><tr><td><code>pbkdf</code></td><td>Compute PBKDF2 hash (for password configuration)</td></tr></tbody></table>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="validation-filters">Validation filters (Rspamd 4.0+)<a href="#validation-filters" class="hash-link" aria-label="Direct link to Validation filters (Rspamd 4.0+)" title="Direct link to Validation filters (Rspamd 4.0+)" translate="no">​</a></h3>
+<p>These filters are designed for validating environment variable inputs in containerized deployments. They return the value unchanged if valid, or <strong>abort Rspamd startup</strong> with a clear error message if validation fails. This eliminates the need for shell entrypoint scripts that validate configuration before starting Rspamd.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Filter</th><th>Description</th><th>Example</th></tr></thead><tbody><tr><td><code>mandatory(msg)</code></td><td>Error if nil or empty</td><td><code>{= env.API_KEY | mandatory(&quot;RSPAMD_API_KEY is required&quot;) =}</code></td></tr><tr><td><code>require_int(msg)</code></td><td>Error if not a valid integer</td><td><code>{= env.PORT | require_int(&quot;PORT must be integer&quot;) =}</code></td></tr><tr><td><code>require_number(msg)</code></td><td>Error if not a valid number</td><td><code>{= env.THRESHOLD | require_number(&quot;must be a number&quot;) =}</code></td></tr><tr><td><code>require_bool(msg)</code></td><td>Error if not a boolean</td><td><code>{= env.ENABLED | require_bool(&quot;must be true/false&quot;) =}</code></td></tr><tr><td><code>require_duration(msg)</code></td><td>Parse duration string, return seconds</td><td><code>{= env.TIMEOUT | require_duration(&quot;invalid duration&quot;) =}</code></td></tr><tr><td><code>require_json(msg)</code></td><td>Error if not valid JSON/UCL</td><td><code>{= env.CONFIG | require_json(&quot;must be valid JSON&quot;) =}</code></td></tr><tr><td><code>fromjson</code></td><td>Parse JSON/UCL string into table</td><td><code>{%- set obj = env.DATA | fromjson %}</code></td></tr></tbody></table>
+<p>All <code>msg</code> arguments are optional; sensible defaults are provided.</p>
+<p><strong><code>require_duration</code></strong> accepts the following format: a number followed by a unit suffix. Plain numbers are treated as seconds.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Unit</th><th>Meaning</th></tr></thead><tbody><tr><td><code>ms</code></td><td>Milliseconds</td></tr><tr><td><code>s</code></td><td>Seconds (default)</td></tr><tr><td><code>min</code> or <code>m</code></td><td>Minutes</td></tr><tr><td><code>h</code></td><td>Hours</td></tr><tr><td><code>d</code></td><td>Days</td></tr><tr><td><code>w</code></td><td>Weeks</td></tr><tr><td><code>y</code></td><td>Years</td></tr></tbody></table>
+<p><strong>Example: validated Docker configuration</strong></p>
+<div class="language-hcl codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-hcl codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain"># Crash at startup if critical vars are missing</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">password = &quot;{= env.PASSWORD | mandatory(&quot;Set RSPAMD_PASSWORD&quot;) | pbkdf =}&quot;;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># Validate and use numeric input</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">{%- set spam_threshold = env.SPAM_THRESHOLD | default &quot;15&quot; | require_number(&quot;SPAM_THRESHOLD must be a number&quot;) %}</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">actions {</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    reject = {= spam_threshold =};</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">}</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># Parse JSON array from env and iterate</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">{%- set disabled = env.DISABLED_MODULES | default &#x27;[]&#x27; | fromjson %}</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">{%- for mod in disabled %}</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">{= mod =} {</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    enabled = false;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">}</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">{%- endfor %}</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># Duration parsing</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">{%- set greylist_time = env.GREYLIST_EXPIRE | default &quot;10min&quot; | require_duration %}</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">greylist {</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    expire = {= greylist_time =};</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">}</span><br></span></code></pre></div></div>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="tests-reference">Tests reference<a href="#tests-reference" class="hash-link" aria-label="Direct link to Tests reference" title="Direct link to Tests reference" translate="no">​</a></h2>
+<p>Tests are boolean functions used in conditions. In Lupa, they are called with the <code>is_</code> prefix:</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">{% if is_defined(env.REDIS_HOST) %}...{% endif %}</span><br></span></code></pre></div></div>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="type-tests">Type tests<a href="#type-tests" class="hash-link" aria-label="Direct link to Type tests" title="Direct link to Type tests" translate="no">​</a></h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Test</th><th>Description</th></tr></thead><tbody><tr><td><code>is_defined(v)</code></td><td>Not nil</td></tr><tr><td><code>is_undefined(v)</code> / <code>is_nil(v)</code> / <code>is_none(v)</code></td><td>Is nil</td></tr><tr><td><code>is_string(v)</code></td><td>Is string type</td></tr><tr><td><code>is_number(v)</code></td><td>Is number (or string convertible to number)</td></tr><tr><td><code>is_integer(v)</code></td><td>Is integer (or string convertible to integer)</td></tr><tr><td><code>is_float(v)</code></td><td>Is non-integer number</td></tr><tr><td><code>is_boolean(v)</code></td><td>Is boolean type</td></tr><tr><td><code>is_mapping(v)</code> / <code>is_table(v)</code></td><td>Is table</td></tr><tr><td><code>is_sequence(v)</code></td><td>Is table with sequential integer keys</td></tr><tr><td><code>is_iterable(v)</code></td><td>Is table or function</td></tr><tr><td><code>is_callable(v)</code></td><td>Is function</td></tr></tbody></table>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="value-tests">Value tests<a href="#value-tests" class="hash-link" aria-label="Direct link to Value tests" title="Direct link to Value tests" translate="no">​</a></h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Test</th><th>Description</th></tr></thead><tbody><tr><td><code>is_true(v)</code></td><td>UCL truthy value: <code>true</code>, <code>yes</code>, <code>on</code>, <code>1</code> (case-insensitive)</td></tr><tr><td><code>is_false(v)</code></td><td>UCL falsy value: <code>false</code>, <code>no</code>, <code>off</code>, <code>0</code> (case-insensitive)</td></tr><tr><td><code>is_odd(n)</code></td><td>n is odd</td></tr><tr><td><code>is_even(n)</code></td><td>n is even</td></tr><tr><td><code>is_divisibleby(n, d)</code></td><td>n is divisible by d</td></tr></tbody></table>
+<div class="theme-admonition theme-admonition-info admonition_xJq3 alert alert--info"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M7 2.3c3.14 0 5.7 2.56 5.7 5.7s-2.56 5.7-5.7 5.7A5.71 5.71 0 0 1 1.3 8c0-3.14 2.56-5.7 5.7-5.7zM7 1C3.14 1 0 4.14 0 8s3.14 7 7 7 7-3.14 7-7-3.14-7-7-7zm1 3H6v5h2V4zm0 6H6v2h2v-2z"></path></svg></span>Rspamd 4.0 changes</div><div class="admonitionContent_BuS1"><p><code>is_true</code> and <code>is_false</code> were updated to recognize UCL-style boolean strings (<code>yes</code>/<code>no</code>, <code>on</code>/<code>off</code>, <code>1</code>/<code>0</code>), making them practical for testing environment variable values which are always strings. Similarly, <code>is_number</code>, <code>is_integer</code>, and <code>is_float</code> now attempt string-to-number conversion.</p></div></div>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="comparison-and-string-tests">Comparison and string tests<a href="#comparison-and-string-tests" class="hash-link" aria-label="Direct link to Comparison and string tests" title="Direct link to Comparison and string tests" translate="no">​</a></h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Test</th><th>Description</th><th>Example</th></tr></thead><tbody><tr><td><code>is_eq(a, b)</code></td><td>a == b</td><td><code>is_eq(env.MODE, &quot;strict&quot;)</code></td></tr><tr><td><code>is_ne(a, b)</code></td><td>a ~= b</td><td></td></tr><tr><td><code>is_lt(a, b)</code> / <code>is_le(a, b)</code></td><td>Less than / less or equal</td><td></td></tr><tr><td><code>is_gt(a, b)</code> / <code>is_ge(a, b)</code></td><td>Greater than / greater or equal</td><td></td></tr><tr><td><code>is_in(val, container)</code></td><td>Substring or element check</td><td><code>is_in(&quot;@&quot;, email)</code></td></tr><tr><td><code>is_startswith(s, prefix)</code></td><td>String starts with prefix</td><td></td></tr><tr><td><code>is_endswith(s, suffix)</code></td><td>String ends with suffix</td><td></td></tr><tr><td><code>is_match(s, pattern)</code></td><td>Matches Lua pattern</td><td><code>is_match(name, &quot;^%a+$&quot;)</code></td></tr><tr><td><code>is_lower(s)</code> / <code>is_upper(s)</code></td><td>All lowercase / uppercase</td><td></td></tr><tr><td><code>is_sameas(a, b)</code></td><td>Alias for <code>is_eq</code></td><td></td></tr></tbody></table>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="json-test-rspamd-40">JSON test (Rspamd 4.0+)<a href="#json-test-rspamd-40" class="hash-link" aria-label="Direct link to JSON test (Rspamd 4.0+)" title="Direct link to JSON test (Rspamd 4.0+)" translate="no">​</a></h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Test</th><th>Description</th><th>Example</th></tr></thead><tbody><tr><td><code>is_json(v)</code></td><td>Value is valid JSON/UCL string</td><td><code>{% if is_json(env.MODULES) %}</code></td></tr></tbody></table>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="global-functions">Global functions<a href="#global-functions" class="hash-link" aria-label="Direct link to Global functions" title="Direct link to Global functions" translate="no">​</a></h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Function</th><th>Description</th><th>Example</th></tr></thead><tbody><tr><td><code>range(start, stop, step)</code></td><td>Sequence of integers (like Python&#x27;s <code>range()</code>)</td><td><code>{% for i in range(1, 5) %}</code></td></tr><tr><td><code>cycler(...)</code></td><td>Cycling iterator with <code>:next()</code> and <code>:reset()</code></td><td></td></tr></tbody></table>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="lua-pattern-quick-reference">Lua pattern quick reference<a href="#lua-pattern-quick-reference" class="hash-link" aria-label="Direct link to Lua pattern quick reference" title="Direct link to Lua pattern quick reference" translate="no">​</a></h2>
+<p>The <code>replace</code> filter and <code>is_match</code> test use <strong>Lua patterns</strong>, not regular expressions:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Pattern</th><th>Matches</th></tr></thead><tbody><tr><td><code>.</code></td><td>Any character</td></tr><tr><td><code>%a</code></td><td>Letter</td></tr><tr><td><code>%d</code></td><td>Digit</td></tr><tr><td><code>%w</code></td><td>Alphanumeric</td></tr><tr><td><code>%s</code></td><td>Whitespace</td></tr><tr><td><code>%p</code></td><td>Punctuation</td></tr><tr><td><code>%u</code> / <code>%l</code></td><td>Uppercase / lowercase letter</td></tr><tr><td><code>[set]</code></td><td>Character class</td></tr><tr><td><code>[^set]</code></td><td>Negated class</td></tr><tr><td><code>*</code></td><td>0 or more (greedy)</td></tr><tr><td><code>+</code></td><td>1 or more (greedy)</td></tr><tr><td><code>-</code></td><td>0 or more (lazy)</td></tr><tr><td><code>?</code></td><td>0 or 1</td></tr><tr><td><code>^</code> / <code>$</code></td><td>Start / end anchor</td></tr><tr><td><code>(...)</code></td><td>Capture</td></tr></tbody></table>
+<p>Lua patterns do <strong>not</strong> support alternation (<code>|</code>), lookahead, or <code>\d</code>-style escapes. Use uppercase to negate: <code>%D</code> matches non-digit, <code>%S</code> matches non-whitespace.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="complete-docker-example">Complete Docker example<a href="#complete-docker-example" class="hash-link" aria-label="Direct link to Complete Docker example" title="Direct link to Complete Docker example" translate="no">​</a></h2>
+<p>Here is a real-world example showing how environment variables and validation filters work together for a fully containerized Rspamd deployment:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain"># docker-compose environment</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">RSPAMD_PASSWORD=my_secret_password</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">RSPAMD_REDIS_HOST=redis</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">RSPAMD_REDIS_PORT=6379</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">RSPAMD_SPAM_THRESHOLD=15</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">RSPAMD_GREYLIST_EXPIRE=10min</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">RSPAMD_DISABLED_MODULES=[&quot;rbl_surbl&quot;, &quot;clickhouse&quot;]</span><br></span></code></pre></div></div>
+<div class="language-hcl codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockTitle_OeMC">local.d/worker-controller.inc</div><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-hcl codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain"># Password is mandatory -- Rspamd won&#x27;t start without it</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">password = &quot;{= env.PASSWORD | mandatory(&quot;Set RSPAMD_PASSWORD&quot;) | pbkdf =}&quot;;</span><br></span></code></pre></div></div>
+<div class="language-hcl codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockTitle_OeMC">local.d/redis.conf</div><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-hcl codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">servers = &quot;{= env.REDIS_HOST | default &quot;127.0.0.1&quot; =}:{= env.REDIS_PORT | default &quot;6379&quot; =}&quot;;</span><br></span></code></pre></div></div>
+<div class="language-hcl codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockTitle_OeMC">local.d/actions.conf</div><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-hcl codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">{%- set threshold = env.SPAM_THRESHOLD | default &quot;15&quot; | require_number(&quot;SPAM_THRESHOLD must be numeric&quot;) %}</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">reject = {= threshold =};</span><br></span></code></pre></div></div>
+<div class="language-hcl codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockTitle_OeMC">local.d/greylist.conf</div><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-hcl codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">{%- set expire = env.GREYLIST_EXPIRE | default &quot;10min&quot; | require_duration(&quot;GREYLIST_EXPIRE: use 30s, 5min, 1h&quot;) %}</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">expire = {= expire =};</span><br></span></code></pre></div></div></div><footer class="theme-doc-footer docusaurus-mt-lg"><div class="row margin-top--sm theme-doc-footer-edit-meta-row"><div class="col noPrint_WFHX"><a href="https://github.com/rspamd/docs.rspamd.com/edit/master/docs/configuration/templates.md" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>Edit this page</a></div><div class="col lastUpdated_JAkA"></div></div></footer></article><nav class="docusaurus-mt-lg pagination-nav" aria-label="Docs pages"><a class="pagination-nav__link pagination-nav__link--prev" href="/docs.rspamd.com/branches/master/configuration/ucl"><div class="pagination-nav__sublabel">Previous</div><div class="pagination-nav__label">Universal configuration language (UCL)</div></a><a class="pagination-nav__link pagination-nav__link--next" href="/docs.rspamd.com/branches/master/workers/"><div class="pagination-nav__sublabel">Next</div><div class="pagination-nav__label">Workers documentation</div></a></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#introduction" class="table-of-contents__link toc-highlight">Introduction</a></li><li><a href="#template-delimiters" class="table-of-contents__link toc-highlight">Template delimiters</a><ul><li><a href="#whitespace-control" class="table-of-contents__link toc-highlight">Whitespace control</a></li></ul></li><li><a href="#environment-variables" class="table-of-contents__link toc-highlight">Environment variables</a><ul><li><a href="#how-it-works" class="table-of-contents__link toc-highlight">How it works</a></li><li><a href="#built-in-environment-variables" class="table-of-contents__link toc-highlight">Built-in environment variables</a></li><li><a href="#practical-examples" class="table-of-contents__link toc-highlight">Practical examples</a></li><li><a href="#the---lua-env-option" class="table-of-contents__link toc-highlight">The <code>--lua-env</code> option</a></li></ul></li><li><a href="#rspamd-path-variables" class="table-of-contents__link toc-highlight">Rspamd path variables</a></li><li><a href="#expression-syntax" class="table-of-contents__link toc-highlight">Expression syntax</a></li><li><a href="#control-structures" class="table-of-contents__link toc-highlight">Control structures</a><ul><li><a href="#conditionals" class="table-of-contents__link toc-highlight">Conditionals</a></li><li><a href="#loops" class="table-of-contents__link toc-highlight">Loops</a></li><li><a href="#variable-assignment" class="table-of-contents__link toc-highlight">Variable assignment</a></li><li><a href="#macros" class="table-of-contents__link toc-highlight">Macros</a></li><li><a href="#raw-blocks" class="table-of-contents__link toc-highlight">Raw blocks</a></li></ul></li><li><a href="#filters-reference" class="table-of-contents__link toc-highlight">Filters reference</a><ul><li><a href="#string-filters" class="table-of-contents__link toc-highlight">String filters</a></li><li><a href="#number-filters" class="table-of-contents__link toc-highlight">Number filters</a></li><li><a href="#collection-filters" class="table-of-contents__link toc-highlight">Collection filters</a></li><li><a href="#default-and-serialization-filters" class="table-of-contents__link toc-highlight">Default and serialization filters</a></li><li><a href="#rspamd-specific-filters" class="table-of-contents__link toc-highlight">Rspamd-specific filters</a></li><li><a href="#validation-filters" class="table-of-contents__link toc-highlight">Validation filters (Rspamd 4.0+)</a></li></ul></li><li><a href="#tests-reference" class="table-of-contents__link toc-highlight">Tests reference</a><ul><li><a href="#type-tests" class="table-of-contents__link toc-highlight">Type tests</a></li><li><a href="#value-tests" class="table-of-contents__link toc-highlight">Value tests</a></li><li><a href="#comparison-and-string-tests" class="table-of-contents__link toc-highlight">Comparison and string tests</a></li><li><a href="#json-test-rspamd-40" class="table-of-contents__link toc-highlight">JSON test (Rspamd 4.0+)</a></li></ul></li><li><a href="#global-functions" class="table-of-contents__link toc-highlight">Global functions</a></li><li><a href="#lua-pattern-quick-reference" class="table-of-contents__link toc-highlight">Lua pattern quick reference</a></li><li><a href="#complete-docker-example" class="table-of-contents__link toc-highlight">Complete Docker example</a></li></ul></div></div></div></div></main></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="row footer__links"><div class="theme-layout-footer-column col footer__col"><div class="footer__title">Documentation</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/master/tutorials/quickstart">Getting Started</a></li><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/master/configuration">Configuration</a></li><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/master/modules">Modules</a></li><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/master/tutorials">Tutorials</a></li></ul></div><div class="theme-layout-footer-column col footer__col"><div class="footer__title">Resources</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/master/downloads">Downloads</a></li><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/master/faq">FAQ</a></li><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/master/support">Support</a></li><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/master/changelog">Changelog</a></li></ul></div><div class="theme-layout-footer-column col footer__col"><div class="footer__title">Community</div><ul class="footer__items clean-list"><li class="footer__item"><a href="https://github.com/rspamd/rspamd" target="_blank" rel="noopener noreferrer" class="footer__link-item">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a></li><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/master/tutorials/site_contributing">Contributing</a></li><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/master/blog">Blog</a></li></ul></div><div class="theme-layout-footer-column col footer__col"><div class="footer__title">Subscribe</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/master/rss/changelog.xml">Changelog RSS</a></li><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/master/blog/rss.xml">Blog RSS</a></li><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/master/blog/atom.xml">Blog Atom</a></li></ul></div></div><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2026 Rspamd Project. Built with Docusaurus.</div></div></div></footer></div>
+</body>
+</html>
