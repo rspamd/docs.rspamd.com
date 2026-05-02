@@ -375,12 +375,18 @@ One option is `max_score`, which specifies the threshold for a hash weight:
 
 The `mime_types` option specifies which attachment types are checked (or learned) using this fuzzy rule. This option takes a list of valid types in the following format: `["type/subtype", "*/subtype", "type/*", "*"]`, where `*` represents any valid type. In practice, it can be useful to save the hashes for all `application/*` attachments. Texts and embedded images are implicitly checked by `fuzzy_check` plugin, so there is no need to add `image/*` in the list of scanned attachments. Note that attachments and images are searched for an exact match, while texts are matched using the approximate algorithm (shingles).
 
-`read_only` is quite an important option required for storage learning. It is set to `read_only=true` by default, restricting thus a storage's learning:
+`read_only` is quite an important option required for storage learning. By default, a rule allows learning (`read_only = false`):
 
 ~~~hcl
 read_only = true; # disallow learning
-read_only = false; # allow learning
+read_only = false; # allow learning (default)
 ~~~
+
+:::warning Flag Uniqueness for Writable Rules
+Flag numbers must be unique across all rules that do not have `read_only = true`. Write operations (add/delete) are sent to **all** rules whose `fuzzy_map` contains the matching flag and that are not read-only—regardless of which rule was used for scanning. If two writable rules share a flag and one storage rejects writes (e.g., a public or third-party server that does not permit writes from your host), a 503 error will be returned.
+
+To avoid this: use distinct flag numbers for each writable rule, or explicitly set `read_only = true` on third-party rules that should not receive write operations. Setting `read_only = true` on your own local storage rule instead will result in a 404 error when attempting to learn.
+:::
 
 `Encryption_key` parameter specifies the **public** key of a storage and enables encryption for all requests.
 
