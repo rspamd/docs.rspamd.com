@@ -398,13 +398,13 @@ Rspamd monitors DNS lists by querying addresses that should return NXDOMAIN. Err
 
 ### Why aren't fuzzy checks working?
 
-Fuzzy storage uses **UDP port 1335** (not TCP, not TLS).
+Fuzzy storage uses **UDP port 11335** (not TCP, not TLS).
 
 ```bash
 rspamadm fuzzyping   # Test connectivity
 ```
 
-If you see packet loss, check your firewall allows outbound UDP to port 1335.
+If you see packet loss, check your firewall allows outbound UDP to port 11335.
 
 ---
 
