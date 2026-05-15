@@ -50,7 +50,7 @@ rule "FUZZY_EXAMPLE" {
   # Hash algorithm: mumhash (default), fasthash, xxhash, siphash
   algorithm = "mumhash";
 
-  # Allow learning to this storage (default: true = read-only)
+  # Allow write operations (learning) to this storage; set true to disallow
   read_only = false;
 
   # Map flags to symbols
@@ -187,7 +187,7 @@ Each `rule` section defines a fuzzy storage connection:
 | `max_score` | float | — | Global threshold for this rule (deprecated, use per-flag). |
 | `max_hits` | int | — | Maximum matches per message for this rule. |
 | `mime_types` | array | — | MIME types to check: `["*"]`, `["application/*"]`, etc. |
-| `read_only` | boolean | `true` | If `false`, allow learning to this storage. |
+| `read_only` | boolean | `false` | If `true`, disallow learning (write operations) to this storage. |
 | `skip_unknown` | boolean | `false` | If `true`, don't add default symbol for unmatched flags. |
 | `symbol` | string | — | Default symbol for this rule. |
 | `short_text_direct_hash` | boolean | `false` | Use exact hash for texts shorter than `min_length`. |
@@ -207,6 +207,12 @@ fuzzy_map = {
   }
 }
 ```
+
+:::warning Flag Uniqueness for Writable Rules
+Flag numbers must be unique across all rules that do not have `read_only = true`. When Rspamd performs a write operation (add or delete), it sends the request to **all** rules whose `fuzzy_map` contains the matching flag and that are not read-only—regardless of which rule matched during scanning. If two writable rules share a flag and one storage rejects writes (e.g., a public third-party server that does not permit writes from your host), a 503 error will be returned.
+
+To avoid this: use distinct flag numbers for each writable rule, or set `read_only = true` on third-party rules that should not receive write operations. Setting `read_only = true` on your own local storage rule instead will result in a 404 error when attempting to learn.
+:::
 
 Different flags allow a single storage to contain multiple hash categories:
 
