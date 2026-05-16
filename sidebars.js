@@ -103,6 +103,7 @@ const sidebars = {
         "modules/arc",
         "modules/asn",
         "modules/bayes_expiry",
+        "modules/bimi",
         "modules/chartable",
         "modules/clickhouse",
         "modules/dcc",
