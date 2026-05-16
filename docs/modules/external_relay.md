@@ -19,7 +19,7 @@ Different strategies for identifying mail to tamper with and the point of hand-o
 
 If the strategies are too broad to be used in your setup you might limit them using `rspamd_config:add_condition()`, for example:
 ~~~lua
-# /etc/rspamd/rspamd.local.lua
+-- /etc/rspamd/lua.local.d/external_relay.lua
 -- add some condition for the symbol called EXTERNAL_RELAY_COUNT
 rspamd_config:add_condition('EXTERNAL_RELAY_COUNT', function(task)
   -- only apply this rule if authenticated user is postmaster@example.net

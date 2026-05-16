@@ -177,7 +177,8 @@ See [Statistic configuration](/configuration/statistic), [Neural module](/module
 
 Example custom rule:
 ```lua
--- /etc/rspamd/local.d/custom_rules.lua
+-- /etc/rspamd/lua.local.d/custom_rule.lua
+-- `custom_rule` basename is arbitrary
 rspamd_config.SUSPICIOUS_ATTACHMENT = {
   callback = function(task)
     local parts = task:get_parts()
