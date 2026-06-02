@@ -122,7 +122,7 @@ Different environments have different needs. Find the guide that matches your si
 ### Built-in Help
 ```bash
 # Check current configuration
-rspamc configdump
+rspamadm configdump
 
 # Validate configuration files
 rspamd -t
