@@ -164,15 +164,51 @@ const config = {
           },
           {
             type: 'doc',
-            docId: 'about/index',
+            docId: 'tutorials/migration',
             position: 'left',
-            label: 'About',
+            label: 'Upgrading',
           },
           {
-            type: 'doc',
-            docId: 'tutorials/index',
+            type: 'dropdown',
             position: 'left',
-            label: 'Tutorials',
+            label: 'Guides',
+            items: [
+              {
+                type: 'doc',
+                docId: 'tutorials/quickstart',
+                label: 'Quickstart',
+              },
+              {
+                type: 'doc',
+                docId: 'tutorials/migrate_sa',
+                label: 'Migrating from SpamAssassin',
+              },
+              {
+                type: 'doc',
+                docId: 'tutorials/index',
+                label: 'All Tutorials & Guides',
+              },
+              {
+                type: 'doc',
+                docId: 'tutorials/multimap_guide',
+                label: 'Multimap Guide',
+              },
+              {
+                type: 'doc',
+                docId: 'tutorials/settings_guide',
+                label: 'Settings Guide',
+              },
+              {
+                type: 'doc',
+                docId: 'tutorials/dkim_signing_guide',
+                label: 'DKIM Signing Guide',
+              },
+              {
+                type: 'doc',
+                docId: 'tutorials/clickhouse_analytics',
+                label: 'ClickHouse Analytics',
+              },
+            ],
           },
           {
             type: 'doc',
@@ -182,27 +218,14 @@ const config = {
           },
           {
             type: 'doc',
-            docId: 'other/usage_policy',
-            position: 'left',
-            label: 'Usage Policy',
-          },
-          {
-            type: 'doc',
-            docId: 'faq',
-            position: 'left',
-            label: 'FAQ',
-          },
-          {
-            type: 'doc',
-            docId: 'support',
-            position: 'left',
-            label: 'Support',
-          },
-          {
-            type: 'doc',
             docId: 'downloads',
             position: 'left',
             label: 'Downloads',
+          },
+          {
+            to: '/changelog',
+            label: 'Changelog',
+            position: 'left',
           },
           {
             to: '/blog',
@@ -210,9 +233,31 @@ const config = {
             position: 'left',
           },
           {
-            to: '/changelog',
-            label: 'Changelog',
-            position: 'left',
+            type: 'dropdown',
+            position: 'right',
+            label: 'Help',
+            items: [
+              {
+                type: 'doc',
+                docId: 'faq',
+                label: 'FAQ',
+              },
+              {
+                type: 'doc',
+                docId: 'support',
+                label: 'Support',
+              },
+              {
+                type: 'doc',
+                docId: 'other/usage_policy',
+                label: 'Usage Policy',
+              },
+              {
+                type: 'doc',
+                docId: 'about/index',
+                label: 'About',
+              },
+            ],
           },
           {
             type: 'search',
