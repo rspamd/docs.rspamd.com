@@ -332,7 +332,7 @@ trusted_relays {
 2. **Verify setting application**:
    ```bash
    # Test with specific message
-   rspamc -F sender@domain.com -r recipient@company.com < test.eml
+   rspamc --from sender@domain.com --rcpt recipient@company.com < test.eml
    
    # Check which settings applied
    grep "applied.*setting" /var/log/rspamd/rspamd.log
