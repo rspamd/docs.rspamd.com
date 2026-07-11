@@ -6,7 +6,7 @@ title: DKIM signing module
 # DKIM signing module
 
 
-The Rspamd 1.5 version has introduced a convenient method of configuring DKIM signing through the addition of the DKIM signing module. A more customizable option is available in the DKIM module through the [sign_condition](/modules/dkim#dkim-signatures).
+The Rspamd 1.5 version has introduced a convenient method of configuring DKIM signing through the addition of the DKIM signing module. For more advanced control, signing can be driven by a custom `sign_condition` Lua function, supported by both this module and the [DKIM module](/modules/dkim).
 
 DKIM signing currently works with Milter based MTAs (Sendmail, Postfix), Haraka & Communigate. For DKIM signing to work, you must [scan outbound mail with rspamd](/tutorials/scanning_outbound).
 
