@@ -37,6 +37,7 @@ All scanner types support these common options:
 | `symbol_fail` | string | `{SYMBOL}_FAIL` | Symbol to set on scan failure |
 | `symbol_encrypted` | string | `{SYMBOL}_ENCRYPTED` | Symbol to set for encrypted content |
 | `symbol_macro` | string | `{SYMBOL}_MACRO` | Symbol to set for Office macros |
+| `symbol_ignore` | string | `{SYMBOL}_IGNORE` | Symbol set instead of the main symbol when a detected threat name matches the `whitelist` map |
 | `servers` | string | (required) | Server address(es), can be TCP (`host:port`) or Unix socket path |
 | `timeout` | number | (varies) | Connection timeout in seconds |
 | `retransmits` | number | (varies) | Number of retry attempts on failure |
@@ -49,7 +50,7 @@ All scanner types support these common options:
 | `log_clean` | boolean | `false` | Log messages when content is clean |
 | `action` | string | (none) | Force this action when virus found (e.g., `reject`) |
 | `message` | string | (varies) | Custom rejection message, supports `${SCANNER}` and `${VIRUS}` variables |
-| `whitelist` | string | (none) | Path to map of virus names/signatures to ignore |
+| `whitelist` | string | (none) | Path to map of virus names/signatures to ignore. When a detected threat name matches this map, `symbol_ignore` is set instead of the main symbol |
 | `patterns` | table | (none) | Regex patterns to map virus names to custom symbols |
 | `patterns_fail` | table | (none) | Regex patterns to map error messages to custom symbols |
 | `prefix` | string | (auto) | Redis cache key prefix |
@@ -99,9 +100,31 @@ mime_parts_filter_ext {
 }
 ~~~
 
-The `mime_parts_filter_regex` option matches the content-type detected by Rspamd, mime part headers, or the declared filename of an attachment. This also works for files within archives. The `mime_parts_filter_ext` option matches the extension of the declared filename or files within archives.
+The matching `_exclude` filters remove a part from scanning even if it also matches an include filter above:
 
-When any filter is defined, only matching parts are scanned. Without filters, all attachments are scanned.
+~~~hcl
+mime_parts_filter_regex_exclude {
+  SIGNATURE = "^smime\.p7s$";
+}
+mime_parts_filter_ext_exclude {
+  p7s = "p7s";
+}
+~~~
+
+The `mime_parts_filter_regex` option matches the content-type detected by Rspamd, mime part headers, or the declared filename of an attachment. This also works for files within archives. The `mime_parts_filter_ext` option matches the extension of the declared filename or files within archives. `mime_parts_filter_regex_exclude` and `mime_parts_filter_ext_exclude` follow the same matching rules, but remove a part from scanning instead of adding it.
+
+**How include and exclude filters interact:**
+
+| Include filters set? | Exclude filters set? | Result |
+|---|---|---|
+| no | no | every attachment is scanned |
+| yes | no | only parts matching an include filter are scanned |
+| no | yes | every attachment is scanned **except** those matching an exclude filter |
+| yes | yes | only parts matching an include filter **and not** matching an exclude filter are scanned |
+
+An exclude match always takes precedence over an include match on the same part. Exclude-only configuration switches to "scan everything except" mode; it does not make exclude filters open up scanning to parts that fail to match an include filter when one is configured.
+
+Files listed inside archives are matched against these filters as well by default. Set `mime_parts_match_archive = false;` to only match the archive part itself (filename/content-type) and skip checking the files it contains.
 
 ### Redis caching
 
