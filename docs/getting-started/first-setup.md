@@ -264,7 +264,7 @@ sudo setsebool -P antivirus_can_scan_system 1
 If messages have no `X-Spam-*` headers:
 
 ```bash
- rspamadm configdump milter_headers
+rspamadm configdump milter_headers
 rspamc stat  # Check messages scanned
 ```
 
