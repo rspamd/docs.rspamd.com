@@ -31,6 +31,7 @@ DKIM module has several useful configuration options:
  *  `dkim_cache_size` (_number_): cache up to 1000 of the most recent DKIM records
  *  `dkim_cache_expire` (_time_): default max expire for an element in this cache
  *  `skip_multi` (_boolean_): skip DKIM check for messages with multiple signatures
+ *  `check_local` (_boolean_): perform DKIM check for messages from the local network. (default: `false`)
 
 ## DKIM signatures
 
