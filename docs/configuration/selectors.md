@@ -361,7 +361,7 @@ In general, you need not be overly concerned about type safety unless you encoun
 
 ## Own selectors
 
-You have the option to incorporate your custom extractors and processing functions. However, it's crucial to implement this setup before utilizing these selectors in any other context. For instance, the execution of `rspamd.local.lua` precedes the initialization of plugins, making it a secure location to register your functions. Here is a small example about how to register your own extractors and processors.
+You have the option to incorporate your custom extractors and processing functions. However, it's crucial to implement this setup before utilizing these selectors in any other context. For instance, the execution of scripts located inside `lua.local.d/` precedes the initialization of plugins, making it a secure location to register your functions. Here is a small example about how to register your own extractors and processors.
 
 ~~~lua
 local lua_selectors = require "lua_selectors" -- Import module
@@ -398,7 +398,7 @@ You can use these functions in your selectors subsequently.
 
 You can also leverage selectors with Rspamd's [regexp module](/modules/regexp). This approach allows you to utilize the data extracted and processed by the selector framework to match it against various regular expressions.
 
-To start, you'll need to register a selector in the regexp module. You can achieve this by adding the following code to your `rspamd.local.lua` file:
+To start, you'll need to register a selector in the regexp module. You can achieve this by adding the following code to a Lua script inside `lua.local.d/` directory:
 
 ~~~lua
 rspamd_config:register_re_selector('test', 'user.lower;header(Subject).lower', ' ')

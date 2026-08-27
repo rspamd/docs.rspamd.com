@@ -74,8 +74,8 @@ extra_columns = {
   "from_domain" = "from:domain";
   "mime_type" = "header('Content-Type')";
   "user_agent" = "header('User-Agent')";
-  
-  # Custom selectors (must be registered in rspamd.local.lua first!)
+
+  # Custom selectors (must be registered in lua.local.d/ first!)
   "attachment_count" = "attachment_count()";
   "has_executable" = "has_dangerous_attachment()";
   "attachment_extensions" = "attachment_types()";
@@ -229,10 +229,11 @@ Here's how to integrate custom selectors with ClickHouse from start to finish:
 
 #### Step 1: Register Custom Selectors
 
-First, register your custom selectors in `/etc/rspamd/rspamd.local.lua`:
+First, register your custom selectors in `/etc/rspamd/lua.local.d/`:
 
 ```lua
--- /etc/rspamd/rspamd.local.lua
+-- /etc/rspamd/lua.local.d/custom_selectors.lua
+-- `custom_selectors` is arbitrary
 
 local lua_selectors = require "lua_selectors"
 
@@ -560,7 +561,7 @@ ORDER BY Messages DESC;
 ```
 
 **Key Points:**
-- Selector names in `rspamd.local.lua` must match those used in `clickhouse.conf`
+- Selector names in `lua.local.d/custom_selectors.lua` must match those used in `clickhouse.conf`
 - All custom selectors return string values to ClickHouse
 - Restart Rspamd after adding new selectors
 - Custom columns appear automatically in the ClickHouse table
