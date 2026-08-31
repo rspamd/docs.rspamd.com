@@ -177,7 +177,7 @@ Please note that you **cannot** use asynchronous functions, including those with
 
 ## Regexp prefilters
 
-Rspamd has supported Lua filters for regular expressions since version 2.6. The concept is to enable quick prefiltering using regular expressions and slower Lua post-processing when necessary. Here is an example of how it's used in the Bitcoin library:
+Rspamd has supported Lua filters for regular expressions since version 2.6. The concept is to enable quick prefiltering using regular expressions and slower Lua post-processing when necessary. Here is an example:
 
 ~~~lua
 config.regexp['RE_POSTPROCESS'] = {
@@ -206,4 +206,4 @@ config.regexp['RE_POSTPROCESS'] = {
 }
 ~~~
 
-This feature enables the addition of accelerated rules that are only enabled when relatively rare regular expressions match. In this particular case, the feature is used for Bitcoin wallet verification and validation.
+This feature enables the addition of accelerated rules that are only enabled when relatively rare regular expressions match, such as validating a wallet address candidate matched by a cheap regexp before running a more expensive checksum check.
