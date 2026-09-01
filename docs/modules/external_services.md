@@ -94,7 +94,7 @@ The matching `_exclude` filters remove a part from scanning even if it also matc
 
 In other words, an exclude match always wins over an include match on the same part. Exclude filters only widen scanning to "everything" when no include filters are configured at all — they can never cause a part to be scanned that didn't already match an include filter (when one is set).
 
-By default, filenames inside archives are also checked against these filters (`mime_parts_match_archive` defaults to `true`). Set `mime_parts_match_archive = false;` to only match on the archive's own filename/content-type and skip inspecting the files listed inside it.
+By default, filenames inside archives are also checked against these filters (`mime_parts_match_archive` defaults to `true`). Set `mime_parts_match_archive = false;` to only match on the archive's own filename/content-type and skip inspecting the files listed inside it. Since an archive is scanned as a single part, an exclude filter only suppresses the whole archive when **every** file it contains matches an exclude filter; if even one file doesn't match, the archive is still scanned.
 
 Apart from the default settings, specific configuration options need to be set for each rule as described below.
 
@@ -1008,7 +1008,7 @@ Depending on the verdict returned by the `report` endpoint, one of the following
 | `PEEKABOO` | Job result is `bad` (a threat was found) | 1.0 (configurable via `default_score`) |
 | `PEEKABOO_GOOD` | File matched a Peekaboo whitelist entry | -1.0 |
 | `PEEKABOO_PASS` | Job result is `unknown` (no threat found) — only set when `set_clean_symbol = true` | 0.0 |
-| `PEEKABOO_FAIL` | Connection error, or job result is `failed`/`unchecked` | — |
+| `PEEKABOO_FAIL` | Connection error, submit response missing a job ID, or job result is `failed`/`unchecked` | 0.0 |
 
 Results of `ignored` jobs do not set any symbol.
 

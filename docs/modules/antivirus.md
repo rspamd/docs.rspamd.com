@@ -124,7 +124,7 @@ The `mime_parts_filter_regex` option matches the content-type detected by Rspamd
 
 An exclude match always takes precedence over an include match on the same part. Exclude-only configuration switches to "scan everything except" mode; it does not make exclude filters open up scanning to parts that fail to match an include filter when one is configured.
 
-Files listed inside archives are matched against these filters as well by default. Set `mime_parts_match_archive = false;` to only match the archive part itself (filename/content-type) and skip checking the files it contains.
+Files listed inside archives are matched against these filters as well by default. Set `mime_parts_match_archive = false;` to only match the archive part itself (filename/content-type) and skip checking the files it contains. Since an archive is scanned as a single part, an exclude filter only suppresses the whole archive when **every** file it contains matches an exclude filter; if even one file doesn't match, the archive is still scanned.
 
 ### Redis caching
 
