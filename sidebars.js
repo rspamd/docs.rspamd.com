@@ -64,6 +64,7 @@ const sidebars = {
       },
       "items": [
         "configuration/settings",
+        "configuration/multistage",
         "configuration/metrics",
         "configuration/logging",
         "configuration/options",
