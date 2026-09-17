@@ -80,6 +80,17 @@ producer replay falls back to the ordinary EOM scan. A frozen rejection stays
 final if an observer fails or times out. An aborted SMTP transaction never
 carries results into the next transaction.
 
+Only results recorded by a portable producer can trigger a policy. A producer
+that performs a non-portable write at DATA (a passthrough action, an adjusted
+or removed result, a Lua error, or a value over the journal limits) is left out
+of the record together with the checks that depend on it, and all of them run
+again at EOM. Other producers, and the policies that reference their symbols,
+are unaffected. A result written outside any producer, for example from an
+asynchronous callback that is not attached to a symbol, cannot be attributed
+and discards the whole record; the transaction then continues without one.
+When a record is rejected at EOM, the scanner logs the reason (stale record,
+foreign envelope, or a different configuration checksum) at info level.
+
 Key rotation currently uses one key per instance. During a rolling change,
 instances with different keys fall back to EOM. Deploy scanner changes first,
 then proxy changes; watch fallback counters while the fleet converges. Records
@@ -127,6 +138,18 @@ MIME and body-dependent values are unavailable. ClickHouse keeps its existing
 non-nullable `Size UInt32` and `NUrls Int32` columns: DATA rows use zero and
 `HasHeaders`, `HasBody`, `HasMime` flags. Use `avgIf(Size, HasBody = 1)` when
 measuring complete messages. Existing rows migrate as complete EOM records.
+
+Exports at DATA do not share the EOM document shape. `metadata_exporter`
+rules that use the `structured` or `json_with_message` formatters receive the
+terminal event itself: `format`, `event_id`, `decision_stage`,
+`completion_kind`, `action`, `policy`, `policy_recipient`, `reason`,
+`partial_score`, `available_inputs`, the `has_headers`/`has_body`/`has_mime`
+flags, envelope fields and the recorded `symbols`. None of the EOM formatter
+keys are present. Consumers must branch on `decision_stage` before parsing.
+Custom formatters and custom row callbacks are not invoked at DATA. Redis
+history rows for early decisions carry `partial = true`, keep `required_score`,
+`size`, `subject` and MIME addresses as `null`, and use the event ID in place
+of a message ID.
 
 SPF, ASN, envelope multimap and envelope portions of split RBL rules can run
 early. External relay dependencies defer affected connection checks. Mixed
