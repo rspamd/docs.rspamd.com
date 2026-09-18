@@ -1470,3 +1470,237 @@ Two long-standing bugs are fixed in ways that change symbol hit rates:
 - `HFILTER_HELO_IP_A` now fires when the HELO hostname resolves to addresses that do not include the connecting IP, as documented. Previously it fired only when the HELO resolved to no addresses at all, a condition already covered by `HFILTER_HELO_NORES_A_OR_MX` ([5f5c176](https://github.com/rspamd/rspamd/commit/5f5c176d6), [#6176](https://github.com/rspamd/rspamd/pull/6176), [#6165](https://github.com/rspamd/rspamd/issues/6165)).
 
 No configuration change is required, but review local score overrides and composites involving these symbols after the upgrade if your scoring depends on them.
+
+## Migration to Rspamd 4.2.0
+
+### 1. Multimap `top` Filter Returns the Full Public Suffix
+
+The `top` filter of multimap used to return the last label of the eSLD, which conflates the `uk` and `co.uk` namespaces. It now returns the actual public suffix from the suffix lookup, falling back to the old derivation only when no suffix list is loaded or nothing matches ([8f7e6dc2d](https://github.com/rspamd/rspamd/commit/8f7e6dc2d)).
+
+**Who is affected:** Anyone with a multimap rule using `filter = "top"` whose map lists bare labels of multi-label suffixes (`au`, `uk`, `br`, `jp`, …).
+
+**Migration procedure:**
+
+1. Find the maps used by `top`-filtered rules:
+```bash
+grep -rn 'filter *= *"top"' /etc/rspamd/local.d/ /etc/rspamd/override.d/
+```
+2. In each of those maps, replace bare labels with the full suffixes you mean:
+```bash
+grep -nE '^(au|uk|nz|br|jp|za|il)$' /path/to/your/map
+```
+`au` must become `com.au`, `net.au`, … and `uk` must become `co.uk`, `org.uk`, … Single-label suffixes (`com`, `org`, `de`) are unchanged.
+3. Reload and verify with a message whose sender domain is under the affected suffix.
+
+### 2. Public Suffix Resolution Reworked
+
+TLD resolution no longer scans hosts with a multipattern; it probes label suffixes against a flat hash map with full public suffix list semantics ([5d181935e](https://github.com/rspamd/rspamd/commit/5d181935e), [ac05136e3](https://github.com/rspamd/rspamd/commit/ac05136e3)). Two behaviours change:
+
+* `!` exception rules of the public suffix list are honoured now — they were silently skipped before.
+* A host that is itself a public suffix resolves to the whole host instead of being attributed to a shorter suffix.
+
+**Who is affected:** Maps, selectors, RBL composition rules and reputation rules keyed on eSLD (`get_tld`, `url:get_tld`, `rbl` composition maps). The RBL URL composition maps also moved from per-TLD regex buckets to the same suffix rule set ([ddd3fbe23](https://github.com/rspamd/rspamd/commit/ddd3fbe23)): exceptions keep the default eSLD, wildcard rules keep the whole host, and the bare parent is added alongside each wildcard rule.
+
+**Migration procedure:**
+
+1. After the upgrade, re-check any domain allowlist or blocklist entry that sits on or under an exception rule of the PSL, since the key it is matched by may have changed.
+2. Verify a sample of your rules against real URLs:
+```bash
+rspamadm lua -e 'print(require("rspamd_util").get_tld("www.city.kobe.jp"))'
+```
+
+Also new in this release and available for rules that need exact semantics: `url:get_public_suffix()` ([8d9e06df3](https://github.com/rspamd/rspamd/commit/8d9e06df3)), the `get_public_suffix` selector transform ([6c354b1ab](https://github.com/rspamd/rspamd/commit/6c354b1ab)) and the `rspamd_tld_lookup` Lua module ([7318989ea](https://github.com/rspamd/rspamd/commit/7318989ea)).
+
+### 3. SPF: Multiple Records Now Produce a Permerror
+
+A domain publishing more than one `v=spf1` record used to be evaluated using whichever record the resolver happened to answer first. RFC 7208 4.5 requires a permerror, and that is what Rspamd returns now ([ffe728811](https://github.com/rspamd/rspamd/commit/ffe728811)). The version literal is also matched as the RFC defines it: case-insensitively and terminated by a space or the end of the record, so `V=SPF1` now counts as a duplicate while `v=spf10` no longer counts as an SPF record at all ([0e1aec738](https://github.com/rspamd/rspamd/commit/0e1aec738)).
+
+**Who is affected:** Anyone whose own domains, or whose customers' domains, publish two SPF records. Such mail moves from a pass/fail verdict to `R_SPF_PERMFAIL`, which also changes the DMARC outcome.
+
+**Migration procedure:**
+
+1. Audit the domains you are responsible for before upgrading:
+```bash
+dig +short TXT example.com | grep -ci 'v=spf1'
+```
+Anything above `1` must be merged into a single record.
+2. Domains publishing one SPF record next to unrelated TXT records (vendor verification tokens) are unaffected.
+
+### 4. DKIM Alignment Is a Symbol, and `R_DKIM_ALLOW` Is Worth Half
+
+Whether a signature authorises the author is now decided in the DKIM module and reported as the new `R_DKIM_ALIGNED` symbol, with the option `strict` for an exact domain match and `relaxed` when only the organisational domains agree ([f30ef2071](https://github.com/rspamd/rspamd/commit/f30ef2071), [#6197](https://github.com/rspamd/rspamd/pull/6197)). DMARC consumes those facts and drops its own comparison; no DMARC verdict moves.
+
+The credit a passing signature earns is split between the two symbols instead of being added to: **`R_DKIM_ALLOW` goes from -0.2 to -0.1**, and `R_DKIM_ALIGNED` takes the other -0.1. A signature aligned with the author is worth what a passing signature used to be worth on its own; one that merely verifies for an unrelated domain now earns half of that.
+
+Alignment is only reported when the message has a single author: with several mailboxes in `From`, no `R_DKIM_ALIGNED` and no mempool verdict is produced ([e704b8445](https://github.com/rspamd/rspamd/commit/e704b8445)).
+
+**Who is affected:** Anyone who overrides the `R_DKIM_ALLOW` score, or whose thresholds were tuned around it.
+
+To keep the old total for aligned mail while neutralising the new symbol, add to `local.d/groups.conf`:
+
+~~~hcl
+group "dkim" {
+  symbols {
+    "R_DKIM_ALLOW" {
+      score = -0.2;
+    }
+    "R_DKIM_ALIGNED" {
+      score = 0.0;
+    }
+  }
+}
+~~~
+
+### 5. Symbols Cache: One Scheduler, Stricter Dependency Rules
+
+The per-class schedulers (priority-serialised pre/postfilters, topologically ordered filters) are replaced by a single execution plan computed at init: every item gets a stage and a level within that stage, and a dependency inherits the earliest (stage, level) among its dependents ([d144e0df0](https://github.com/rspamd/rspamd/commit/d144e0df0), [#6225](https://github.com/rspamd/rspamd/pull/6225)). Three consequences are user-visible:
+
+* **Invalid dependency edges are now rejected at configuration time.** A connfilter or prefilter depending on a filter used to pull that filter into the wrong stage by accident; such an edge is reported with the stages of both symbols and dropped ([cc9038fc9](https://github.com/rspamd/rspamd/commit/cc9038fc9)). Dependency cycles are likewise broken right after resolution, with an error naming both symbols ([59c5f9c2e](https://github.com/rspamd/rspamd/commit/59c5f9c2e)).
+* **Prefilters may now legitimately depend on filters**, which hoists the filter and its own dependencies to the prefilter stage. Hoists are logged at info level, so a ratelimit keyed by `symbol(DKIM_CHECK)` or by a selector now costs visibly ([57128714b](https://github.com/rspamd/rspamd/commit/57128714b)). Ratelimit, multimap, rbl and reputation rules register the dependencies of their selectors automatically ([d6419aae2](https://github.com/rspamd/rspamd/commit/d6419aae2)).
+* **`ignore_passthrough` filters now actually run after a pre-result.** `task:set_pre_result()` no longer marks the classifier stages as processed, so the filters stage is no longer jumped over ([fec387488](https://github.com/rspamd/rspamd/commit/fec387488)).
+
+**Who is affected:** Anyone with custom Lua rules using `rspamd_config:register_dependency()`, and anyone whose prefilters set a pre-result while other symbols are flagged `ignore_passthrough`.
+
+**Migration procedure:**
+
+1. Before restarting the daemon, validate the configuration — rejected edges and broken cycles are reported here:
+```bash
+rspamadm configtest
+```
+2. Inspect the computed execution order and any hoists:
+```bash
+rspamadm configdump -e
+```
+3. Fix any rejected edge by moving the symbol to a compatible stage rather than relying on the old accidental execution.
+
+### 6. Fuzzy Storage: Hash Count Comes From a Periodic SCAN
+
+The Redis backend used to maintain `<prefix>_count` inside the update script: incremented on every add including a re-learn, decremented on every delete including a missing digest, and never decremented on expiry. The reported number only grew, and a negative value turned into a huge one. Updates no longer touch the counter; instead the first fuzzy worker walks the keyspace with a paced SCAN and publishes the result ([252d3e378](https://github.com/rspamd/rspamd/commit/252d3e378), [#6259](https://github.com/rspamd/rspamd/pull/6259)).
+
+Defaults: a pass at most every 4 hours, `SCAN COUNT` 1000, a 10% duty cycle, all configurable in the `count_scan` section of the fuzzy worker. The scan is pinned to one read server (a replica when configured), progress is checkpointed so a restarted worker resumes, and the lock lives in Redis so storages sharing a Redis run one pass per interval.
+
+**Who is affected:** Operators of fuzzy storage, and anyone alerting on the fuzzy hash count.
+
+**Migration procedure:**
+
+1. Expect the count to read `0` right after the upgrade: negative counters left by older versions are reported as 0 until the first pass completes, which may take up to the configured interval.
+2. If your Redis uses ACLs, make sure the fuzzy storage user may run `SCAN` on the read server it is pinned to.
+3. Re-baseline any monitoring threshold on the fuzzy hash count — the new number is the real one and is usually *lower* than what the old counter reported.
+4. Optional: sampled storage statistics (weights per flag, shingles, creation age buckets) are collected during the same scan and published under `<prefix>_stats`, exposed as the `storage` object of `/fuzzystat` and printed by `rspamadm fuzzystat` ([274ed527a](https://github.com/rspamd/rspamd/commit/274ed527a), [#6260](https://github.com/rspamd/rspamd/pull/6260)). To restore the plain SCAN, in `local.d/worker-fuzzy.inc`:
+
+~~~hcl
+count_scan {
+  stats_sample = 0;
+}
+~~~
+
+The wire STAT reply still carries only the count, so fuzzy clients see nothing new.
+
+### 7. Fuzzy Storage: Key Policy Precedence and Per-Source Statistics
+
+Two changes to fuzzy storage key handling need attention.
+
+**Source policy is applied after decryption** ([5d054b248](https://github.com/rspamd/rspamd/commit/5d054b248), [#6255](https://github.com/rspamd/rspamd/pull/6255)). A request carrying a valid customer key is no longer dropped by a static or dynamic IP ban; IP restrictions are kept for the shared default key, and per-key limits, expiry and permissions are retained. Telemetry for blocked requests is preserved before they are dropped.
+
+**Who is affected:** Storage operators who used IP bans to cut off a client that still holds a valid key. Such a client is now served. Revoke or expire the key itself instead of banning the address.
+
+Key expiry parsing was also repaired: `strptime` left the time-of-day and DST fields untouched when parsing `DD-MM-YYYY`, so an expired key could inherit a far-future expiry from stack contents, and failed date parses are now rejected ([f24fc15f5](https://github.com/rspamd/rspamd/commit/f24fc15f5)). Re-check any key you believed to be expired.
+
+**Per-source statistics are now lazy, and off by default for the default key** ([5c92924a9](https://github.com/rspamd/rspamd/commit/5c92924a9), [#6248](https://github.com/rspamd/rspamd/pull/6248)). Tables are created on the first request that uses a key, starting at four buckets. The default key tracks nothing unless given an explicit cap, since it is the one key whose source set a bounded table cannot represent — `rspamadm fuzzystat` says so rather than printing nothing.
+
+To restore per-IP tracking, set the worker default or a per-key override in `local.d/worker-fuzzy.inc`:
+
+~~~hcl
+max_ips_per_key = 1024;
+~~~
+
+and give the default key an explicit `max_ips` extension in the keys file (`0` disables tracking for that key). The statistics output gains `ips_inserted` and `ips_overflow`; a table whose evictions exceed eight times its cap within an hour is dropped and the key is flagged for the rest of its life.
+
+### 8. UCL Parsing of Untrusted Input Is Bounded
+
+Request bodies were parsed without a structural budget, so a body well within `max_message` could describe a tree orders of magnitude larger than its wire size. Untrusted parsing now applies a depth of 64, a million elements, 1KB keys, 16MB strings and `min(96 * inlen + 256KB, 64MB)` of tree ([8c269facc](https://github.com/rspamd/rspamd/commit/8c269facc), [#6207](https://github.com/rspamd/rspamd/pull/6207)). This covers checkv3 metadata in both JSON and msgpack form, both controller body parsers and both proxy parsers. Container nesting is bounded for every parse type at the libucl default of 1024 ([d2c0d372a](https://github.com/rspamd/rspamd/commit/d2c0d372a)).
+
+**Who is affected:** Anyone submitting very large or deeply nested scan metadata through checkv3, the controller or the proxy. Such a request is now rejected instead of being parsed.
+
+**Migration procedure:**
+
+1. If you pass generated metadata (large recipient lists, nested JSON blobs) with scan requests, check that no single string exceeds 16MB and that nesting stays under 64.
+2. Lua modules parsing replies from outside the local configuration now use `ucl.untrusted_parser()` ([a7c1d5d54](https://github.com/rspamd/rspamd/commit/a7c1d5d54), [0b730fb15](https://github.com/rspamd/rspamd/commit/0b730fb15)) — HTTP request headers, the LLM providers, the `lua_scanners` backends, bimi, contextal, the updates and openphish feeds, the external neural service. A custom module parsing network replies should do the same, overriding individual caps where the data legitimately needs it:
+
+~~~lua
+local parser = ucl.untrusted_parser({max_string_length = 64 * 1024 * 1024})
+~~~
+
+Clickhouse, elastic, `lua_cache`, `history_redis`, the neural model paths and everything in config or `rspamadm` mode keep the ordinary parser on purpose.
+
+### 9. ClickHouse Schema 12
+
+Migration 11 → 12 adds bloom-filter data-skipping indexes (granularity 4) on `MessageId`, `From`, `MimeFrom`, `IP`, `Urls.Tld` and `Attachments.Digest`, plus a bloom filter on `Subject` ([b9275cfa6](https://github.com/rspamd/rspamd/commit/b9275cfa6), [b1ddb79cb](https://github.com/rspamd/rspamd/commit/b1ddb79cb), [#6241](https://github.com/rspamd/rspamd/pull/6241)). On a 20M messages/day install, a single Message-ID lookup over 30 days read 303M rows and 15.5 GB before this change.
+
+**Who is affected:** All ClickHouse module users. The migration runs automatically and is metadata-only, so it is fast and safe — but new parts carry the index while older parts only pick it up as they merge or expire.
+
+**Migration procedure (optional, operator's choice):**
+
+1. Let Rspamd apply the migration by restarting normally, then confirm:
+```bash
+clickhouse-client -q "SELECT name, type_full FROM system.data_skipping_indices WHERE table = 'rspamd'"
+```
+2. To make the indexes effective on existing parts immediately, materialise them by name. This is deliberately left to you because it rereads the column as a background mutation:
+```bash
+clickhouse-client -q "ALTER TABLE rspamd MATERIALIZE INDEX <index_name>"
+```
+3. Watch the mutation until it drains before starting the next one:
+```bash
+clickhouse-client -q "SELECT * FROM system.mutations WHERE table = 'rspamd' AND NOT is_done"
+```
+
+### 10. New Attachment and Hidden-Text Scoring
+
+Two groups of changes move scores on messages that previously scored differently. Re-check your thresholds and any per-symbol overrides against a ham corpus before rolling this to production.
+
+**SVG attachments are parsed** and produce `SVG_CONTENT`, `SVG_SUSPICIOUS`, `SVG_SCRIPT`, `SVG_FOREIGN_OBJECT`, `SVG_DATA_URI`, `SVG_EXTERNAL_LINKS`, `SVG_EXTERNAL_RESOURCES`, `SVG_FORM` and `SVG_REDIRECT`, with **small non-zero default weights on the scripting and embedding indicators** ([c7deefa9a](https://github.com/rspamd/rspamd/commit/c7deefa9a), [#6240](https://github.com/rspamd/rspamd/pull/6240)). HTML smuggled inside an SVG is injected back into the scan as an HTML part, so its URLs reach the RBL and reputation pipeline ([e05302399](https://github.com/rspamd/rspamd/commit/e05302399), [960b17959](https://github.com/rspamd/rspamd/commit/960b17959)). Configure or disable under `lua_content`:
+
+~~~hcl
+lua_content {
+  svg {
+    enabled = false;
+  }
+}
+~~~
+
+XLSX and PPTX join DOCX in the OOXML pipeline, adding `XLSX_CONTENT`, `XLSX_EXTERNAL_LINKS`, `XLSX_SUSPICIOUS`, `PPTX_CONTENT`, `PPTX_EXTERNAL_LINKS`, `PPTX_SUSPICIOUS`, `OOXML_MACROS`, `OOXML_OLE_OBJECT`, `OOXML_REMOTE_TEMPLATE` and `OOXML_EXTERNAL_DATA` — all with **zero weight by default** ([fe26f2923](https://github.com/rspamd/rspamd/commit/fe26f2923), [#6238](https://github.com/rspamd/rspamd/pull/6238)). They are safe to leave alone until you decide to score them.
+
+**CSS handling changed substantially, in both directions.** Compound selectors and combinators (`div.mainbox`, `div p`, `div > p`, `h1 + p`, `h1 ~ p`) are evaluated now, so hidden text behind the rules mail templates actually use is detected ([e6162390a](https://github.com/rspamd/rspamd/commit/e6162390a), [#6252](https://github.com/rspamd/rspamd/pull/6252)), and `R_WHITE_ON_WHITE` fires on white-on-white text whether or not the message also contains hidden text ([307fa376f](https://github.com/rspamd/rspamd/commit/307fa376f), fixes [#6262](https://github.com/rspamd/rspamd/issues/6262)). At the same time several severe false positives are gone: a grouped selector that could not be evaluated used to register a rule for a bare tag and move whole message bodies to the invisible buffer ([d89aa4a8c](https://github.com/rspamd/rspamd/commit/d89aa4a8c)), and the `font` shorthand, the `vw`/`vh` units and percent sizes were all mishandled so that ordinary webmail replies compiled as invisible ([e7d85786c](https://github.com/rspamd/rspamd/commit/e7d85786c), [#6245](https://github.com/rspamd/rspamd/pull/6245)). Expect `HIDDEN_TEXT` to stop firing on legitimate mail and to start firing on the templates it was meant for.
+
+### 11. `url_redirector`: `redirectors_only` Is Now Enforced
+
+`map:get_key()` returns `false`, not `nil`, on a miss for glob, regexp and set maps, so the `redirectors_only` gate written as `get_key(...) ~= nil` was always true and **every** redirect target was followed regardless of `redirector_hosts_map`. The gate now uses truthiness and is applied at all three sites that can issue an HTTP request for a hop ([a16e47594](https://github.com/rspamd/rspamd/commit/a16e47594), [#6198](https://github.com/rspamd/rspamd/pull/6198)).
+
+A related map cache bug is fixed alongside: a map given as a *list* of URLs was keyed by the digest of the list alone, ignoring the requested type, so whichever module registered first decided the type for everyone. `url_redirector` asked for a glob map of `redirector_hosts_map` while a multimap `redirector` rule asked for a hash map of the same URLs, and no glob pattern in that feed could ever match ([19bad32bb](https://github.com/rspamd/rspamd/commit/19bad32bb), [53acca685](https://github.com/rspamd/rspamd/commit/53acca685), [#6226](https://github.com/rspamd/rspamd/pull/6226)).
+
+**Who is affected:** Anyone running `url_redirector` with `redirectors_only = true`, and anyone sharing one URL list between modules that ask for different map types.
+
+**Migration procedure:**
+
+1. Expect noticeably fewer outbound HTTP requests and fewer resolved redirect targets after the upgrade — that is the documented behaviour finally taking effect.
+2. If you relied on full redirect following, set `redirectors_only = false` explicitly in `local.d/url_redirector.conf` rather than depending on the old bug.
+3. Confirm which hops are actually fetched using the debug line added before every request:
+```bash
+rspamadm configtest -L url_redirector
+```
+
+### 12. `forged_recipients` Compares by Mailbox Identity and Fetches a New Map
+
+Envelope and header addresses were compared as raw strings, so `johndoe@googlemail.com` with `RCPT TO johndoe@gmail.com`, or `From: j.o.h.n@gmail.com` with `MAIL FROM john@gmail.com`, were reported as `FORGED_RECIPIENTS` / `FORGED_SENDER` although both sides name one mailbox. Both sides now match by `lua_aliases.mailbox_identity`: equivalent domains are folded, gmail dots and plus tags are stripped ([7bb2c77a0](https://github.com/rspamd/rspamd/commit/7bb2c77a0), [8b36f110e](https://github.com/rspamd/rspamd/commit/8b36f110e), issue [#6227](https://github.com/rspamd/rspamd/issues/6227)).
+
+**Who is affected:** Everyone — the equivalence classes come from a **new map fetched from `maps.rspamd.com`**.
+
+**Migration procedure:**
+
+1. If your workers reach `maps.rspamd.com` through a firewall or proxy, allow `rspamd/equivalent_domains.inc` alongside the other Rspamd maps. A fallback snapshot ships in `conf/maps.d`, so a blocked fetch degrades to the builtin Google class rather than failing.
+2. To point the option at your own list, override it in `local.d/forged_recipients.conf`:
+
+~~~hcl
+equivalent_domains = "/etc/rspamd/maps.d/equivalent_domains.inc";
+~~~
+3. Expect fewer `FORGED_RECIPIENTS` and `FORGED_SENDER` hits. The symbol options still show the wire addresses, and the addresses on the task are not modified — the identity is used for comparison only, never written back, since the domains stay distinct for SPF, DKIM and DMARC.
