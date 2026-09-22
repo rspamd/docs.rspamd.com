@@ -47,7 +47,8 @@ rspamd_config:register_symbol({
 ### Your first symbol
 
 ```lua
--- /etc/rspamd/local.d/custom_rules.lua
+-- /etc/rspamd/lua.local.d/custom_rule.lua
+-- `custom_rule` basename is arbitrary
 local function always_fires(task)
   return true
 end
@@ -360,5 +361,3 @@ config['regexp']['SYMBOL'] = { callback = function(task) ... end }
 | Post-filters | After normal filters and composites |
 | Composites (pass 2) | Combine results including postfilters |
 | Idempotent filters | Must not change result |
-
-
