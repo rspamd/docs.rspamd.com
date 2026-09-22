@@ -65,7 +65,7 @@ Running unit tests requires building a special `rspamd-test` target. If you use 
 
 To run unit tests, simply execute `test/rspamd-test -p /rspamd/lua`.
 
-However, it's important to note that it's currently not possible to execute specific unit tests individually.
+Specific unit tests can be run individually by passing their name or matching glob as the `TESTS` environment variable, e.g. `TESTS="reg*.lua" test/rspamd-test -p /rspamd/lua` to target regexp tests.
 
 ## Functional tests
 
