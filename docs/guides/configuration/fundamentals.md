@@ -438,10 +438,10 @@ sudo rspamadm configtest -v
 
 ```bash
 # View configuration dump
-rspamc configdump
+rspamadm configdump
 
 # Check specific symbols and scores
-rspamc configdump | grep -A5 -B5 "symbol_name"
+rspamadm configdump | grep -A5 -B5 "symbol_name"
 
 # Monitor real-time changes
 tail -f /var/log/rspamd/rspamd.log
