@@ -274,6 +274,31 @@ rspamd_config:add_condition('SOME_SYMBOL', function(task) return false end)
 
 Or use [settings](/configuration/settings) for dynamic control.
 
+### What does the "maximum symbols cache timeout" warning mean?
+
+```
+configured task_timeout 8.00 is less than maximum symbols cache timeout 25.00; some symbols can be terminated before checks
+```
+
+At startup or when running `rspamadm configtest`, Rspamd compares
+[`task_timeout`](/configuration/options) with the total of the timeouts declared
+by all enabled symbols. The latter is a theoretical worst case: processing
+stages that run sequentially contribute their largest declared timeouts, while
+symbols within the same stage run concurrently. Most checks finish well before
+their declared timeouts, so a total larger than `task_timeout` is common and
+normally requires no action — it is the usual trade-off between a small
+`task_timeout` (bounded message processing time) and sufficiently generous
+timeouts of individual modules and checks.
+
+The accompanying `list of top N symbols by execution time` line shows which
+symbols contribute the most (e.g. `MX_CHECK`, `URL_REDIRECTOR_CHECK`), so you
+can identify the module `timeout` settings that drive the theoretical maximum.
+
+The warning is purely informational: Rspamd does not adjust anything. Consider
+raising `task_timeout` or lowering the slowest modules' timeouts only if you
+actually observe checks being cut short (missing symbol results or timeouts in
+the logs).
+
 ---
 
 ## Scores and Actions

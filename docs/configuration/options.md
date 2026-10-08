@@ -107,7 +107,7 @@ control_socket = "$DBDIR/rspamd.sock mode=0600";
 |`ssl_ca_path`| path to ssl CA file
 |`ssl_ciphers`| list of ssl ciphers (e.g. HIGH:!aNULL:!kRSA:!PSK:!SRP:!MD5:!RC4)
 |`stats_file`| path to stats file
-|`task_timeout`| maximum time for processing a single message; tasks exceeding this limit are aborted. At startup, Rspamd may log a warning if individual symbol timeouts suggest that the theoretical maximum processing time exceeds `task_timeout` — this is informational and does not necessarily require any action
+|`task_timeout`| maximum time for processing a single message; tasks exceeding this limit are aborted. At startup or when running `rspamadm configtest`, Rspamd may warn if the theoretical worst-case total of per-symbol timeouts exceeds `task_timeout` — this is informational, see [the FAQ](/faq#what-does-the-maximum-symbols-cache-timeout-warning-mean)
 |`temp_dir`| a directory for temporary files (can also be set via the environment variable `TMPDIR`).
 |`tld`| path to the TLD file for urls detector
 |`trusted_keys`| list of trusted public keys used for signatures in base32 encoding
