@@ -103,8 +103,14 @@ sudo rspamadm configtest
 # Restart Rspamd
 sudo systemctl restart rspamd
 
-# Test DKIM signing
-echo "Test message" | rspamc -d example.com -f test@example.com
+# Test DKIM signing. The From: header domain must match the authenticated user.
+rspamc -u test@example.com <<'EOF' | grep "DKIM_SIGNED"
+From: test@example.com
+To: rcpt@example.net
+Subject: DKIM test
+
+Test message
+EOF
 ```
 
 ## Advanced Configurations
@@ -701,7 +707,7 @@ test.example.com
 ```bash
 # /etc/systemd/system/rspamd.service.d/vault.conf
 [Service]
-Environment="VAULT_DKIM_TOKEN=s.AhTThjWhKZAf97VowxG6blyu"
+Environment="RSPAMD_VAULT_DKIM_TOKEN=s.AhTThjWhKZAf97VowxG6blyu"
 Environment="VAULT_ADDR=http://127.0.0.1:8200"
 ```
 
@@ -793,10 +799,10 @@ check_dns_records() {
 check_rspamd_signing() {
     log "INFO: Testing DKIM signing..."
     
-    # Test signing with a sample message
-    local test_result=$(echo "Test message" | rspamc -d example.com -f test@example.com 2>&1)
+    # Test signing with a sample message (From: header domain must match the auth user)
+    local test_result=$(printf 'From: test@example.com\nTo: rcpt@example.net\nSubject: DKIM test\nMessage-Id: <monitor@example.com>\n\nTest message\n' | rspamc -u test@example.com 2>&1)
     
-    if echo "$test_result" | grep -q "DKIM-Signature:"; then
+    if echo "$test_result" | grep -q "DKIM_SIGNED"; then
         log "INFO: DKIM signing test passed"
     else
         log "ERROR: DKIM signing test failed: $test_result"
@@ -851,8 +857,14 @@ rspamadm configtest
 # Check Vault connectivity from Rspamd
 rspamc stat
 
-# Test DKIM signing
-echo "Test message" | rspamc -d example.com -f test@example.com
+# Test DKIM signing (From: header domain must match the authenticated user)
+rspamc -u test@example.com <<'EOF' | grep "DKIM_SIGNED"
+From: test@example.com
+To: rcpt@example.net
+Subject: DKIM test
+
+Test message
+EOF
 ```
 
 **6.3 Monitor Logs**
@@ -954,14 +966,14 @@ Implement regular key rotation for security:
 ```hcl
 # /etc/rspamd/local.d/dkim_signing.conf
 
+# Map of domains to selectors (supports rotation across multiple selectors)
+selector_map = "/etc/rspamd/dkim_selectors.map";
+
 domain {
   example.com {
     # Current key
     selector = "2024a";
     path = "/etc/rspamd/dkim/example.com/2024a.key";
-    
-    # Alternative selectors for rotation
-    selector_map = "/etc/rspamd/dkim_selectors.map";
   }
 }
 ```
@@ -1145,17 +1157,34 @@ domain {
     path = "/shared/dkim/example.com/shared.key";
   }
 }
-
-# Server-specific keys
-server_keys = "/etc/rspamd/local_dkim_keys.map";
 ```
 
-```bash
-# /etc/rspamd/local_dkim_keys.map
-# server-specific keys for different mail servers
-mx1.example.com mx1 /etc/rspamd/dkim/mx1.key
-mx2.example.com mx2 /etc/rspamd/dkim/mx2.key
+Alternatively, when each mail server must sign with its own key, configure a
+per-host selector and key on each server individually. Rspamd has no single
+runtime option to map hostnames to keys, so this is done per host:
+
+```hcl
+# /etc/rspamd/local.d/dkim_signing.conf  (on mx1.example.com)
+domain {
+  example.com {
+    selector = "mx1";
+    path = "/etc/rspamd/dkim/example.com/mx1.key";
+  }
+}
 ```
+
+```hcl
+# /etc/rspamd/local.d/dkim_signing.conf  (on mx2.example.com)
+domain {
+  example.com {
+    selector = "mx2";
+    path = "/etc/rspamd/dkim/example.com/mx2.key";
+  }
+}
+```
+
+Each selector (`mx1._domainkey.example.com`, `mx2._domainkey.example.com`)
+must be published as its own DNS TXT record.
 
 ### Cloud Provider Setup
 
@@ -1230,25 +1259,13 @@ sign_networks = [
 
 2. **DNS testing**:
    ```bash
-   # Test DNS propagation
-   dig TXT mail._domainkey.example.com
-   
-   # Test DKIM validation
-   rspamadm dkim_keygen -t -s mail -d example.com
+   # Verify the published public key resolves
+   dig TXT mail._domainkey.example.com +short
    ```
 
 ### Performance Optimization
 
-1. **Key caching**:
-   ```hcl
-   # /etc/rspamd/local.d/dkim_signing.conf
-   
-   # Cache keys in memory
-   cache_key = true;
-   cache_expiry = 3600;
-   ```
-
-2. **Selective signing**:
+1. **Selective signing**:
    ```hcl
    # Only sign necessary mail
    sign_authenticated = true;   # Sign authenticated mail
@@ -1288,19 +1305,35 @@ sign_networks = [
    # Check logs
    tail -f /var/log/rspamd/rspamd.log | grep -i dkim
    
-   # Test manually
-   echo "test" | rspamc -d example.com -f test@example.com
+   # Test manually (From: header domain must match the authenticated user)
+   rspamc -u test@example.com <<'EOF'
+   From: test@example.com
+   To: rcpt@example.net
+   Subject: DKIM test
+
+   Test message
+   EOF
    ```
 
 ### Testing DKIM
 
 1. **Manual testing**:
    ```bash
-   # Test signing with rspamc
-   rspamc -d example.com -f sender@example.com -r recipient@test.com < test_message.eml
-   
-   # Check for DKIM-Signature header
+   # Scan a message as an authenticated user. Its From: header domain must match
+   # the user (e.g. From: sender@example.com).
+   rspamc -u sender@example.com <<'EOF'
+   From: sender@example.com
+   To: recipient@example.net
+   Subject: DKIM test
+
+   Test message
+   EOF
    ```
+   A signed message reports the `DKIM_SIGNED` symbol and a (folded, multi-line)
+   `DKIM-Signature:` header. To print the whole signature, add `-j` and pipe the
+   JSON through `jq -r '."dkim-signature"'`.
+   (`-F`/`--from` sets the SMTP envelope sender, not the From: header that DKIM
+   signs, so it cannot replace the `From:` above with `use_domain = "header"`.)
 
 2. **External validation**:
    ```bash
@@ -1308,29 +1341,6 @@ sign_networks = [
    # - Gmail (check Authentication-Results header)
    # - mail-tester.com
    # - dkimvalidator.com
-   ```
-
-3. **Automated testing**:
-   ```bash
-   #!/bin/bash
-   # dkim_test.sh
-   
-   DOMAIN="example.com"
-   SELECTOR="mail"
-   
-   # Test key generation
-   if rspamadm dkim_keygen -t -s $SELECTOR -d $DOMAIN; then
-     echo "DKIM validation: PASS"
-   else
-     echo "DKIM validation: FAIL"
-   fi
-   
-   # Test signing
-   if echo "test" | rspamc -d $DOMAIN | grep -q "DKIM-Signature"; then
-     echo "DKIM signing: PASS"
-   else
-     echo "DKIM signing: FAIL"
-   fi
    ```
 
 ## Monitoring and Maintenance

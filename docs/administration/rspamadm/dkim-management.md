@@ -58,11 +58,14 @@ default._domainkey.example.com. IN TXT ( "v=DKIM1; k=rsa; "
 ### Options
 
 ```
--d, --domain <domain>      Domain name
--s, --selector <selector>  DKIM selector (default: "default")
--k, --privkey <file>      Save private key to file
--b, --bits <bits>         Key length in bits (default: 1024)
--t, --type <rsa|ed25519>  Key type (default: rsa)
+-d, --domain <domain>            Domain name
+-s, --selector <selector>        DKIM selector (default: mail)
+-k, --privkey <file>             Save private key to file
+-b, --bits <bits>                Key length in bits (default: 1024)
+-t, --type <rsa|ed25519>         Key type (default: rsa)
+-o, --output <dns|plain|dnskey>  Public key output format (default: dns)
+    --priv-output <pem|der>      Private key output format, RSA only (default: pem)
+-f, --force                      Force overwrite of existing files
 ```
 
 ### Key Type Recommendations
