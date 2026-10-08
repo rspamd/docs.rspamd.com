@@ -6,13 +6,13 @@ title: About Rspamd
 
 ## Introduction
 
-**Rspamd** is a high-performance email processing framework designed as an independent layer between your Mail Transfer Agent (MTA) and the internet. Operating outside MTA internal flows, Rspamd provides security isolation while delivering comprehensive message analysis, spam filtering, and policy enforcement.
+**Rspamd** is a high-performance spam filtering system and email processing framework. It runs as a separate daemon next to your Mail Transfer Agent (MTA): the MTA passes each message to Rspamd, which analyzes it and returns a score and a recommended action.
 
 ### Core Capabilities
 
 Built on an **event-driven architecture** with a complete **Lua scripting framework**, Rspamd offers:
 
-- **Advanced spam filtering** - Combines Bayesian statistics, neural networks, fuzzy hashing, and 60+ analysis modules
+- **Advanced spam filtering** - Combines Bayesian statistics, neural networks, fuzzy hashing, DNS blocklists and rule-based content checks
 - **Email authentication** - SPF, DKIM, DMARC, and ARC validation with cryptographic signing
 - **Policy enforcement** - Rate limiting, greylisting, reputation tracking, and custom rules
 - **Machine learning** - Neural networks and statistical classifiers that adapt to your mail patterns
@@ -22,22 +22,23 @@ Built on an **event-driven architecture** with a complete **Lua scripting framew
 
 Each message is evaluated through multiple stages:
 
-1. **Pre-filters** - Whitelisting, basic policy checks (execute first, can skip further processing)
-2. **Main filters** - Parallel execution of authentication checks (SPF/DKIM/DMARC), content analysis, RBL lookups, statistical classifiers
-3. **Post-filters** - Composites, neural networks, final scoring adjustments
-4. **Action decision** - Based on cumulative score: pass, add headers, greylist, or reject
+1. **Pre-filters** - Settings, rDNS and ASN lookups, and with Redis the ratelimit and greylist checks (run first, can end processing early)
+2. **Filters** - Authentication checks (SPF/DKIM/DMARC), content rules, RBL lookups, fuzzy checks; network lookups run concurrently
+3. **Classifiers and composites** - The Bayes classifier, then composites that combine symbols
+4. **Post-filters** - Neural networks, the greylisting decision, final action adjustments
+5. **Action decision** - Based on the total score: no action, greylist, add header, rewrite subject or reject
+
+[Understanding Rspamd](/getting-started/understanding-rspamd#how-rspamd-processes-a-message) describes each stage.
 
 Rspamd communicates results to your MTA via HTTP/JSON API or Milter protocol, recommending an action without directly handling mail delivery.
 
 ### Performance Profile
 
-- **Event-driven I/O** - Single worker handles 100+ concurrent messages
+- **Event-driven I/O** - Each worker process scans many messages at once
 - **Async operations** - Non-blocking DNS, Redis, HTTP requests
-- **Typical scan time** - 50-200ms per message (including network operations)
-- **Throughput** - 5-10 messages/sec per worker core (500K-1M messages/day single worker)
-- **Memory footprint** - 50-100MB per worker process
+- **Throughput** - The project reports roughly ten times SpamAssassin's throughput with the same rules. Actual throughput depends on your hardware, the enabled modules and message size. Scan time also depends on the latency of DNS, Redis and other network lookups
 
-See [Architecture documentation](/developers/architecture) for internal details and [Features](/about/features) for comprehensive capabilities list.
+See [Architecture documentation](/developers/architecture) for internal details, [Performance](/about/performance) for the optimizations Rspamd uses and [Features](/about/features) for the full list of capabilities.
 
 ## Choose Your Path
 
@@ -49,17 +50,14 @@ This documentation is organized to help you succeed with Rspamd at any experienc
 
 1. **[Understanding Rspamd](/getting-started/understanding-rspamd)** - Learn how Rspamd processes messages and makes decisions
 2. **[Installation](/getting-started/installation)** - Choose the best installation method (package, Docker, Kubernetes)
-3. **[First Setup](/getting-started/first-setup)** - Configure working spam filtering in 30 minutes
-
-**Time investment**: 2-3 hours from zero to production-ready configuration
+3. **[First Setup](/getting-started/first-setup)** - Check Redis and the web interface password, connect Postfix and train Bayes
 
 ### 🎯 Configuring Rspamd?
 
-**Go to**: [Configuration Guides](/guides/configuration/)
+**Go to**: [Configuration](/configuration/)
 
 - **[Configuration Fundamentals](/guides/configuration/fundamentals)** - Understand the layered configuration system
 - **[Tool Selection Guide](/guides/configuration/tool-selection)** - Choose between multimap, regexp, Lua, or selectors
-- **Module-specific guides** - Detailed tutorials for common tasks
 
 **Common tasks**:
 - [Migrating from SpamAssassin](/tutorials/migrate_sa)
@@ -71,38 +69,44 @@ This documentation is organized to help you succeed with Rspamd at any experienc
 
 **For developers and advanced users**:
 
-- **[Module Documentation](/modules/)** - Complete parameter reference for all 60+ modules
+- **[Module Documentation](/modules/)** - Configuration reference for the built-in modules
 - **[Lua API](/lua/)** - Programming interface for custom rules and plugins
-- **[Developer Guides](/developers/)** - Architecture, protocol, writing rules, testing
-- **[Protocol Documentation](/developers/protocol)** - HTTP API and Milter protocol specifications
+- **[Developer Guides](/developers/architecture)** - Architecture, protocol, [writing rules](/developers/writing_rules), [testing](/developers/writing_tests)
+- **[Protocol Documentation](/developers/protocol)** - HTTP scanning protocol and reply format; [controller endpoints](/developers/controller_endpoints) cover the management API
 
 ## Quick Start Options
 
-### Docker Test Environment (5 minutes)
+### Docker Test Environment
 
-Fastest way to explore Rspamd's web interface and test message scanning:
+Fastest way to explore Rspamd's web interface and test message scanning. The image does not generate a password, and the controller refuses the default password `q1` for connections through a published port, so set your own first:
 
 ```bash
-# Run Rspamd container with web interface
+# Generate a password hash (enter the password when asked)
+docker run --rm -it rspamd/rspamd:latest rspamadm pw
+
+# Put the hash into a local.d directory for the container
+mkdir -p local.d
+echo 'password = "$2$your_generated_hash";' > local.d/worker-controller.inc
+
+# Run Rspamd with the ports published on 127.0.0.1 only
 docker run -d \
   --name rspamd-test \
-  -p 11334:11334 \
-  -p 11333:11333 \
+  -v "$PWD/local.d:/etc/rspamd/local.d:ro" \
+  -p 127.0.0.1:11334:11334 \
+  -p 127.0.0.1:11333:11333 \
   rspamd/rspamd:latest
 
-# Access web interface at http://localhost:11334
-# Default password: see container logs for generated password
-docker logs rspamd-test 2>&1 | grep password
+# Access web interface at http://localhost:11334 and log in with your password
 ```
 
 Test message scanning:
 ```bash
-# Scan a test message
+# Scan a test message (without From, To, Date and Message-ID headers it scores high on its own)
 echo -e "Subject: Test\n\nTest message body" | \
   curl --data-binary @- http://localhost:11333/checkv2
 ```
 
-**Note**: Docker setup is for testing only. For production, use package installation with proper Redis integration.
+**Note**: This single container has no Redis and no local recursive DNS resolver, so Bayes, greylisting and rate limiting do not work and DNS blocklists may refuse its queries. For production, use the packages below or the [Docker Compose setup](/getting-started/installation#docker-compose) with Redis and Unbound.
 
 ### Production Package Installation
 
@@ -110,32 +114,39 @@ echo -e "Subject: Test\n\nTest message body" | \
 
 ```bash
 # Install prerequisites
-sudo apt install -y apt-transport-https ca-certificates curl gnupg
+sudo apt-get update
+sudo apt-get install -y lsb-release wget gpg
 
-# Add Rspamd repository (modern keyring method)
-curl -fsSL https://rspamd.com/apt-stable/gpg.key | \
-  sudo gpg --dearmor -o /usr/share/keyrings/rspamd.gpg
+# Add GPG key
+sudo mkdir -p /etc/apt/keyrings
+wget -O- https://rspamd.com/apt-stable/gpg.key | gpg --dearmor | sudo tee /etc/apt/keyrings/rspamd.gpg > /dev/null
 
-echo "deb [signed-by=/usr/share/keyrings/rspamd.gpg] https://rspamd.com/apt-stable/ $(lsb_release -cs) main" | \
-  sudo tee /etc/apt/sources.list.d/rspamd.list
+# Add repository
+CODENAME=$(lsb_release -c -s)
+echo "deb [signed-by=/etc/apt/keyrings/rspamd.gpg] http://rspamd.com/apt-stable/ $CODENAME main" | sudo tee /etc/apt/sources.list.d/rspamd.list
 
 # Install Rspamd and Redis
-sudo apt update
-sudo apt install -y rspamd redis-server
+sudo apt-get update
+sudo apt-get --no-install-recommends install rspamd
+sudo apt-get install redis-server
 
 # Start services
 sudo systemctl enable --now rspamd redis-server
 ```
 
-#### CentOS/RHEL/Rocky Linux
+#### RHEL, AlmaLinux, Rocky Linux and other EL distributions
 
 ```bash
-# Add Rspamd repository
-curl -sSL https://rspamd.com/rpm-stable/centos-8/rspamd.repo | \
-  sudo tee /etc/yum.repos.d/rspamd.repo
+# The packages need EPEL (on RHEL itself, see the installation guide)
+sudo dnf install epel-release
 
-# Install Rspamd and Redis
-sudo dnf install -y rspamd redis
+# Add Rspamd repository for your EL version
+source /etc/os-release
+EL_VERSION=$(echo -n $PLATFORM_ID | sed "s/.*el//")
+sudo curl -o /etc/yum.repos.d/rspamd.repo https://rspamd.com/rpm-stable/centos-${EL_VERSION}/rspamd.repo
+
+# Install Rspamd and Redis (on EL 10, install and enable valkey instead of redis)
+sudo dnf install rspamd redis
 
 # Start services
 sudo systemctl enable --now rspamd redis
@@ -149,14 +160,20 @@ sudo systemctl enable --now rspamd redis
    rspamd --version
    ```
 
-2. **Set web interface password**:
+2. **Connect Rspamd to Redis**. The shipped configuration has no Redis server set, so Bayes, greylisting and rate limiting stay disabled until you add one:
+   ```hcl
+   # /etc/rspamd/local.d/redis.conf
+   servers = "127.0.0.1";
+   ```
+
+3. **Set web interface password** (connections from localhost do not need it, but clients outside `secure_ip` do):
    ```bash
    rspamadm pw  # Generate password hash
    echo 'password = "$2$your_hash_here";' | sudo tee /etc/rspamd/local.d/worker-controller.inc
    sudo systemctl restart rspamd
    ```
 
-3. **Continue with**: [First Setup Guide](/getting-started/first-setup) for complete configuration
+4. **Continue with**: [First Setup Guide](/getting-started/first-setup) for complete configuration
 
 For detailed installation instructions including Kubernetes, Docker Compose, and other platforms, see the [Installation Guide](/getting-started/installation).
 
@@ -164,25 +181,25 @@ For detailed installation instructions including Kubernetes, Docker Compose, and
 
 | Feature | Description |
 |---------|-------------|
-| **Event-driven architecture** | Async I/O allows 100+ concurrent message scans per worker |
+| **Event-driven architecture** | Async I/O lets each worker scan many messages concurrently |
 | **Email authentication** | SPF, DKIM (signing+validation), DMARC, ARC with caching |
 | **Statistical learning** | Bayesian classifier + Neural networks + Fuzzy hashing |
 | **Content analysis** | Regex rules (Hyperscan-optimized), MIME checks, language detection |
-| **Real-time blacklists** | 50+ preconfigured RBLs, SURBL, URIBL with parallel DNS queries |
+| **Real-time blacklists** | Preconfigured IP, domain, URL and email blocklists (Spamhaus, SURBL, URIBL and others) with parallel DNS queries |
 | **Anti-abuse** | Rate limiting, greylisting, spamtrap detection |
-| **Web UI** | Real-time monitoring, history, training, configuration validation |
-| **Protocols** | HTTP/JSON, Milter, native Rspamd protocol |
+| **Web UI** | Statistics and throughput graphs, history, scanning and training, editing scores, action thresholds and maps, selector testing |
+| **Protocols** | HTTP/JSON, Milter (proxy worker), legacy RSPAMC and spamc protocols |
 | **Security** | HTTPCrypt encryption, localhost-only binding, minimal attack surface |
 | **Scalability** | Horizontal scaling, load balancing, Redis HA support |
 
-See [Features page](/about/features) for comprehensive technical details.
+See the [Features page](/about/features) for technical details.
 
 ## Architecture Overview
 
 ```
 ┌─────────────────────────────────────────────────┐
 │              Mail Transfer Agent                │
-│          (Postfix/Exim/Sendmail/etc)           │
+│          (Postfix/Exim/Sendmail/etc)            │
 └────────────────┬────────────────────────────────┘
                  │ Milter/HTTP
                  ▼
@@ -200,8 +217,8 @@ See [Features page](/about/features) for comprehensive technical details.
     ▼            ▼            ▼
 ┌────────┐  ┌────────┐  ┌─────────────┐
 │ Redis  │  │  DNS   │  │  External   │
-│        │  │Resolver│  │  Services   │
-│Statistics│ │ (RBLs)│  │(AV, URLs)  │
+│ (Bayes,│  │Resolver│  │  Services   │
+│ limits)│  │ (RBLs) │  │ (AV, URLs)  │
 └────────┘  └────────┘  └─────────────┘
 ```
 
@@ -218,7 +235,7 @@ See [Architecture documentation](/developers/architecture) for detailed process 
 
 ### Postfix (most common)
 
-```nginx
+```ini
 # /etc/postfix/main.cf
 smtpd_milters = inet:localhost:11332
 non_smtpd_milters = inet:localhost:11332
@@ -228,13 +245,20 @@ milter_protocol = 6
 
 ### Exim
 
-```perl
-# ACL check
+Exim talks to the normal worker on port 11333 with the legacy RSPAMC protocol:
+
+```text
+# Main section of the Exim configuration
+spamd_address = 127.0.0.1 11333 variant=rspamd
+
+# In the ACL used for acl_smtp_data
 warn
   spam = nobody:true
   add_header = X-Spam-Score: $spam_score
   add_header = X-Spam-Report: $spam_report
 ```
+
+This only adds headers. The [Exim section](/tutorials/integration#integration-with-exim-mta) of the integration guide shows a complete ACL that rejects or defers mail based on `$spam_action`.
 
 ### Direct HTTP API
 
@@ -249,25 +273,21 @@ See [Integration guide](/tutorials/integration) for complete MTA setup instructi
 
 ## Performance Comparison
 
-| Solution | Messages/sec/core | Architecture | Memory/process |
-|----------|------------------|--------------|----------------|
-| **Rspamd** | 5-10 | Event-driven, async | 50-100MB |
-| SpamAssassin | 0.5-1 | Process-per-message | 30-50MB |
-| Amavis | 1-2 | Process pool | 100-200MB |
+The project reports that Rspamd processes about ten times as many messages as SpamAssassin with the same rules, loaded through the [SpamAssassin module](/modules/spamassassin). In a [2019 measurement](/blog/rspamd-performance), one server handled about 1500 messages per second with about 80% of its CPU idle. Throughput on your system depends on your hardware, the enabled modules and message size. Slow DNS, Redis and other network lookups add to the scan time of each message, but they do not hold up other scans.
 
 **Why Rspamd is faster**:
 - Non-blocking I/O (single process handles many messages)
-- Optimized regex engine (Hyperscan on x86_64)
+- Optimized regex engine (Hyperscan or its fork Vectorscan in the official packages)
 - Efficient memory pools
-- Connection pooling for Redis/DNS/HTTP
+- Connection pools for Redis and HTTP keep-alive connections
 - Zero-copy message handling where possible
 
-See [Performance comparison](/about/comparison) for detailed benchmarks.
+See [Performance](/about/performance) for the optimizations and the [comparison with SpamAssassin](/about/comparison) for a feature-by-feature table.
 
 ## Common Use Cases
 
 - **ISP/hosting providers** - High-volume mail filtering (millions of messages/day)
-- **Enterprise mail servers** - Policy enforcement, DLP, advanced authentication
+- **Enterprise mail servers** - Policy enforcement, outbound scanning, advanced authentication
 - **Small business** - Simple spam filtering with minimal resources
 - **Mailing list operators** - ARC handling, reputation management
 - **Security teams** - Threat intelligence integration, custom detection rules
@@ -277,15 +297,15 @@ See [Performance comparison](/about/comparison) for detailed benchmarks.
 If you're currently using SpamAssassin:
 
 1. **Install Rspamd alongside SpamAssassin** (don't remove SA yet)
-2. **Configure both to add headers** (test mode, no rejection)
+2. **Configure both to add headers** (test mode, no rejection; see [Testing alongside SpamAssassin](/getting-started/installation#testing-alongside-spamassassin))
 3. **Compare results** for several days
 4. **Retrain Bayesian classifier** with your mail corpus (SA Bayes data not compatible)
 5. **Switch to Rspamd** once confident
 
 **Key differences**:
-- 10-100x faster processing
+- Roughly ten times SpamAssassin's throughput with the same rules
 - Different statistical model (must retrain)
-- Better modern spam handling (DMARC, ARC, neural nets)
+- DKIM and ARC signing and DMARC aggregate reports built in (SpamAssassin only checks DMARC and ARC)
 - Event-driven vs process-per-message
 
 See [SpamAssassin migration guide](/tutorials/migrate_sa) for step-by-step instructions.
@@ -303,17 +323,17 @@ See [SpamAssassin migration guide](/tutorials/migrate_sa) for step-by-step instr
 
 - **[GitHub Repository](https://github.com/rspamd/rspamd)** - Source code, issue tracking, pull requests
 - **[Issue Tracker](https://github.com/rspamd/rspamd/issues)** - Bug reports and feature requests
-- **[Contributing Guide](https://github.com/rspamd/rspamd/blob/master/CONTRIBUTING.md)** - How to contribute code or documentation
+- **[Contributing Guide](https://github.com/rspamd/rspamd/blob/master/CONTRIBUTING.md)** - How to contribute code; [contributing to the documentation](/tutorials/site_contributing) covers this site
 
 ### Commercial Support
 
-Professional support, consulting, and custom development available from Rspamd developers and certified partners. See [Support page](/support) for details.
+For large or custom deployments that may require NDA signing, consulting, or dedicated access to fuzzy storage or DNS lists, commercial support is available. Contact support@rspamd.com; see the [Support page](/support#commercial-support).
 
 ### Security Vulnerabilities
 
-Report security issues privately to: security@rspamd.com
+Report security issues privately through [GitHub private vulnerability reporting](https://github.com/rspamd/rspamd/security/advisories/new) (preferred), or email vsevolod@rspamd.com with `[SECURITY]` in the subject.
 
-Do not open public GitHub issues for security vulnerabilities.
+Do not open public GitHub issues for security vulnerabilities. [SECURITY.md](https://github.com/rspamd/rspamd/blob/master/SECURITY.md) explains what the project treats as a vulnerability.
 
 ## Documentation Structure
 
@@ -322,10 +342,10 @@ This documentation is organized into several sections:
 - **[Getting Started](/getting-started/)** - Installation, configuration basics, first setup
 - **[About](/about/)** - Features, comparison, performance
 - **[Configuration](/configuration/)** - System-wide settings, UCL syntax, configuration layers
-- **[Modules](/modules/)** - Complete reference for all 60+ modules
+- **[Modules](/modules/)** - Reference for the built-in modules
 - **[Workers](/workers/)** - Worker types and their configuration
 - **[Tutorials](/tutorials/)** - Step-by-step guides for common tasks
-- **[Developers](/developers/)** - Architecture, protocol, writing rules, Lua API
+- **[Developers](/developers/architecture)** - Architecture, [protocol](/developers/protocol), [writing rules](/developers/writing_rules), [writing tests](/developers/writing_tests)
 - **[Lua API](/lua/)** - Complete programming interface documentation
 - **[FAQ](/faq)** - Frequently asked questions
 
@@ -339,15 +359,15 @@ Key points:
 - Patent grant included
 - No warranty provided
 
-See [LICENSE](https://github.com/rspamd/rspamd/blob/master/LICENSE) file for complete terms.
+See [LICENSE.md](https://github.com/rspamd/rspamd/blob/master/LICENSE.md) file for complete terms.
 
 ## Project Status
 
 - **Active development** - Regular releases with new features and improvements
 - **Production ready** - Used by ISPs, hosting providers, and enterprises worldwide
-- **Stable API** - Backwards compatibility maintained
-- **Security updates** - Prompt response to vulnerabilities
-- **Long-term support** - Project maintained since 2012
+- **Upgrade notes** - Incompatible changes between versions are listed in [Updating Rspamd](/tutorials/migration)
+- **Security updates** - Released for the latest stable series only (currently 4.x); older series get no backports
+- **Project history** - Developed since 2008
 
 **Current stable version**: Check [GitHub releases](https://github.com/rspamd/rspamd/releases) for latest version
 

@@ -55,7 +55,7 @@ The `hosts` option for the `upstream` and `mirror` can specify IP addresses or U
 | `ssl` | false | Use SSL/TLS for connection to upstream |
 | `keepalive` | false | Use HTTP keepalive (also accepted as `keep_alive`) |
 | `extra_headers` | - | Additional headers to send |
-| `token_bucket` | enabled (4.0+) | Token bucket load balancing sub-block; see [Token bucket load balancing](#token-bucket-load-balancing) |
+| `token_bucket` | - | Token bucket load balancing sub-block (4.0+); upstreams without it use round-robin. The shipped `local` upstream has one. See [Token bucket load balancing](#token-bucket-load-balancing) |
 
 For a full list of options, please refer to `rspamadm confighelp workers.rspamd_proxy`.
 
@@ -69,7 +69,7 @@ For users who do not need Milter support, it's generally more efficient to use n
 
 ## Milter support
 
-Starting from Rspamd 1.6, the rspamd proxy worker supports the `milter` protocol, which is compatible with popular MTAs like Postfix and Sendmail. This new feature also marks the obsolescence of the [Rmilter](/rmilter/) project in recognition of the improved integration method.
+Starting from Rspamd 1.6, the rspamd proxy worker supports the `milter` protocol, which is compatible with popular MTAs like Postfix and Sendmail. The milter protocol is built into the proxy worker, so no separate milter daemon is needed; this replaced the obsolete Rmilter project.
 
 To enable Milter mode, use the `milter` boolean worker option. When enabled, the proxy communicates exclusively in the Milter protocol. If disabled, the proxy can be used with Rspamd's native [HTTP protocol](/developers/protocol) and the legacy protocol used by Exim.
 
@@ -92,35 +92,32 @@ upstream "local" {
   self_scan = yes; # Enable self-scan
 }
 
-# Proxy worker is listening on *:11332 by default
+# Proxy worker is listening on localhost:11332 by default
 #bind_socket = localhost:11332;
 ~~~
 
-Also you can disable<sup>[1](#fn1)</sup> [normal](/workers/normal) worker to free up system resources as it is not necessary in `self-scan` mode:
+Also you can disable[^1] [normal](/workers/normal) worker to free up system resources as it is not necessary in `self-scan` mode:
 
 ~~~hcl
 # local.d/worker-normal.inc
 enabled = false;
 ~~~
 
-But there is a drawback: since `rspamc` uses [normal](/workers/normal) worker by default you need to explicitly point it to [controller](/workers/controller) worker port (11334)<sup>[2](#fn1)</sup>:
+But there is a drawback: when `rspamc` connects to a remote host without a port, it sends scan requests to the [normal](/workers/normal) worker port (11333), so you need to point it to the [controller](/workers/controller) worker port (11334) explicitly:
 
 ~~~
 rspamc -h rspamd.example.org:11334 input-file
 ~~~
 
-&nbsp;
+This is not needed for local scans: when the host is `localhost` (the default), `127.0.0.1` or `::1` and no port is given, `rspamc` connects to the controller port (1.7+).
 
----
-<a name="fn1">1.</a> The `enabled` option is available for workers since Rspamd 1.6.2, in  previous versions you can use `count = 0;` instead.
-
-<a name="fn1">2.</a> When connecting to local IP `rspamc` uses controller port by default (1.7+).
+[^1]: The `enabled` option is available for workers since Rspamd 1.6.2, in previous versions you can use `count = 0;` instead.
 
 ### Proxy mode
 
 <img class="img-fluid" src="/img/rspamd_milter_proxy.png">
 
-In this mode, a dedicated layer of Rspamd scanners is employed, featuring load-balancing and optional encryption and/or compression. For this particular setup, the configuration may vary. Below is a concise example of proxy mode with four scanners, where two of them are allocated more resources to handle a higher volume of requests. Additionally, the local worker is disabled:
+In this mode, a dedicated layer of Rspamd scanners is employed, featuring load-balancing and optional encryption and/or compression. For this particular setup, the configuration may vary. Below is a concise example of proxy mode with four scanners, where two of them are allocated more resources to handle a higher volume of requests. Additionally, the shipped `local` upstream is disabled:
 
 ~~~hcl
 # local.d/worker-proxy.inc
@@ -139,9 +136,9 @@ upstream "scan" {
 
 ## Token bucket load balancing
 
-Starting from Rspamd 4.0, the proxy uses **token bucket** load balancing for upstream selection by default, replacing the previous round-robin algorithm. Token bucket distributes requests proportionally to available capacity and handles burst traffic more gracefully than round-robin.
+Starting from Rspamd 4.0, the proxy can select upstream hosts with **token bucket** load balancing instead of round-robin. It is enabled for each upstream that has a `token_bucket` sub-block. The shipped `local` upstream in `$CONFDIR/worker-proxy.inc` has one, so token bucket is the default there; an upstream you define without this block uses round-robin.
 
-Each upstream maintains a bucket of tokens. Tokens are replenished at a configurable rate. Each forwarded request consumes tokens proportional to its cost. When a bucket is empty, the upstream is temporarily deprioritised.
+Each host of the upstream has a bucket of `max_tokens` tokens. A request costs `base_cost + message_size / scale` tokens, where `message_size` is in bytes. The proxy sends the request to the host with the fewest tokens in flight among the hosts that have enough tokens left; if no host has enough, it picks the host with the fewest tokens in flight. The tokens are returned when the request succeeds. After a failure they are not returned, and the bucket refills over time at `max_tokens / 60` tokens per second.
 
 The token bucket behaviour is controlled per-upstream via the `token_bucket` sub-block:
 
@@ -152,20 +149,38 @@ upstream "scan" {
   hosts = "host1:11333,host2:11333";
 
   token_bucket {
-    max_tokens = 100;  # bucket capacity (default: 100)
-    scale      = 1.0;  # replenishment rate multiplier (default: 1.0)
-    base_cost  = 1.0;  # tokens consumed per request (default: 1.0)
+    max_tokens = 10000; # bucket capacity per host (default: 10000)
+    scale = 1024;       # message bytes per token (default: 1024)
+    base_cost = 10;     # tokens charged per request on top of the size cost (default: 10)
   }
 }
 ~~~
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `max_tokens` | 100 | Maximum bucket capacity |
-| `scale` | 1.0 | Token replenishment rate multiplier relative to request rate |
-| `base_cost` | 1.0 | Base token cost per request |
+| `max_tokens` | 10000 | Bucket capacity of each host; also sets the refill rate (`max_tokens / 60` per second) |
+| `scale` | 1024 | Message bytes per token |
+| `base_cost` | 10 | Tokens charged for every request in addition to the size-based cost |
+| `min_tokens` | 1 | Accepted (and set in the shipped config), but not used by the current selection code |
 
-To restore the pre-4.0 round-robin behaviour, remove the `token_bucket` block from the upstream configuration entirely.
+To use round-robin for an upstream, leave out the `token_bucket` block. For the shipped `local` upstream, which gets its block from `$CONFDIR/worker-proxy.inc`, set it to `false` in `local.d/worker-proxy.inc`:
+
+~~~hcl
+# local.d/worker-proxy.inc
+upstream "local" {
+  token_bucket = false; # use round-robin
+}
+~~~
+
+Alternatively, define the upstreams in `override.d/worker-proxy.inc`; its `upstream` section replaces the whole shipped one, including any upstreams from `local.d/worker-proxy.inc`:
+
+~~~hcl
+# override.d/worker-proxy.inc
+upstream "local" {
+  default = yes;
+  hosts = "localhost";
+}
+~~~
 
 ## Mirroring
 
@@ -185,7 +200,7 @@ In this mode, Rspamd mirrors a portion of its traffic to a test cluster. The sca
 # local.d/worker-proxy.inc
 # Main scan layer
 upstream "scan" {
-  default = "yes";
+  default = yes;
   hosts = "round-robin:host1:11333:10,host2:11333:10,host3:11333:5,host4:11333:5";
   key = "..."; # Public key for encryption, generated by rspamadm keypair
   compression = yes; # Use zstd compression

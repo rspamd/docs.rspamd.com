@@ -76,10 +76,10 @@ Official packages include several optimizations not present in distribution pack
 | Feature | Description |
 |---------|-------------|
 | **Link Time Optimization (LTO)** | Enables cross-module optimization for better performance |
-| **Bundled LuaJIT 2.1** | Uses LuaJIT 2.1 beta for up to 30% performance improvement over stable LuaJIT |
-| **jemalloc** | Memory allocator optimized for multi-threaded applications |
+| **Bundled LuaJIT 2.1** | Built from the upstream LuaJIT `v2.1` branch instead of using the distribution's Lua or LuaJIT package |
+| **jemalloc** | Memory allocator optimized for multi-threaded applications (x86_64 packages, except EL 10) |
 | **Hyperscan** | Intel's high-performance regex matching library (x86_64) |
-| **Vectorscan** | Hyperscan port for ARM64 and PowerPC platforms |
+| **Vectorscan** | Hyperscan fork used in ARM64 packages and in x86_64 packages for EL 10 |
 
 These optimizations may not be available on older platforms due to toolchain limitations.
 
@@ -108,7 +108,7 @@ The official Docker image is available at [rspamd/rspamd on Docker Hub](https://
 | Tag | Description |
 |-----|-------------|
 | `latest` | Latest stable release |
-| `3.x`, `3.x.y` | Specific version series |
+| `4`, `4.x`, `4.x.y` | Latest release in a major or minor series, or a specific release |
 | `nightly` | Development builds from master branch |
 | `asan-*` | ASAN-enabled images for debugging |
 
@@ -145,10 +145,10 @@ Rspamd supports the following Debian-based distributions:
 |--------------|-----------------|
 | Debian trixie | 3.13 |
 | Debian bookworm | 3.5 |
-| Debian bullseye | — |
 | Ubuntu noble (24.04) | 3.9 |
 | Ubuntu jammy (22.04) | 3.3 |
-| Ubuntu focal (20.04) | 2.5 |
+
+Debian bullseye and Ubuntu focal (20.04) no longer get new packages. The last version published for bullseye is 4.1.5, and focal has been removed from the repository.
 
 ### Install Stable Packages
 
@@ -204,7 +204,7 @@ sudo apt-get --no-install-recommends install rspamd-asan
 
 ### Hyperscan and LuaJIT
 
-For information about Hyperscan and LuaJIT in Debian/Ubuntu packages, see the [FAQ](/faq#how-rspamd-packages-are-built).
+Official Debian and Ubuntu packages are built with Hyperscan on amd64, Vectorscan on arm64, and a bundled LuaJIT instead of the distribution's Lua. See [Build Optimizations](#build-optimizations) above and the [FAQ](/faq#how-are-official-packages-built).
 
 ### Debian Standard Repository Warning
 
@@ -363,26 +363,28 @@ cd rspamd
 For a specific version:
 
 ```bash
-git clone --recursive -b 3.10.2 https://github.com/rspamd/rspamd.git
+git clone --recursive -b 4.2.1 https://github.com/rspamd/rspamd.git
 ```
 
 ### Build Requirements
 
 | Dependency | Description | Required |
 |------------|-------------|----------|
-| [CMake](https://cmake.org/) 3.12+ | Build system | Yes |
-| C11 compiler | GCC 7+ or Clang 6+ | Yes |
+| [CMake](https://cmake.org/) 3.15+ | Build system | Yes |
+| C11 compiler | GCC 8+ or Clang 7+ | Yes |
 | C++20 compiler | GCC 10+ or Clang 10+ | Yes |
 | [OpenSSL](https://www.openssl.org/) | Cryptography library | Yes |
 | [GLib2](https://developer.gnome.org/glib/) 2.28+ | Common utilities library | Yes |
 | [Ragel](https://www.colm.net/open-source/ragel/) | State machine compiler | Yes |
 | [LuaJIT](https://luajit.org/) or [Lua](https://www.lua.org/) 5.1-5.4 | Scripting language | Yes |
 | [SQLite3](https://sqlite.org/) | Embedded database | Yes |
-| [libmagic](https://www.darwinsys.com/file/) | File type detection | Yes |
 | [libicu](https://icu.unicode.org/) | Unicode library | Yes |
 | [PCRE2](https://www.pcre.org/) | Regular expressions | Yes |
 | [zlib](https://zlib.net/) | Compression library | Yes |
-| [Hyperscan](https://www.hyperscan.io/) | High-performance regex (x86_64) | Recommended |
+| [libsodium](https://doc.libsodium.org/) 1.0.0+ | Cryptography library | Yes |
+| [libarchive](https://libarchive.org/) 3.0+ | Archive extraction | Yes |
+| [Perl](https://www.perl.org/) | Generates the Snowball stemmer modules at build time | Yes |
+| [Hyperscan](https://github.com/intel/hyperscan) | High-performance regex (x86_64) | Recommended |
 | [Vectorscan](https://github.com/VectorCamp/vectorscan) | Hyperscan for ARM64/PPC64 | Recommended |
 | [jemalloc](https://jemalloc.net/) | Memory allocator | Recommended |
 | [Redis](https://redis.io/) | In-memory data store | Recommended |
@@ -409,8 +411,7 @@ cmake .. \
   -DENABLE_LUAJIT=ON \
   -DENABLE_HYPERSCAN=ON \
   -DENABLE_JEMALLOC=ON \
-  -DCMAKE_C_FLAGS="-flto" \
-  -DCMAKE_CXX_FLAGS="-flto"
+  -DENABLE_LTO=ON
 make -j$(nproc)
 sudo make install
 ```
@@ -436,6 +437,7 @@ Note: ASAN builds automatically disable jemalloc.
 | `ENABLE_HYPERSCAN` | OFF | Enable Hyperscan regex acceleration |
 | `ENABLE_JEMALLOC` | OFF | Use jemalloc memory allocator |
 | `ENABLE_PCRE2` | ON | Use PCRE2 (vs legacy PCRE) |
+| `ENABLE_LTO` | ON for Release and RelWithDebInfo | Enable Link Time Optimization |
 | `SANITIZE` | — | Enable sanitizers (address, memory, undefined, leak) |
 | `CMAKE_INSTALL_PREFIX` | /usr/local | Installation prefix |
 
@@ -444,7 +446,7 @@ Note: ASAN builds automatically disable jemalloc.
 For Debian-based systems not officially supported, you can build packages using the in-tree fixtures:
 
 ```bash
-export RSPAMD_VERSION=3.10.2
+export RSPAMD_VERSION=4.2.1
 git clone -b ${RSPAMD_VERSION} https://github.com/rspamd/rspamd.git
 cd rspamd
 
@@ -456,6 +458,10 @@ sed -i "s/quilt/native/" debian/source/format
 sudo apt install devscripts
 mk-build-deps
 sudo dpkg -i rspamd-build-deps_*.deb || sudo apt install -f -y
+
+# debian/rules also enables LuaJIT and Hyperscan, which Build-Depends does not list
+# (on arm64, install libvectorscan-dev instead of libhyperscan-dev)
+sudo apt install libluajit-5.1-dev libhyperscan-dev
 
 # Build package
 debuild -us -uc

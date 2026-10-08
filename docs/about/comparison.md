@@ -9,7 +9,7 @@ This comparison helps you understand the key differences between Rspamd and Spam
 ## Quick Summary
 
 **Choose Rspamd if you need:**
-- High-performance filtering (10-100x faster)
+- High throughput: roughly ten times SpamAssassin's with the same rules (see [Performance](/about/performance))
 - Modern architecture with async I/O
 - Built-in machine learning and neural networks
 - Integrated web UI and management API
@@ -46,27 +46,17 @@ This comparison helps you understand the key differences between Rspamd and Spam
       </tr>
       <tr>
         <td>Process model</td>
-        <td>Event-driven async I/O (libevent)</td>
+        <td>Event-driven async I/O (libev)</td>
         <td>Pre-forked worker pool</td>
       </tr>
       <tr>
-        <td>Performance (msg/sec/core)</td>
-        <td><strong>5-10 messages/sec</strong><br/>(500K-1M msg/day per worker)</td>
-        <td>0.5-2 messages/sec<br/>(50K-200K msg/day per worker)</td>
-      </tr>
-      <tr>
-        <td>Typical scan time</td>
-        <td><strong>50-200ms</strong> including network ops</td>
-        <td>200ms-2s depending on rules</td>
-      </tr>
-      <tr>
-        <td>Memory per process</td>
-        <td>50-100MB per worker</td>
-        <td>30-50MB per worker</td>
+        <td>Throughput</td>
+        <td><strong>Roughly ten times</strong> SpamAssassin's with the same rules</td>
+        <td>Baseline</td>
       </tr>
       <tr>
         <td>Concurrent processing</td>
-        <td><strong>100+ messages simultaneously</strong> per worker</td>
+        <td><strong>Many messages at once</strong> per worker</td>
         <td>1 message per worker process</td>
       </tr>
       <tr>
@@ -156,7 +146,7 @@ This comparison helps you understand the key differences between Rspamd and Spam
       </tr>
       <tr>
         <td>Language detection</td>
-        <td><span class="fa-solid fa-lg fa-check icon-green"></span> <strong>60+ languages</strong><br/>UTF-8 normalization, CJK support</td>
+        <td><span class="fa-solid fa-lg fa-check icon-green"></span> <strong>47 built-in language profiles</strong>, more with fastText<br/>UTF-8 normalization, CJK support</td>
         <td><span class="fa-solid fa-lg fa-check icon-green"></span> UTF-8 support (v4+)<br/>Limited language detection</td>
       </tr>
       <tr>
@@ -181,7 +171,7 @@ This comparison helps you understand the key differences between Rspamd and Spam
       </tr>
       <tr>
         <td>DNS blacklists (RBL)</td>
-        <td><span class="fa-solid fa-lg fa-check icon-green"></span> 50+ preconfigured<br/>Async parallel queries</td>
+        <td><span class="fa-solid fa-lg fa-check icon-green"></span> About 20 preconfigured rules<br/>Async parallel queries</td>
         <td><span class="fa-solid fa-lg fa-check icon-green"></span> Standard RBL support</td>
       </tr>
       <tr>
@@ -378,7 +368,7 @@ This comparison helps you understand the key differences between Rspamd and Spam
 
 ### When to Choose Rspamd
 
-**High-volume mail systems** (100K+ messages/day):
+**High-volume mail systems**:
 - Event-driven architecture handles load efficiently
 - Single server can replace multiple SpamAssassin servers
 - Native clustering and load balancing
@@ -407,7 +397,7 @@ This comparison helps you understand the key differences between Rspamd and Spam
 - Large existing Perl plugin codebase
 - Upgrade from older SA versions
 
-**Low-volume mail systems** (< 10K messages/day):
+**Low-volume mail systems**:
 - Simpler setup, fewer moving parts
 - No Redis requirement
 - File-based storage is sufficient
@@ -435,15 +425,9 @@ See the [SpamAssassin migration guide](/tutorials/migrate_sa) for detailed instr
 
 ## Performance Comparison
 
-Real-world performance metrics from production deployments:
+The project reports that Rspamd processes about ten times as many messages as SpamAssassin with the same rules, loaded through the [SpamAssassin module](/modules/spamassassin); see [Performance](/about/performance). In a [2019 measurement](/blog/rspamd-performance), one server handled about 1500 messages per second with about 80% of its CPU idle, while also running ClickHouse, Redis and Unbound.
 
-| Metric | Rspamd | SpamAssassin | Improvement |
-|--------|--------|--------------|-------------|
-| Messages/sec/core | 5-10 | 0.5-2 | **10-20x faster** |
-| Scan time (typical) | 50-200ms | 200ms-2s | **4-10x faster** |
-| Concurrent connections | 100+ per worker | 1 per worker | **100x better** |
-| Memory efficiency | 50-100MB/worker | 30-50MB/worker | Similar |
-| Setup complexity | Moderate | Simple to Moderate | Depends on scale |
+Throughput and scan time on your system depend on your hardware, the enabled modules, message size and the latency of DNS, Redis and other network lookups, so measure with your own mail.
 
 ## Conclusion
 

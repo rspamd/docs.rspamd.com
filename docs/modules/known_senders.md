@@ -29,41 +29,40 @@ Result options indicate which key matched, e.g. `smtp:<hash>` or `mime:<hash>`.
 
 Add configuration to `/etc/rspamd/local.d/known_senders.conf` (or configure Redis globally):
 
-~~~hcl
-known_senders {
-  enabled = true;
+```hcl
+# local.d/known_senders.conf
+enabled = true;
 
-  # Redis (can be configured globally as well)
-  #servers = 127.0.0.1:6379;
+# Redis (can be configured globally as well)
+#servers = 127.0.0.1:6379;
 
-  # Domains to track senders (map or list)
-  domains = "https://maps.rspamd.com/freemail/free.txt.zst";
+# Domains to track senders (map or list)
+domains = "https://maps.rspamd.com/freemail/free.txt.zst";
 
-  # Storage
-  use_bloom = false;           # requires RedisBloom if true
-  redis_key = "rs_known_senders";
-  max_senders = 100000;        # max elements kept in set/filter
-  max_ttl = 30d;               # default 30 days; applies to non-Bloom (ZSET) storage
+# Storage
+use_bloom = false;           # requires RedisBloom if true
+redis_key = "rs_known_senders";
+max_senders = 100000;        # max elements kept in set/filter
+max_ttl = 30d;               # accepted, but entries are not expired; the ZSET is only trimmed to max_senders
 
-  # Symbols
-  symbol = "KNOWN_SENDER";
-  symbol_unknown = "UNKNOWN_SENDER";
-  symbol_check_mail_global = "INC_MAIL_KNOWN_GLOBALLY";
-  symbol_check_mail_local = "INC_MAIL_KNOWN_LOCALLY";
+# Symbols
+symbol = "KNOWN_SENDER";
+symbol_unknown = "UNKNOWN_SENDER";
+symbol_check_mail_global = "INC_MAIL_KNOWN_GLOBALLY";
+symbol_check_mail_local = "INC_MAIL_KNOWN_LOCALLY";
 
-  # Replies-related (must match settings in the replies module when changed)
-  sender_prefix = "rsrk";
-  sender_key_global = "verified_senders";
-  sender_key_size = 20;        # applies to global reply-set keys only; local keys are always 8 chars
-  max_recipients = 15;         # recipients to verify for local set
+# Replies-related (must match settings in the replies module when changed)
+sender_prefix = "rsrk";
+sender_key_global = "verified_senders";
+sender_key_size = 20;        # applies to global reply-set keys only; local keys are always 8 chars
+max_recipients = 15;         # recipients to verify for local set
 
-  # Optional privacy for reply sender before hashing
-  reply_sender_privacy = false;
-  reply_sender_privacy_alg = "blake2";
-  reply_sender_privacy_prefix = "obf";
-  reply_sender_privacy_length = 16;
-}
-~~~
+# Optional privacy for reply sender before hashing
+reply_sender_privacy = false;
+reply_sender_privacy_alg = "blake2";
+reply_sender_privacy_prefix = "obf";
+reply_sender_privacy_length = 16;
+```
 
 ## Symbols
 
@@ -80,7 +79,7 @@ Override these scores in your metrics configuration as needed.
 
 ## Requirements
 
-- **Redis**: configure Redis servers globally or per-module, see [Redis configuration](/docs/configuration/redis.md)
+- **Redis**: configure Redis servers globally or per-module, see [Redis configuration](/configuration/redis)
 - **RedisBloom (optional)**: required if `use_bloom = true`. Enable in Redis, e.g. in `redis.conf`:
 
 ```

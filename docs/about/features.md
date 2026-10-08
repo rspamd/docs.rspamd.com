@@ -10,7 +10,7 @@ Rspamd is a high-performance spam filtering system that combines traditional spa
 
 ### Event-Driven Non-Blocking Architecture
 
-Rspamd uses [libevent](https://libevent.org/) for asynchronous I/O operations, allowing a single worker process to handle thousands of concurrent connections without blocking.
+Rspamd uses [libev](http://software.schmorp.de/pkg/libev.html) for asynchronous I/O operations, allowing a single worker process to handle thousands of concurrent connections without blocking.
 
 **Technical details:**
 - Non-blocking DNS lookups (hundreds of RBL/DKIM/SPF queries per message)
@@ -23,7 +23,7 @@ Rspamd uses [libevent](https://libevent.org/) for asynchronous I/O operations, a
 - Typical message scanning: 50-200ms (including all network operations)
 - Memory footprint: ~50-100MB per worker process
 
-See [Architecture documentation](/developers/architecture#event-driven-model) for internal details.
+See [Architecture documentation](/developers/architecture#event-driven-architecture) for internal details.
 
 ### Multi-Worker Process Model
 
@@ -42,13 +42,13 @@ Rspamd uses a master-worker architecture inspired by nginx:
 
 ### Modular Plugin System
 
-Over 60 built-in modules can be enabled/disabled/configured independently:
+More than 50 built-in modules can be enabled/disabled/configured independently:
 
 ```hcl
 # Example: Configure SPF module
 # /etc/rspamd/local.d/spf.conf
-external_relay = ["192.168.1.0/24"];  # Skip SPF for internal relays
-whitelist = ["example.com"];          # Whitelist trusted domains
+external_relay = ["192.168.1.0/24"];  # Check the IP that passed mail to these relays
+whitelist = ["192.0.2.10"];           # Skip SPF checks for these sender IPs
 ```
 
 **Module categories:**
@@ -66,15 +66,11 @@ See [Modules documentation](/modules/) for complete list.
 Rspamd uses [UCL (Universal Configuration Language)](/configuration/ucl) - a JSON-compatible format with includes and macros:
 
 ```hcl
-# Base configuration
+# /etc/rspamd/local.d/actions.conf
 reject = 15;
 
-# Include external file
-.include(try=true) "/etc/rspamd/custom-thresholds.conf"
-
-# Macros
-.define MY_NETWORK "192.168.1.0/24"
-whitelist_ip = "$MY_NETWORK";
+# Include another file; $LOCAL_CONFDIR is a variable defined by Rspamd
+.include(try=true) "$LOCAL_CONFDIR/custom-thresholds.conf"
 ```
 
 **Configuration layers:**
@@ -97,12 +93,12 @@ See [Configuration fundamentals](/guides/configuration/fundamentals) for best pr
 **DKIM (DomainKeys Identified Mail):**
 - Verifies cryptographic signatures in email headers
 - Supports multiple signatures per message
-- Caches public keys in Redis for performance
+- Caches public keys in memory for performance
 - Symbols: `R_DKIM_ALLOW`, `R_DKIM_REJECT`, `R_DKIM_TEMPFAIL`, `R_DKIM_PERMFAIL`
 
 **DMARC (Domain-based Message Authentication):**
 - Combines SPF and DKIM results with domain policy
-- Supports aggregate and forensic reporting
+- Supports aggregate reporting
 - Policy enforcement: none, quarantine, reject
 - Symbols: `DMARC_POLICY_ALLOW`, `DMARC_POLICY_REJECT`, `DMARC_POLICY_QUARANTINE`, `DMARC_POLICY_SOFTFAIL`
 
@@ -119,7 +115,7 @@ See [SPF module](/modules/spf), [DKIM module](/modules/dkim), [DMARC module](/mo
 **Bayesian Classification:**
 - Token-based statistical analysis (words, patterns, metadata)
 - Redis backend with automatic token expiration
-- Per-user and per-language training support
+- Per-user training support
 - Autolearn mode: automatically train on high-confidence spam/ham
 
 ```hcl
@@ -138,7 +134,7 @@ autolearn {
 **Neural Networks:**
 - Multi-layer perceptron with rule outputs as inputs
 - Automatically learns optimal symbol weight combinations
-- Separate networks for short/medium/long messages
+- Several networks can be defined as separate rules
 - Requires Redis for weight storage
 
 ```hcl
@@ -146,8 +142,7 @@ autolearn {
 rules {
   "NEURAL_SPAM" {
     train {
-      max_trains = 10000;  # Training cycles
-      max_usages = 100;    # Retrains after this many classifications
+      max_trains = 10000;  # Training vectors of each class needed to train
       spam_score = 8.0;    # Learn as spam if score >= 8
       ham_score = -2.0;    # Learn as ham if score <= -2
     }
@@ -171,18 +166,19 @@ See [Statistic configuration](/configuration/statistic), [Neural module](/module
 ### Content Analysis
 
 **Regular Expression Rules:**
-- LuaJIT-optimized regex engine (Hyperscan on x86_64)
+- PCRE regex engine with Hyperscan acceleration where available
 - Multi-expression matching in single pass
 - Header, body, URL, and raw content matching
 
 Example custom rule:
 ```lua
--- /etc/rspamd/local.d/custom_rules.lua
+-- /etc/rspamd/lua.local.d/custom_rules.lua
 rspamd_config.SUSPICIOUS_ATTACHMENT = {
   callback = function(task)
     local parts = task:get_parts()
     for _, part in ipairs(parts) do
-      local ext = part:get_extension()
+      local fname = part:get_filename()
+      local ext = fname and fname:lower():match('%.([^.]+)$')
       if ext and (ext == "exe" or ext == "scr" or ext == "bat") then
         return true, 1.0, ext  -- Return true, weight 1.0, attachment extension
       end
@@ -203,7 +199,7 @@ rspamd_config.SUSPICIOUS_ATTACHMENT = {
 - Embedded image analysis
 
 **Language and Charset Detection:**
-- Automatic language identification (60+ languages)
+- Automatic language identification (47 built-in language profiles, more with an optional fastText model)
 - Mixed charset detection (common in spam)
 - UTF-8 validation
 - CJK (Chinese, Japanese, Korean) support
@@ -215,35 +211,35 @@ rspamd_config.SUSPICIOUS_ATTACHMENT = {
 - Phishing detection (lookalike domains)
 - TLD validation
 
-See [Regexp module](/modules/regexp), [SURBL module](/modules/surbl), [Phishing module](/modules/phishing).
+See [Regexp module](/modules/regexp), [RBL module](/modules/rbl) (URL lists), [Phishing module](/modules/phishing).
 
 ### Reputation and Blacklists
 
 **RBL (Real-time Blackhole Lists):**
-- Parallel DNS queries to multiple RBLs (50+ preconfigured)
+- Parallel DNS queries to multiple RBLs (about 20 preconfigured rules)
 - IP reputation: sender IP, email server IPs from headers
 - Automatic retry logic and caching
 - Configurable weights per RBL
 
-Commonly used RBLs:
-- Spamhaus (ZEN, DBL, PBL)
-- SORBS
-- SpamCop
-- Barracuda
-- URIBL (URL-based)
+Preconfigured lists include:
+- Spamhaus (ZEN, DBL)
+- Mailspike
+- Spam Eating Monkey
+- DNSWL (allowlist)
+- SURBL and URIBL (URL-based)
 
 **ASN and Country Detection:**
-- GeoIP2/MaxMind database integration
+- ASN, network and country lookups over DNS (`asn.rspamd.com` by default)
 - ASN-based reputation scoring
 - Country-specific rules
 
-**IP Score Module:**
-- Tracks IP reputation based on historical behavior
-- Learns from user actions (spam/ham classification)
-- Exponential decay for old data
-- Whitelist trusted IPs automatically
+**Reputation Module:**
+- Tracks the reputation of sender IPs (with their ASN and country), URLs, DKIM and SPF domains, or any selector value
+- Learns from the results of previous scans
+- Stores data in Redis or queries a DNS list
+- Replaced the `ip_score` module in Rspamd 2.0
 
-See [RBL module](/modules/rbl), [ASN module](/modules/asn), [IP Score module](/modules/ip_score).
+See [RBL module](/modules/rbl), [ASN module](/modules/asn), [Reputation module](/modules/reputation).
 
 ### Anti-Abuse Mechanisms
 
@@ -257,13 +253,12 @@ See [RBL module](/modules/rbl), [ASN module](/modules/asn), [IP Score module](/m
 # /etc/rspamd/local.d/greylist.conf
 expire = 86400;      # 24 hours
 timeout = 300;       # 5 minutes delay
-whitelist_ip = [];   # IPs to skip greylisting
-whitelist_rcpt = []; # Recipients to skip greylisting
+whitelisted_ip = ["192.0.2.0/24"];  # IPs to skip greylisting
 ```
 
 **Rate Limiting:**
 - Limits messages per time period by IP, sender, recipient, or custom selector
-- Bucket-based rate limiting (token bucket algorithm)
+- Bucket-based rate limiting (leaky bucket algorithm)
 - Multiple limit tiers (soft limits, hard limits)
 - Redis-backed counters
 
@@ -271,15 +266,15 @@ whitelist_rcpt = []; # Recipients to skip greylisting
 # /etc/rspamd/local.d/ratelimit.conf
 rates {
   # Limit to 100 messages per hour per sender IP
-  to = {
+  ip = {
     bucket = {
       burst = 120;
       rate = "100 / 1h";
     }
   }
 
-  # Limit to 1000 recipients per hour per authenticated user
-  to_ip_from = {
+  # Limit to 1000 messages per hour per authenticated user
+  user = {
     bucket = {
       burst = 1100;
       rate = "1000 / 1h";
@@ -289,10 +284,10 @@ rates {
 ```
 
 **Spamtrap Detection:**
-- Mark certain addresses as spamtraps
-- Auto-learn as spam any message to spamtraps
+- Mark certain addresses or domains as spamtraps
+- Add fuzzy hashes of messages sent to spamtraps
 - Feed spamtraps to Bayesian classifier
-- Block sender IPs sending to spamtraps
+- Force an action, such as reject, for messages sent to spamtraps
 
 See [Greylisting module](/modules/greylisting), [Ratelimit module](/modules/ratelimit), [Spamtrap module](/modules/spamtrap).
 
@@ -303,7 +298,6 @@ See [Greylisting module](/modules/greylisting), [Ratelimit module](/modules/rate
 **HTTP/JSON API:**
 - Native protocol for message scanning
 - RESTful endpoints for management
-- WebSocket support for real-time updates
 - [HTTPCrypt encryption](/developers/encryption) for inter-server communication
 
 Example API request:
@@ -321,7 +315,7 @@ Response:
   "required_score": 15.0,
   "symbols": {
     "R_SPF_FAIL": {"score": 1.0},
-    "BAYES_SPAM": {"score": 3.5, "options": ["0.95"]},
+    "BAYES_SPAM": {"score": 3.5, "options": ["95.00%"]},
     "SUSPICIOUS_URL": {"score": 2.0}
   },
   "messages": [],
@@ -333,7 +327,7 @@ Response:
 - Compatible with Postfix, Sendmail, and other milter-capable MTAs
 - Protocol translation via Proxy worker
 - Support for all milter actions (reject, tempfail, add/remove headers, modify body)
-- Multiplexing multiple messages over single connection
+- Several messages over one milter connection, processed one after another
 
 **Exim Protocol:**
 - Native integration via Exim's spam scanner interface
@@ -351,22 +345,22 @@ Modern single-page application for monitoring and management:
 - Live statistics and graphs (messages/sec, actions distribution)
 - Bayesian training (learn spam/ham from web UI)
 - Fuzzy hash management (add/delete hashes)
-- Configuration validation
+- Selector expression testing
 - Symbol and rule management
 - Server cluster monitoring (multiple Rspamd instances)
 
 **Access control:**
-- Password-protected (bcrypt hashing)
+- Password-protected (PBKDF2 or Catena password hashes)
 - Separate read-only and enable passwords
 - IP-based access restrictions
-- Optional HTTPS with client certificates
+- Optional HTTPS (`ssl` bind sockets with `ssl_cert` and `ssl_key`)
 
 **API endpoints:**
 - `/stat` - Server statistics
-- `/graph` - Historical data (requires ClickHouse or Redis)
+- `/graph` - Historical data (requires an RRD file)
 - `/history` - Recent messages
 - `/errors` - Error log
-- `/learn_spam`, `/learn_ham` - Training endpoints
+- `/learnspam`, `/learnham` - Training endpoints
 - `/saveactions` - Modify action thresholds
 
 See [Controller worker](/workers/controller) documentation.
@@ -381,7 +375,7 @@ See [Controller worker](/workers/controller) documentation.
 
 **Prometheus Integration:**
 - `/metrics` endpoint in Prometheus format
-- Metric exporter module for custom metrics
+- Metric exporter module can also push statistics to Graphite
 - Pre-built Grafana dashboards available
 
 **Logging:**
@@ -392,8 +386,8 @@ See [Controller worker](/workers/controller) documentation.
 
 **Health Checks:**
 - `/ping` - Liveness check (is Rspamd responding?)
-- `/stat` - Readiness check (is Rspamd ready to process?)
-- Systemd watchdog support
+- `/healthy` - Fails if some workers stop answering heartbeats
+- `/ready` - Readiness check (are scanner workers running?)
 
 Example Prometheus query:
 ```promql
@@ -412,20 +406,20 @@ See [Metric exporter module](/modules/metric_exporter).
 
 **Load Balancing:**
 - Proxy worker can forward to multiple Normal workers
-- Round-robin, hash-based, or least-connection algorithms
+- Round-robin, random, master-slave, hash-based or token bucket selection
 - Automatic failover on worker failure
 - Health checks for backend workers
 
 **Redis High Availability:**
 - Redis Sentinel support for automatic failover
-- Redis Cluster support for sharding
+- Separate `read_servers` and `write_servers`
 - Consistent hashing for multi-Redis setups
 - Connection pooling and retry logic
 
 **Fuzzy Storage Replication:**
-- Master-slave replication for fuzzy hashes
-- Mirroring mode: write to multiple storage nodes
-- Encrypted replication channels
+- With the default Redis backend, fuzzy hashes live in Redis, so Redis replication covers them
+- Several fuzzy storage workers can share one Redis backend
+- Encrypted traffic between `fuzzy_check` clients and storage
 
 **Configuration Synchronization:**
 - Centralized configuration management (version control)
@@ -458,7 +452,7 @@ See [Metric exporter module](/modules/metric_exporter).
 - 4-worker server: 20-40 messages/sec (2-3M messages/day)
 - DNS resolver speed is often the bottleneck (use local recursive resolver)
 
-See [Architecture deployment patterns](/developers/architecture#deployment-patterns).
+See [Architecture deployment patterns](/developers/architecture#scalability-and-deployment-patterns).
 
 ### Security
 
@@ -473,10 +467,8 @@ See [Architecture deployment patterns](/developers/architecture#deployment-patte
 # /etc/rspamd/local.d/worker-proxy.inc
 upstream "backend" {
   hosts = "backend1.example.com:11333";
-  encryption = {
-    type = "httpcrypt";
-    pubkey = "your-public-key-here";
-  };
+  # Public key from the keypair of the scanner worker
+  key = "tm8zjw3ougwj1qjpyweugqhuyg4576ctg6p7mbrhma6ytjewp4ry";
 }
 ```
 
@@ -498,14 +490,14 @@ See [Encryption documentation](/developers/encryption) for cryptographic details
 
 **CPU Optimization:**
 - Zero-copy message handling where possible
-- Regex engine optimization (Hyperscan on x86_64)
+- Regex engine optimization (Hyperscan, or the compatible Vectorscan in arm64 packages)
 - LuaJIT for fast rule execution
 - SIMD operations for fuzzy hashing
 
 **Disk I/O:**
-- Minimal disk writes (only logs)
+- Minimal disk writes (mostly logs and caches)
 - All working data in Redis (in-memory)
-- Optional persistent history (SQLite or ClickHouse)
+- Optional persistent history (Redis or ClickHouse)
 
 **Network Optimization:**
 - Connection pooling for Redis, HTTP, and DNS
@@ -568,8 +560,8 @@ local function check_sender_reputation(task)
   return false  -- Do not insert symbol here; will be inserted in callback
 end
 
--- Register callback symbol (virtual, no score)
-rspamd_config:register_symbol({
+-- Register callback symbol (no score)
+local check_id = rspamd_config:register_symbol({
   name = 'SENDER_REPUTATION_CHECK',
   type = 'normal',
   callback = check_sender_reputation,
@@ -581,17 +573,19 @@ rspamd_config:register_symbol({
 rspamd_config:register_symbol({
   name = 'SENDER_BAD_REPUTATION',
   type = 'virtual',
-  parent = 'SENDER_REPUTATION_CHECK',
+  parent = check_id,
   score = 5.0,
   group = 'reputation',
   description = 'Sender has bad reputation in our database'
 })
 ```
 
+Rspamd loads a plugin from `plugins.d` only if the configuration has a section with the plugin's file name, for example `sender_reputation {}` in `/etc/rspamd/rspamd.conf.local`, or if that name is listed in the `explicit_modules` option.
+
 **Key concepts for async operations:**
-- Main callback registers a check symbol (virtual, no score)
+- Main callback registers a check symbol (no score)
 - Async operations (Redis, DNS, HTTP) use callbacks to insert results
-- Result symbols use `parent` to link to check symbol
+- Result symbols use `parent` with the id that `register_symbol` returned for the check symbol
 - Main callback returns `false` (result inserted asynchronously via `task:insert_result()`)
 
 **Lua API features:**
@@ -612,8 +606,7 @@ See [Writing rules](/developers/writing_rules) and [Lua API documentation](/lua/
 - Timeout and retry handling
 
 **URL Filtering:**
-- Google Safe Browsing API
-- OPH (Open Phish)
+- OpenPhish and PhishTank feeds (phishing module)
 - Custom URL checkers via HTTP
 
 **AI/ML Services:**

@@ -89,8 +89,8 @@ Official packages from rspamd.com include these optimizations:
 | Feature | Benefit |
 |---------|---------|
 | Link Time Optimization (LTO) | Better performance |
-| Bundled LuaJIT 2.1 beta | Up to 30% faster than stable LuaJIT |
-| jemalloc | Optimized memory allocation |
+| Bundled LuaJIT 2.1 | Built from the upstream LuaJIT `v2.1` branch instead of the distribution package |
+| jemalloc | Optimized memory allocation (x86_64 packages, except EL 10) |
 | Hyperscan/Vectorscan | Fast regex matching |
 
 Debug symbols are available in separate packages (`rspamd-dbg` for DEB, `rspamd-debuginfo` for RPM).

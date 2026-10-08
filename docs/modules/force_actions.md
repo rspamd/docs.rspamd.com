@@ -19,19 +19,19 @@ The following elements are valid in the rules of this module:
  - `message`: SMTP message to be used by MTA
  - `require_action`: override action only if metric action in this list
  - `subject`: subject to set in metric for `rewrite subject` action
- - `limit`: minimum expression score required to trigger the action (default: 0)
- - `least`: if true, use the least significant action when multiple rules match
- - `process_all`: if true, continue processing other rules even after a match
+ - `limit`: the action is applied only if the expression result is greater than this value (default: 0)
+ - `least`: if true, the forced action is a minimum: Rspamd applies it unless the score-based action is stronger, and the remaining checks still run
+ - `process_all`: if true, Rspamd still runs the remaining checks after the rule sets the action (by default they are skipped)
 
 Only one of `honor_action` or `require_action` should be set on a given rule.
 
-[Composite expressions](/configuration/composites#composite-expressions) can be used for `expression`.
+[Composite expressions](/configuration/composites#expression-syntax) can be used for `expression`.
 
 [Selectors](/configuration/selectors) can be used to generate dynamic `message`. The selector expression must be enclosed in `${}`.
 
 ### Symbol names
 
-Each rule named `MY_RULE` produces a registered symbol called `FORCE_ACTION_MY_RULE` (the rule name is uppercased). These symbol names can be used when setting up dependencies or checking debug output.
+Each rule named `MY_RULE` produces a registered symbol called `FORCE_ACTION_MY_RULE` (the rule name is used as is, without changing its case). These symbol names can be used when setting up dependencies or checking debug output.
 
 ### Execution Order
 

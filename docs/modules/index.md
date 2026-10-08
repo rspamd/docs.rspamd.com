@@ -22,8 +22,7 @@ filters = "chartable,dkim,regexp,fuzzy_check";
 ~~~
 
 If no `filters` attribute is defined, all C modules are disabled. To understand how to
-override defaults, see the FAQ [here](/faq#what-are-local-and-override-config-files)
-and [here](/faq#what-are-the-locald-and-overrided-directories).
+override defaults, see the FAQ on [the difference between local.d and override.d](/faq#what-is-the-difference-between-locald-and-overrided).
 
 Available C modules:
 
@@ -68,15 +67,13 @@ The following Lua modules are enabled in the default configuration (but may requ
 - [asn](/modules/asn) - looks up ASN-related information
 - [clickhouse](/modules/clickhouse) - pushes scan-related information to clickhouse DBMS (requires configuration)
 - [bayes_expiry](/modules/bayes_expiry) - provides expiration of statistical tokens (requires Redis and configuration)
-- [dcc](/modules/dcc) - performs [DCC](https://www.dcc-servers.net/dcc/) lookups to determine message bulkiness (requires configuration)
 - [dkim_signing](/modules/dkim_signing) - adds DKIM signatures to messages (requires configuration)
 - [dmarc](/modules/dmarc) - performs DMARC policy checks (requires Redis & configuration for reporting)
-- [elastic](/modules/elastic) - pushes scan-related information to Elasticsearch. (requires configuration)
-- [emails](/modules/emails) - extract emails from a message and checks it against DNS blacklists. (requires configuration)
+- [external_services](/modules/external_services) - integrates external scanners such as oletools, DCC, Pyzor, Razor or ICAP servers (requires configuration)
 - [force_actions](/modules/force_actions) - forces actions if selected symbols are detected (requires configuration)
 - [greylisting](/modules/greylisting) - allows to delay suspicious messages (requires Redis)
+- [hfilter](/modules/hfilter) - checks HELO, hostname, sender, recipients, Message-ID and URLs for common bad patterns
 - [history redis](/modules/history_redis) - stores history in Redis (requires Redis)
-- [ip_score](/modules/ip_score) - dynamically scores sender reputation (requires Redis). This module is removed since Rspamd 2.0 and replaced by [reputation module](/modules/reputation). The existing configuration is automatically converted by Rspamd.
 - [maillist](/modules/maillist) - determines the common mailing list signatures in a message.
 - [metadata_exporter](/modules/metadata_exporter) - pushes message metadata to external systems (requires configuration)
 - [metric_exporter](/modules/metric_exporter) - pushes statistics to external monitoring systems (requires configuration)
@@ -91,7 +88,6 @@ The following Lua modules are enabled in the default configuration (but may requ
 - [replies](/modules/replies) - checks if an incoming message is a reply for our own message (requires Redis)
 - [rbl](/modules/rbl) - a plugin that checks messages against DNS runtime blacklists.
 - [reputation](/modules/reputation) - a plugin that manages reputation evaluation based on various rules.
-- [rspamd_update](/modules/rspamd_update) - load dynamic rules and other Rspamd updates (requires configuration)
 - [spamassassin](/modules/spamassassin) - load spamassassin rules (requires configuration)
 - [spf](/modules/spf) - perform SPF checks
 - [trie](/modules/trie) - uses suffix trie for extra-fast patterns lookup in messages. (requires configuration)
@@ -100,14 +96,26 @@ The following Lua modules are enabled in the default configuration (but may requ
 
 The following modules are explicitly disabled in the default configuration, set `enabled = true` in `local.d/${MODULE_NAME}.conf` to enable them:
 
+- [dcc](/modules/dcc) - performs [DCC](https://www.dcc-servers.net/dcc/) lookups to determine message bulkiness (requires configuration)
+- [elastic](/modules/elastic) - pushes scan-related information to Elasticsearch (requires configuration)
+- [external_relay](/modules/external_relay) - takes the sending IP, hostname and HELO from `Received` headers when Rspamd scans mail after the MX (requires configuration)
+- [gpt](/modules/gpt) - sends message content to an OpenAI or Ollama API for a spam assessment (requires configuration)
+- [known_senders](/modules/known_senders) - remembers senders from the configured domains and marks known and first-time senders (requires Redis)
 - [mx_check](/modules/mx_check) - checks if sending domain has a connectable MX (requires Redis)
+- [p0f](/modules/p0f) - performs passive OS fingerprinting of the sender with a local p0f daemon (requires p0f)
+- [rspamd_update](/modules/rspamd_update) - load dynamic rules and other Rspamd updates (requires configuration)
+- [spamtrap](/modules/spamtrap) - catches mail sent to spamtrap addresses and can learn it as spam (requires configuration)
 
-The following modules are explicitly disabled and are experimental, so you need to set `enabled = true` in `local.d/${MODULE_NAME}.conf` **AND** to set the global option `enable_experimental = true` in `local.d/options.inc`:
+The aws_s3, bimi, contextal and http_headers modules are disabled in the same way but have no documentation pages yet.
 
-- url_reputation - assigns reputation to domains in URLs (requires Redis). Removed in Rspamd 2.0.
-- url_tags - persists URL tags in Redis (requires Redis). Removed in Rspamd 2.0.
+Experimental modules (currently only maps_stats) also need the global option `enable_experimental = true` in `local.d/options.inc`; without it Rspamd disables them at startup. Experimental modules are not recommended for production usage!
 
-Experimental modules are not recommended for production usage!
+The following Lua modules were removed in earlier releases:
+
+- [emails](/modules/emails) - extracted emails from a message and checked them against DNS blacklists. This module was removed in Rspamd 2.0 and replaced by the [rbl module](/modules/rbl). The existing configuration is automatically converted by Rspamd.
+- [ip_score](/modules/ip_score) - dynamically scored sender reputation (requires Redis). This module was removed in Rspamd 2.0 and replaced by the [reputation module](/modules/reputation). The existing configuration is not converted, so configure the reputation module instead.
+- url_reputation - assigned reputation to domains in URLs (requires Redis). This experimental module was removed in Rspamd 2.0.
+- url_tags - persisted URL tags in Redis (requires Redis). This experimental module was removed in Rspamd 2.0.
 
 ## Disabling module
 

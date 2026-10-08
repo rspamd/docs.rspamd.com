@@ -6,7 +6,7 @@ title: Milter headers module
 # Milter headers module
 
 
-The `milter headers` module (formerly known as `rmilter headers`) has been added in Rspamd 1.5 to provide a relatively simple way to configure adding/removing of headers via Rmilter (the alternative being to use the [API](/lua/rspamd_task#me7351)). Despite its name, it is not tied to the `milter` protocol and also works with supported mailservers that use the HTTP interface such as Haraka and OpenSMTPD, as well as with Exim via the RSPAMC protocol (since Rspamd 4.0, header operations are serialised into `$spam_report` — see [MTA integration](/tutorials/integration#milter-headers-in-exim-rspamd-40)).
+The `milter headers` module (formerly known as `rmilter_headers`) has been added in Rspamd 1.5 to provide a relatively simple way to configure adding/removing of headers (the alternative being to use the [API](/lua/rspamd_task#m70081) directly). The module puts these changes into the `milter` block of the scan reply: the [proxy worker](/workers/rspamd_proxy#milter-support) applies them through the milter protocol, and clients of the [HTTP protocol](/developers/protocol#milter-headers) read them from the reply. Despite its name, it is not tied to the `milter` protocol and also works with supported mailservers that use the HTTP interface such as Haraka and OpenSMTPD, as well as with Exim via the RSPAMC protocol (since Rspamd 4.0, header operations are serialised into `$spam_report`, see [MTA integration](/tutorials/integration#milter-headers-in-exim-rspamd-40)).
 
 
 
@@ -95,9 +95,9 @@ Set false to always add headers for local IPs (default `true`).
 skip_local = true;
 ~~~
 
-### skip_all (2.8.0+)
+### skip_all (3.0+)
     
-Do not add extended headers for any messages (except those matching extended_headers_rcpt) (default `false`)
+Do not run routines for any messages (except those matching `extended_headers_rcpt`) (default `false`). Custom routines and the `remove-spam-flag` and `fuzzy-hashes` routines are not affected.
 
 ~~~hcl
 skip_all = true;
@@ -115,7 +115,7 @@ skip_authenticated = true;
 
 List of recipients (default `empty`).
 
-When [`extended_spam_headers`](#extended_spam_headers) is enabled, also add extended Rspamd headers to messages if **EVERY** envelope recipient match this list (e.g. a list of domains mail server responsible for).
+When [`extended_spam_headers`](#extended_spam_headers) is enabled, also add extended Rspamd headers to messages if **at least one** envelope recipient matches this list (e.g. a list of domains mail server responsible for). An entry can be a full address, a user name, or a domain written as `@domain`; a map can be used instead of a list.
 
 ~~~hcl
 extended_headers_rcpt = ["user1", "@example1.com", "user2@example2.com"];
@@ -132,7 +132,7 @@ Routines to use- this is the only required setting (may be omitted if using `ext
 use = ["x-spamd-bar", "authentication-results"];
 ~~~
 
-### headers_modify_mode (3.0+)
+### headers_modify_mode (3.4+)
 
 Mode for modifying headers. Default is `compat` for compatibility with older versions. Set to `override` to replace headers completely.
 
@@ -162,11 +162,30 @@ From version 3.9.0, this can be set to `null` to indicate that foreign headers s
 
 Available routines and their settings are as below, default values are as indicated:
 
+### add-headers
+
+Adds headers with fixed values (`headers` MUST be specified). Existing headers with the same names are removed according to `remove`.
+
+~~~hcl
+# local.d/milter_headers.conf
+use = ["add-headers"];
+
+routines {
+  add-headers {
+    headers {
+      "X-Scanned-By" = "Rspamd";
+    }
+    remove = 0;
+  }
+}
+~~~
+
 ### authentication-results
 
 Add an [authentication-results](https://tools.ietf.org/html/rfc7001) header.
 
 ~~~hcl
+# local.d/milter_headers.conf
 use = ["authentication-results"];
 #authenticated_headers = ["authentication-results"]; # to add this header for authenticated users
 
@@ -181,7 +200,7 @@ routines {
     # remove_ar_from = ["example.com", ".example.net"];
     # Set this false not to add SMTP usernames in authentication-results
     add_smtp_user = true;
-    # SPF/DKIM/DMARC symbols in case these are redefined
+    # SPF/DKIM/DMARC/ARC symbols in case these are redefined
     spf_symbols {
       pass = "R_SPF_ALLOW";
       fail = "R_SPF_FAIL";
@@ -191,12 +210,9 @@ routines {
       none = "R_SPF_NA";
       permerror = "R_SPF_PERMFAIL";
     }
+    # Other DKIM results are taken from the DKIM check results, not from symbols
     dkim_symbols {
-      pass = "R_DKIM_ALLOW";
-      fail = "R_DKIM_REJECT";
-      temperror = "R_DKIM_TEMPFAIL";
       none = "R_DKIM_NA";
-      permerror = "R_DKIM_PERMFAIL";
     }
     dmarc_symbols {
       pass = "DMARC_POLICY_ALLOW";
@@ -207,21 +223,28 @@ routines {
       softfail = "DMARC_POLICY_SOFTFAIL";
       quarantine = "DMARC_POLICY_QUARANTINE";
     }
+    arc_symbols {
+      pass = "ARC_ALLOW";
+      permerror = "ARC_INVALID";
+      temperror = "ARC_DNSFAIL";
+      none = "ARC_NA";
+      reject = "ARC_REJECT";
+    }
   }
 }
 ~~~
 
 ### fuzzy-hashes (1.7.5+)
 
-For each matched fuzzy hash adds a header containing the hash.
+Adds the matched fuzzy hashes to a header. Since Rspamd 4.1.3 each hash is annotated with the fuzzy rule, flag and probability, the queried hash for non-exact matches and, when known, the time the hash was added. With the default `headers_modify_mode = "compat"` all hashes go into one header separated by commas; with `override` each hash gets its own header. This routine does not remove existing headers.
 
 ~~~hcl
+# local.d/milter_headers.conf
 use = ["fuzzy-hashes"];
 
 routines {
   fuzzy-hashes {
     header = "X-Rspamd-Fuzzy";
-    remove = 0;
   }
 }
 ~~~
@@ -339,17 +362,13 @@ routines {
 
 ### x-rspamd-pre-result
 
-Adds a header describing any pre-result override that was applied to the message (e.g. by the `force_actions` module). The header includes the overriding action, the module that set it, and the human-readable message. The header is only written when a pre-result is actually present; no header is added for ordinary messages. This routine is activated implicitly by `x-spamd-result` and does not need to be listed separately in `use` unless `x-spamd-result` is not active.
+Adds a header describing any pre-result override that was applied to the message (e.g. by the `force_actions` module). The header includes the overriding action, the module that set it, and the human-readable message. The header is only written when a pre-result is actually present; no header is added for ordinary messages.
+
+This header is written by the [`x-spamd-result`](#x-spamd-result-158) routine, so it is added whenever `x-spamd-result` is active (for example, with `extended_spam_headers = true`). There is no separate `x-rspamd-pre-result` routine: listing it in `use` does not add the header on its own and makes the module log an error for every message.
 
 ~~~hcl
-use = ["x-rspamd-pre-result"];
-
-routines {
-  x-rspamd-pre-result {
-    header = 'X-Rspamd-Pre-Result';
-    remove = 0;
-  }
-}
+# local.d/milter_headers.conf
+use = ["x-spamd-result"]; # also adds X-Rspamd-Pre-Result when a pre-result is set
 ~~~
 
 ### x-spamd-result (1.5.8+)
@@ -451,6 +470,22 @@ routines {
 ~~~
 
 If the [Antivirus module](/modules/antivirus) detects any viruses in an email, the module adds a header that contains the names of the viruses detected by the configured scanners.
+
+### x-os-fingerprint
+
+Adds a header with the operating system of the sending host as detected by the [P0f module](/modules/p0f), in the form `OS, (up: N min), (distance N, link: TYPE)`. Nothing is added when there is no p0f result for the message.
+
+~~~hcl
+# local.d/milter_headers.conf
+use = ["x-os-fingerprint"];
+
+routines {
+  x-os-fingerprint {
+    header = "X-OS-Fingerprint";
+    remove = 0;
+  }
+}
+~~~
 
 ## Custom routines
 

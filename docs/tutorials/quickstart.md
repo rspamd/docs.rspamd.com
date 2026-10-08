@@ -62,7 +62,7 @@ Before installing Rspamd, ensure you have:
 
 **Note**: While Rspamd can work with Exim, it has limited support and is not recommended.
 
-Consider setting up your own [local DNS resolver](/faq#resolver-setup) for better performance.
+Consider setting up your own [local DNS resolver](/faq#how-do-i-configure-dns-resolution) for better performance.
 
 ## Step 1: Install Rspamd
 
@@ -72,9 +72,16 @@ Instructions for downloading Rspamd can be found on the [downloads page](/downlo
 
 For Ubuntu/Debian:
 ```bash
+# Install prerequisites
+sudo apt-get update
+sudo apt-get install -y lsb-release wget gpg
+
+# Add the repository key
+sudo mkdir -p /etc/apt/keyrings
+wget -O- https://rspamd.com/apt-stable/gpg.key | gpg --dearmor | sudo tee /etc/apt/keyrings/rspamd.gpg > /dev/null
+
 # Add Rspamd repository
-curl https://rspamd.com/apt-stable/gpg.key | sudo apt-key add -
-echo "deb https://rspamd.com/apt-stable/ $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/rspamd.list
+echo "deb [signed-by=/etc/apt/keyrings/rspamd.gpg] http://rspamd.com/apt-stable/ $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/rspamd.list
 
 # Update and install
 sudo apt update
@@ -218,7 +225,21 @@ sudo tail -f /var/log/rspamd/rspamd.log
 
 ### Access the Web Interface
 
-1. Open your browser to `http://your-server:11334`
+The controller worker serves the web interface on port 11334. By default it listens on `localhost` only, so `http://your-server:11334` does not open from another machine. Use one of these options:
+
+- Open an SSH tunnel with `ssh -L 11334:localhost:11334 your-server` and browse to `http://localhost:11334`
+- Put a reverse proxy in front of the controller, see [How do I run the WebUI behind a proxy?](/faq#how-do-i-run-the-webui-behind-a-proxy)
+- Make the controller listen on all interfaces, restrict access to port 11334 with a firewall, and restart Rspamd:
+
+```hcl
+# /etc/rspamd/local.d/worker-controller.inc
+# Add this line next to the password
+bind_socket = "*:11334";
+```
+
+Then:
+
+1. Open the web interface in your browser
 2. Enter the password you configured earlier
 3. You should see the Rspamd dashboard with statistics and configuration options
 
@@ -256,12 +277,13 @@ greylist = 3;    # Was 4 - temporary delay suspicious mail
 Edit `/etc/rspamd/local.d/groups.conf`:
 
 ```hcl
+# /etc/rspamd/local.d/groups.conf
 symbols = {
   "BAYES_SPAM" = {
-    score = 5.5;  # Increase Bayes spam weight
+    score = 5.5;  # Increase Bayes spam weight (default 5.1)
   }
-  "SPF_FAIL" = {
-    score = 2.0;  # Reduce SPF failure penalty
+  "R_SPF_FAIL" = {
+    score = 0.5;  # Reduce SPF failure penalty (default 1.0)
   }
 }
 ```
@@ -296,8 +318,8 @@ sudo rspamadm configwizard
 This interactive tool helps configure:
 - Redis server connection
 - Controller password
+- Postfix integration
 - DKIM signing
-- Basic settings
 
 ## Using Rspamd
 
@@ -330,9 +352,9 @@ rspamadm confighelp -k classifier
 rspamadm dkim_keygen -s mail -d example.com
 ```
 
-### Automatic Learning with Email Clients
+### Sorting Spam into a Junk Folder
 
-Set up automatic spam learning by configuring your email client to move spam to a "Junk" folder. Create a Dovecot Sieve script (`~/.dovecot.sieve`):
+In milter mode, Rspamd adds an `X-Spam: Yes` header to messages that reach the `add header` action. A Dovecot Sieve script (`~/.dovecot.sieve`) can file these messages into the "Junk" folder:
 
 ```sieve
 require ["fileinto"];
@@ -341,6 +363,8 @@ if header :is "X-Spam" "Yes" {
     fileinto "Junk";
 }
 ```
+
+This script only sorts mail and does not train Rspamd. To learn from users who move messages into or out of "Junk", use the Dovecot IMAPSieve plugin to pass those messages to `rspamc learn_spam` or `rspamc learn_ham`. [Getting feedback from users with IMAPSieve](/tutorials/feedback_from_users_with_IMAPSieve) shows a related IMAPSieve setup.
 
 ## Understanding Rspamd's Configuration System
 
@@ -375,9 +399,9 @@ Symbols are organized into logical groups you can adjust:
 - **`rbl_group.conf`** - DNS blacklist results  
 - **`statistics_group.conf`** - Bayesian classifier scores
 - **`headers_group.conf`** - Email header analysis
-- **`phishing_group.conf`** - URL and content analysis
+- **`phishing_group.conf`** - Phishing URL detection
 
-Learn more about [actions and scores](/faq#what-are-rspamd-actions) in the documentation.
+Learn more about [actions and scores](/configuration/metrics) in the documentation.
 
 ## Troubleshooting
 
@@ -396,7 +420,7 @@ sudo rspamadm configtest
 **Web interface not accessible:**
 - Check firewall settings
 - Verify controller password is set
-- Ensure port 11334 is accessible
+- Check that the controller `bind_socket` is reachable from your browser (by default it listens on `localhost:11334` only)
 
 **Mail not being scanned:**
 - Check Postfix milter configuration
@@ -416,7 +440,7 @@ sudo rspamadm configtest
 ## Next Steps
 
 ### Immediate Improvements
-1. **Set up automatic learning** with Dovecot Sieve
+1. **Set up automatic learning** with Dovecot IMAPSieve
 2. **Monitor and tune scores** based on your mail patterns
 3. **Configure DKIM signing** for outbound mail
 4. **Set up proper TLS** certificates
@@ -450,7 +474,8 @@ For experienced users who want to dive deeper:
 ### Official Documentation
 - [Complete Configuration Reference](/configuration/)
 - [Module Documentation](/modules/)
-- [WebUI Guide](/webui)
+- [Web interface questions in the FAQ](/faq#web-interface)
+- [Controller worker](/workers/controller), which serves the web interface
 
 ### Community Resources
 - [An alternative introduction to rspamd configuration](https://www.0xf8.org/2018/05/an-alternative-introduction-to-rspamd-configuration-introduction/) - Detailed configuration guide
@@ -459,7 +484,7 @@ For experienced users who want to dive deeper:
 
 ### Tools and Add-ons
 - [Thunderbird Rspamd Add-on](https://addons.thunderbird.net/thunderbird/addon/rspamd-spamness/) - Visualize spam scores
-- [Rspamd Stats Visualization](https://github.com/moisseev/rspamd-spamness/)
+- [Rspamd-spamness homepage](https://github.com/moisseev/rspamd-spamness/) - Source code and releases of the same add-on
 
 **Congratulations!** You now have a working Rspamd installation. Start with the basic configuration and gradually explore advanced features as your needs grow.
 

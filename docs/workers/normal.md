@@ -8,13 +8,14 @@ Rspamd normal worker is intended to scan messages for spam. It has the following
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `count` | 4 | Number of normal worker processes to run |
+| `count` | CPU count minus 2, from 1 to 4 | Number of normal worker processes to run |
 | `mime` | true | Set to `false` if you want to scan non-MIME messages (e.g. forum comments or SMS) |
+| `allow_file_and_shm_inputs` | true | Allow clients connected over TCP to pass the message as a local file or shared memory segment (`File`, `Path` and `Shm` request headers). Unix socket clients can always do this. The default will become `false` in the next major release |
 | `timeout` | 60s | Protocol I/O timeout |
-| `task_timeout` | 8s | Maximum time to process a single task. See [task_timeout](/configuration/options#task_timeout) |
+| `task_timeout` | 8s | Maximum time to process a single task. If not set, the global [task_timeout](/configuration/options#global-options) option is used |
 | `max_tasks` | 0 | Maximum count of parallel tasks processed by a single worker (0 = no limit) |
 | `keypair` | - | Encryption keypair for secure communications |
-| `encrypted_only` | false | Allow only encrypted connections |
+| `encrypted_only` | false | Allow only encrypted connections; clients on Unix sockets and loopback addresses are exempt |
 | `ssl_cert` | - | Path to PEM certificate file (required when using `ssl` bind sockets, see [HTTPS support](/workers/#https-support)) |
 | `ssl_key` | - | Path to PEM private key file (required when using `ssl` bind sockets) |
 

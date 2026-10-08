@@ -31,7 +31,6 @@ BLOCKED_SENDERS {
 TRUSTED_IPS {
   type = "ip";
   map = "/etc/rspamd/maps/trusted_ips.map";
-  prefilter = true;
   action = "accept";
   description = "Trusted IP addresses";
 }
@@ -64,7 +63,7 @@ Common combinations:
 |----------|------|--------|------------------|
 | Block domains | from | email:domain | example.com |
 | Block users | from | email:user | spammer |
-| Block file types | filename | extension | .exe |
+| Block file types | filename | extension | exe |
 | Block URLs | url | tld | badsite.com |
 
 
@@ -84,7 +83,7 @@ Maps in Rspamd refer to files or HTTP links that are automatically monitored and
 
 Rspamd offers the option to save traffic for HTTP maps using cached maps, while also respecting `304 Not modified responses`, Cache-Control headers, and ETags. Additionally, the maps data is shared between workers, and only the first controller worker is allowed to fetch remote maps.
 
-By default, the configuration of this module actively utilises compound maps, which define a map as an array of sources with a local fallback location. While this redundancy may be unnecessary for user-defined maps, further details are available in the following [FAQ section](/faq#what-are-maps).
+A map can also be defined as an array of sources. Several default module configurations use this to add a local `fallback+file://` copy that is used when the remote source cannot be loaded. This redundancy is usually unnecessary for user-defined maps; see [Fallback Options](/configuration/maps#fallback-options) for details.
 
 ## Troubleshooting
 
@@ -99,7 +98,7 @@ Common issues and solutions:
 ~~~
 
 2. Scores not working as expected
-   - Check if using prefilter (prefilters don't use scores)
+   - Check if the rule sets an `action` (the forced action applies regardless of the score)
    - For content maps, consider multiple part matching
    - Verify symbol isn't overridden in metrics
 
@@ -137,7 +136,7 @@ To define your own rules, it is advisable to do so in the `/etc/rspamd/local.d/m
    - Use comments in maps to document entries
 
 2. Performance Considerations
-   - Use prefilters for early accept/reject decisions
+   - Use `action` rules for early accept/reject decisions
    - Prefer simple matches over complex regexes
    - Use CDB maps for large datasets
    - Consider Redis for frequently updated maps
@@ -157,15 +156,15 @@ Mandatory attributes are:
 
 Optional map configuration attributes:
 
-* `prefilter` - defines if the map is used in [prefilter mode](#pre-filter-maps)
-* `action` - for prefilter maps defines action set by map match
+* `prefilter` - not used since Rspamd 3.3; a rule with `action` is ordered ahead of most other filters without it ([learn more](#pre-filter-maps))
+* `action` - action set when the map matches ([learn more](#pre-filter-maps))
 * `regexp` - set to `true` if your map contain [regular expressions](#regexp-maps)
 * `glob` - set to `true` to treat map entries as glob patterns (analogous to `regexp = true` but for globs); if combined with `multi = true`, all matching globs are reported
 * `symbols` - array of symbols that this map can insert (for key-value pairs), [learn more](#multiple-symbol-maps). Please bear in mind, that if you define this attribute, your map must have entries in form `key<spaces>value` to match a specific symbol.
 * `disable_multisymbol` - if set to `true`, ignore any symbol names embedded in map values and always insert the rule's own symbol (useful when you want the map to provide only options/score but not override the symbol name)
 * `score` - score of the symbol (can be redefined in the `metric` section)
 * `description` - map description
-* `message` - message returned to MTA on prefilter reject action being triggered
+* `message` - message returned to MTA when the rule's `action` is applied
 * `message_func` - a string containing a Lua function body that is evaluated once at load time and called as `function(task, symbol, matched_value)` to produce a custom pre-result message; if it returns a non-nil value that string is used instead of the default `"Matched map: <symbol>"` message. Example: `message_func = "return function(task, sym, val) return 'Blocked: ' .. tostring(val) end"`
 * `group` - group for the symbol (can be redefined in `metric`)
 * `require_symbols` - expression of symbols that have to match for a specific message: [learn more](#conditional-maps)
@@ -221,8 +220,8 @@ Available format specifiers:
 * `regexp_multi;` or `re_multi;` - Content contains regular expressions, match all possible entries
 * `glob;` - Content contains glob patterns
 * `glob_multi;` - Content contains glob patterns, match all possible entries
-* `radix`; or `ipnet;` - Content contains IP/CIDR entries
-* `set`; - Content treated as set members
+* `radix;` or `ipnet;` - Content contains IP/CIDR entries
+* `set;` - Content treated as set members
 * `hash;` or `plain;` - Content treated as hash table entries
 
 Note: Format specifiers are different from the `regexp = true;` and `multi = true;` options in map configuration. While they achieve similar results, format specifiers take precedence over configuration options.
@@ -480,7 +479,7 @@ These are generic emails and headers filters:
 | :-------------- | :-------------------------------- |
 | `tld` | matches eSLD (effective second level domain - a second-level domain or something that's effectively so like `example.com` or `example.za.org`)
 | `tld:regexp:/re/` | extracts generic information using the specified regular expression from the eSLD part
-| `top` | matches TLD (top level domain) part of the helo/hostname
+| `top` | matches the full public suffix of the helo/hostname, such as `com` or `com.au` (before Rspamd 4.2.0, only the last label, such as `au`)
 
 ### Mempool filters
 
@@ -493,9 +492,9 @@ If no filter is specified `real_ip` is used by default.
 | Filter            | Description                       |
 | :-------------- | :-------------------------------- |
 | `from_hostname` | string that represents hostname provided by a peer
-| `from_ip` | IP address as provided by a peer
+| `from_ip` | sending IP address recorded by the MTA, as a string
 | `real_hostname` | hostname as resolved by MTA
-| `real_ip` | IP as resolved by PTR request of MTA
+| `real_ip` | sending IP address recorded by the MTA (the same address as `from_ip`, as an IP object)
 | `by_hostname` | MTA hostname
 | `proto` | protocol, e.g. ESMTP or ESMTPS
 | `timestamp` | received timestamp
@@ -516,7 +515,7 @@ Negative values can be specified to match positions relative to the end of Recei
 * `nflags` - One or more flags which must NOT be present to match
 * `artificial` - if set to `true`, include artificial Received headers (those synthesised internally by Rspamd) in matching; by default artificial headers are excluded
 
-Currently available flags are `ssl` (hop used SSL) and `authenticated` (hop used SMTP authentication).
+Currently available flags are `ssl` (hop used SSL), `authenticated` (hop used SMTP authentication) and `utf8` (hop used SMTPUTF8).
 
 ### Selector options filters
 
@@ -543,27 +542,26 @@ URL maps allows another set of filters (by default, `url` maps are matched using
 | `tag:name` | matches full hostnames that have URL tag with `name`
 | `tld` | matches eSLD (effective second level domain - a second-level domain or something that's effectively so like `example.com` or `example.za.org`)
 | `tld:regexp:/re/` | extracts generic information using the specified regular expression from the eSLD part
-| `top` | matches TLD (top level domain) part of the hostname
+| `top` | matches the full public suffix of the hostname, such as `com` or `com.au` (before Rspamd 4.2.0, only the last label, such as `au`)
 
 ## Pre-filter maps
 
-To enable pre-filter support, you should specify `action` parameter which can take one of the
+To make a rule force an action when its map matches, specify the `action` parameter, which can take one of the
 following values:
 
 * `accept` - accept the message (no action)
 * `add header` or `add_header` - add a header to the message
 * `rewrite subject` or `rewrite_subject` - change the subject
 * `greylist` - greylist the message
-* `reject` - drop the message
+* `reject` - reject the message
 
-If a map matches, no filters will be processed for a message. It is important to note that prefilter maps do not support multiple symbols or symbol conditions by design.
+If a map matches, the action is set as a passthrough result, and the remaining filters are not processed for the message. Since Rspamd 3.3, these rules are registered as normal symbols that are ordered ahead of most other filters, so the `prefilter = true` option is no longer needed.
 
 ~~~hcl
 # local.d/multimap.conf
 IP_WHITELIST { 
   type = "ip"; 
   map = "/tmp/ip.map"; 
-  prefilter = true;
   action = "accept";
 }
 # Better use RBL module instead
@@ -571,7 +569,6 @@ SPAMHAUS_PBL_BLACKLIST {
   type = "dnsbl"; 
   map = "pbl.spamhaus.org";
   description = "PBL dns block list";
-  prefilter = true;
   action = "reject";
 }
 ~~~
@@ -736,7 +733,7 @@ SENDER_FROM_WHITELIST_USER {
 }
 
 # With Redis backend, also you need specify servers for Redis.
-SENDER_FROM_WHITELIST_USER {
+SENDER_FROM_WHITELIST_REDIS {
   type = "from";
   map = "redis://hashkey";
 }
@@ -798,7 +795,6 @@ SYMBOL_OPTIONS_DBL {
 
 WHITELIST_HELO_RCPT {
   type = "combined";
-  prefilter = true;
   action = "accept";
   rules {
     helo {
@@ -858,16 +854,15 @@ Starting from Rspamd 3.13, the multimap module supports SpamAssassin-like rule d
 
 To use SpamAssassin-like rules, set the map type to `regexp_rules`:
 
-~~~ucl
-multimap {
-  # SpamAssassin-like rules
-  CUSTOM_SA_RULES {
-    type = "regexp_rules";
-    map = "/path/to/sa_rules.cf";
-    description = "Custom SpamAssassin-like rules";
-  }
+```hcl
+# /etc/rspamd/local.d/multimap.conf
+# SpamAssassin-like rules
+CUSTOM_SA_RULES {
+  type = "regexp_rules";
+  map = "/path/to/sa_rules.cf";
+  description = "Custom SpamAssassin-like rules";
 }
-~~~
+```
 
 ### Rule Format
 
@@ -971,20 +966,19 @@ m{pattern}flags
 pattern
 ~~~
 
-Supported flags: `g`, `i`, `m`, `x`, `s`, `u`
+Supported flags: `i`, `m`, `x`, `s`, `u`
 
 ### Example Configuration
 
-~~~ucl
-multimap {
-  # Main SA rules
-  CUSTOM_SA_CHECKS {
-    type = "regexp_rules";
-    map = "file:///etc/rspamd/custom_sa.cf";
-    description = "Custom SpamAssassin rules";
-  }
+```hcl
+# /etc/rspamd/local.d/multimap.conf
+# Main SA rules
+CUSTOM_SA_CHECKS {
+  type = "regexp_rules";
+  map = "file:///etc/rspamd/custom_sa.cf";
+  description = "Custom SpamAssassin rules";
 }
-~~~
+```
 
 Content of `/etc/rspamd/custom_sa.cf`:
 

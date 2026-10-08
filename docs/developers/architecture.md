@@ -120,7 +120,7 @@ See [fuzzy_storage worker documentation](/workers/fuzzy_storage) for details.
 
 ### Event Loop
 
-Rspamd uses **libevent** (or **libev** on some platforms) for event-driven I/O:
+Rspamd uses **libev**, bundled in `contrib/libev`, for event-driven I/O:
 
 ```
 ┌──────────────────────────────────────────────────────────┐

@@ -7,7 +7,12 @@ title: External Relay module
 
 This plugin is designed for users who need to conduct scans after the MX has processed a message, such as those who receive mail over POP3 and forward it to a local MTA. Most users can disregard it.
 
-For users with such setups, it is important to disable the reject action to prevent generating backscatter. Refer to [the FAQ](/faq#how-can-i-disable-some-rspamd-action) for instructions.
+For users with such setups, it is important to disable the reject action to prevent generating backscatter. To do this, set the action to `null`:
+
+```hcl
+# /etc/rspamd/local.d/actions.conf
+reject = null;
+```
 
 If possible, it is better to run Rspamd on the MX.
 
@@ -19,7 +24,7 @@ Different strategies for identifying mail to tamper with and the point of hand-o
 
 If the strategies are too broad to be used in your setup you might limit them using `rspamd_config:add_condition()`, for example:
 ~~~lua
-# /etc/rspamd/rspamd.local.lua
+-- /etc/rspamd/rspamd.local.lua
 -- add some condition for the symbol called EXTERNAL_RELAY_COUNT
 rspamd_config:add_condition('EXTERNAL_RELAY_COUNT', function(task)
   -- only apply this rule if authenticated user is postmaster@example.net
@@ -67,7 +72,7 @@ The following strategy-specific settings are defined:
 
 ### authenticated
 
- * `user_map` (optional): A [map](/faq#what-are-maps) containing a list of usernames. The rule applies only if the local sender uses a username listed in the configuration.
+ * `user_map` (optional): A [map](/configuration/maps) containing a list of usernames. The rule applies only if the local sender uses a username listed in the configuration.
 
 ### count
 
@@ -75,7 +80,7 @@ The following strategy-specific settings are defined:
 
 ### hostname_map
 
- * `hostname_map` (required): A [map](/faq#what-are-maps) of hostnames which we expect to see from the sender and in `Received` headers.
+ * `hostname_map` (required): A [map](/configuration/maps) of hostnames which we expect to see from the sender and in `Received` headers.
 
 ### local
 
@@ -83,6 +88,6 @@ No additional settings. The strategy walks `Received` headers from top to bottom
 
 ### ip_map
 
- * `ip_map` (required): A [map](/faq#what-are-maps) of IPs which we expect to see from the sender and in `Received` headers.
+ * `ip_map` (required): A [map](/configuration/maps) of IPs which we expect to see from the sender and in `Received` headers.
 
 The strategy walks `Received` headers from top to bottom and uses the first entry whose IP is not in the map. If all IPs are in the map, the last `Received` header is used as a fallback.

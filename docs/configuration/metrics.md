@@ -25,15 +25,14 @@ From version 1.9, there are also some more actions:
 Starting from version 1.9, you have the flexibility to define custom actions with their own thresholds in Rspamd. You can also utilize these custom actions in the `force_actions` module:
 
 ```hcl
-actions {
-  # Generic threshold
-  my_action = {
-    score = 9.0;
-  },
-  # Force action only
-  phishing = {
-    flags = ["no_threshold"],
-  }
+# /etc/rspamd/local.d/actions.conf
+# Generic threshold
+my_action {
+  score = 9.0;
+}
+# Force action only
+phishing {
+  flags = ["no_threshold"];
 }
 ```
 
@@ -47,26 +46,24 @@ Only one action could be applied to a message. Hence, it is generally useless to
 Key points:
 
 - `soft reject` has no threshold. It is emitted by modules (e.g. `greylist`, `ratelimit`) or by core logic (e.g. timeouts) via a pre-result.
-- The `greylist` threshold triggers the `soft reject` action. For example, `greylist = 4;` means “at score ≥ 4, apply greylisting and return action soft reject”. This is expected by design.
+- The `greylist` threshold sets the `greylist` action. For example, with `greylist = 4;` a message that scores at least 4 (and below `add_header`) gets `greylist`. When Redis is configured, the [greylist module](/modules/greylisting) defers first-time senders of these messages (and of messages that get `add header`), and Rspamd returns `soft reject` for them.
 
 Example:
 
 ```hcl
 # /etc/rspamd/local.d/actions.conf
-actions {
-  reject = 15;      # final reject
-  add_header = 6;   # mark spam
-  greylist = 4;     # triggers soft reject (temporary deferral)
+reject = 15;      # final reject
+add_header = 6;   # mark spam
+greylist = 4;     # greylist action; the greylist module defers first-time senders
 
-  # Custom action (referenced by force_actions), no own threshold
-  phishing = {
-    flags = ["no_threshold"];
-  }
+# Custom action (referenced by force_actions), no own threshold
+phishing {
+  flags = ["no_threshold"];
 }
 ```
 
 Notes:
-- Modules can force an action regardless of thresholds (e.g. greylisting/ratelimit calling `task:set_pre_result('soft reject', ...)`). The most severe applicable action wins.
+- Modules can force an action regardless of thresholds (e.g. greylisting/ratelimit calling `task:set_pre_result('soft reject', ...)`). Such a pre-result replaces the action chosen by score, unless it is flagged `least`; then it applies only when the score-based action is weaker.
 - Do not define two thresholds at the same score; only one action is returned.
 
 ## Configuring scores and actions
@@ -122,18 +119,18 @@ To modify symbols for existing groups, it is advisable to utilize dedicated file
 Actions thresholds and configuration are defined in `local.d/actions.conf`:
 
 ```hcl
-# local.d/actions.conf
-actions {
-  reject = 15;
-  add_header = 6;
-  greylist = 4; # will result in soft reject
+# /etc/rspamd/local.d/actions.conf
+reject = 15;
+add_header = 6;
+greylist = 4;
 
-  # Optional custom action used by force_actions
-  phishing = {
-    flags = ["no_threshold"];
-  }
+# Optional custom action used by force_actions
+phishing {
+  flags = ["no_threshold"];
 }
 ```
+
+`local.d/actions.conf` is already included inside the `actions` section, so write the settings without an `actions { }` wrapper. With a wrapper, `rspamadm configtest` fails with a nested section error.
 
 It is also possible to define some generic attributes for actions applications:
 

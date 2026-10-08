@@ -10,7 +10,6 @@ The options section defines basic Rspamd behaviour. Options are global for all t
 
 ~~~hcl
 filters = "chartable,dkim,regexp,fuzzy_check";
-raw_mode = false;
 one_shot = false;
 cache_file = "$DBDIR/symbols.cache";
 map_watch_interval = 5min;
@@ -27,7 +26,7 @@ upstream {
     resolve_min_interval = 60;
 }
 tempdir = "/tmp";
-url_tld = "${PLUGINSDIR}/effective_tld_names.dat";
+url_tld = "${SHAREDIR}/effective_tld_names.dat";
 classify_headers = [
 	"User-Agent",
 	"X-Mailer",
@@ -93,26 +92,25 @@ control_socket = "$DBDIR/rspamd.sock mode=0600";
 |`max_sessions_cache`| maximum number of sessions in cache before warning (default: 100)
 |`max_shots`| maximum number of hits per a single symbol (default: 100)
 |`max_urls`| maximum count of URLs to process to avoid DoS (default: 10240)
-|`max_word_len`| maximum length of the word to be considered in statistics/fuzzy
-|`min_word_len`| minimum size in letters (valid for utf-8 as well) for a sequence of characters to be treated as a word; normally Rspamd skips sequences if they are shorter or equal to three symbols
+|`max_word_len`| maximum length of the word to be considered in statistics/fuzzy (default: 40)
+|`min_word_len`| minimum size in letters (valid for utf-8 as well) for a sequence of characters to be treated as a word; shorter sequences are skipped (default: 0, no minimum)
 |`monitoring_watch_interval`| monitoring watch interval for the periodic checks of [RBL](/modules/rbl) and some other resources, 60 seconds by default
 |`neighbours`| list of servers in Rspamd cluster
 |`one_shot`| if this flag is set to `true` then multiple rule triggers do not increase the total score of messages (however, this option can also be individually configured in the `metric` section for each symbol)
-|`pid_file`| file used to store PID of the Rspamd main process (not used with syst.html)
+|`pidfile`| file used to store PID of the Rspamd main process (not written in foreground mode, `rspamd -f`, which the systemd unit uses)
 |`public_groups_only`| output merely public groups everywhere
-|`raw_mode`| don't try to convert all messages to utf8
 |`rrd`| path to RRD file
 |`sessions_cache`| enable sessions cache to debug dangling sessions
 |`soft_reject_on_timeout`| emit soft reject if task timeout takes place
 |`ssl_ca_path`| path to ssl CA file
 |`ssl_ciphers`| list of ssl ciphers (e.g. HIGH:!aNULL:!kRSA:!PSK:!SRP:!MD5:!RC4)
 |`stats_file`| path to stats file
-|`task_timeout`| maximum time for processing a single message; tasks exceeding this limit are aborted. At startup or when running `rspamadm configtest`, Rspamd may warn if the theoretical worst-case total of per-symbol timeouts exceeds `task_timeout` — this is informational, see [the FAQ](/faq#what-does-the-maximum-symbols-cache-timeout-warning-mean)
-|`temp_dir`| a directory for temporary files (can also be set via the environment variable `TMPDIR`).
+|`task_timeout`| maximum time for processing a single message (default: 8s); tasks exceeding this limit are aborted. At startup or when running `rspamadm configtest`, Rspamd may warn if the theoretical worst-case total of per-symbol timeouts exceeds `task_timeout`; this is informational, see [the FAQ](/faq#what-does-the-maximum-symbols-cache-timeout-warning-mean)
+|`tempdir`| a directory for temporary files; if it is not set, Rspamd uses the `TMPDIR` environment variable and then `/tmp`
 |`tld`| path to the TLD file for urls detector
 |`trusted_keys`| list of trusted public keys used for signatures in base32 encoding
 |`url_tld`| path to file with top level domain suffixes used by Rspamd to find URLs in messages; by default this file is shipped with Rspamd and should not be touched manually
-|`vectorized_hyperscan`| use hyperscan in vectorized mode (experimental)
+|`vectorized_hyperscan`| use hyperscan in vectorized mode (obsolete, do not use)
 |`words_decay`| start skipping words at this amount
 |`zstd_input_dictionary`| dictionary for zstd inbound protocol compression
 |`zstd_output_dictionary`| dictionary for outbound zstd compression
@@ -123,24 +121,22 @@ These options fall under a dedicated subsection called `dns` and control the nam
 
 * `nameserver`: A list (or array) of DNS servers to be used. If this option is omitted, Rspamd will parse the `/etc/resolv.conf` file. Additionally, you can specify weights for DNS servers to balance the load. For example:
 
-~~~hcl
-options {
-	dns {
-		# 9/10 on 127.0.0.1 and 1/10 to 8.8.8.8
-		nameserver = ["127.0.0.1:53:10", "10.0.1.1:53:1"];
-	}
+```hcl
+# /etc/rspamd/local.d/options.inc
+dns {
+	# weights 10:1 send most requests to 127.0.0.1 and a few to 10.0.1.1
+	nameserver = ["127.0.0.1:53:10", "10.0.1.1:53:1"];
 }
-~~~
+```
 
 You can also specify another configuration of DNS servers selection strategy using [upstream](/configuration/upstream) syntax, e.g.:
 
-~~~hcl
-options {
-	dns {
-		nameserver = "master-slave:127.0.0.1:53:10,8.8.8.8:53:1";
-	}
+```hcl
+# /etc/rspamd/local.d/options.inc
+dns {
+	nameserver = "master-slave:127.0.0.1:53:10,8.8.8.8:53:1";
 }
-~~~
+```
 
 In this case, `8.8.8.8` public resolver will be used as a backup when local resolver is down. It's important to note that by default, Rspamd uses `round-robin` strategy which is also used when resolvers are read from `/etc/resolv.conf`.
 
@@ -176,7 +172,7 @@ neighbours {
 
 However, if you plan to access the WebUI on this host, it is advisable to configure a more appropriate and relevant entry.
 
-If you have [a reverse proxy with TLS](/tutorials/quickstart#setting-up-the-webui) in front of Rspamd, explicitly specify the protocol and port in the `host` directive:
+If you have [a reverse proxy with TLS](/faq#how-do-i-run-the-webui-behind-a-proxy) in front of Rspamd, explicitly specify the protocol and port in the `host` directive:
 
 ~~~hcl
 neighbours {

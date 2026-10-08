@@ -106,18 +106,18 @@ The table below shows integration options available for different MTAs:
 
 | MTA | HTTP Integration | Milter Integration | License |
 | --- | :--------------: | :----------------: | ------- |
-| [Apache James](tutorials/integration#integration-with-apache-james) | ✅ | ❌ | Apache 2.0 |
+| [Apache James](#integration-with-apache-james) | ✅ | ❌ | Apache 2.0 |
 | Axigen | ❌ | ✅ | Proprietary |
 | Communigate Pro | ✅ | ❌ | Proprietary |
-| [EmailSuccess](tutorials/integration#integration-with-emailsuccess-mta) | ✅ | ❌ | Proprietary |
-| [**Exim**](tutorials/integration#integration-with-exim-mta) | ✅ | ❌ | GPL v2 |
-| [Haraka](tutorials/integration#integration-with-haraka-mta) | ✅ | ❌ | MIT |
+| [EmailSuccess](#integration-with-emailsuccess-mta) | ✅ | ❌ | Proprietary |
+| [**Exim**](#integration-with-exim-mta) | ✅ | ❌ | GPL v2 |
+| [Haraka](#integration-with-haraka-mta) | ✅ | ❌ | MIT |
 | [Maddy](https://maddy.email/reference/checks/rspamd) | ✅ | ❌ | GPL v3 |
 | [OpenSMTPD](https://github.com/poolpOrg/filter-rspamd) | ✅ | ❌ | ISC, BSD |
-| [**Postfix**](tutorials/integration#using-rspamd-with-postfix-mta) | ❌ | ✅ | IBM Public License |
-| [Sendmail](tutorials/integration#using-rspamd-with-sendmail-mta) | ❌ | ✅ | Sendmail License |
+| [**Postfix**](#using-rspamd-with-postfix-mta) | ❌ | ✅ | IBM Public License |
+| [Sendmail](#using-rspamd-with-sendmail-mta) | ❌ | ✅ | Sendmail License |
 | SmarterMail | ✅ | ❌ | Proprietary |
-| [Stalwart Mail](tutorials/integration#integration-with-stalwart-mail-server) | ❌ | ✅ | AGPL v3 or Commercial |
+| [Stalwart Mail](#integration-with-stalwart-mail-server) | ❌ | ✅ | AGPL v3 or Commercial |
 
 :::tip Security Recommendation
 When using HTTP integration, always implement HTTPS encryption using either:
@@ -164,7 +164,7 @@ Then, follow the steps above to apply the patch.
 For versions 4.86 and 4.87, it is advisable to apply a patch to disable half-closed sockets. Run the command:
 `patch -p1 < ../rspamd/contrib/exim/shutdown.patch`
 
-Alternatively, you can set `enable_shutdown_workaround = true` in `$LOCAL_CONFDIR/local.d/options.inc`
+Alternatively, rely on the `enable_shutdown_workaround` [global option](/configuration/options#global-options), which is enabled by default.
 
 Here is an example of the Exim configuration:
 
@@ -364,7 +364,7 @@ For further information, refer to the [EmailSuccess documentation](https://doc.e
 
 ## LDA mode
 
-In LDA (Local Delivery Agent) mode, the MTA (Mail Transfer Agent) invokes the Rspamd client, `rspamc`, a message using Rspamd and appends the scan results to the source message. The overall process is illustrated in the following image:
+In LDA (Local Delivery Agent) mode, the MTA (Mail Transfer Agent) invokes the Rspamd client, `rspamc`, which scans a message using Rspamd and appends the scan results to the source message. The overall process is illustrated in the following image:
 
 ![lda scheme](/img/rspamd_lda.png "rspamd as LDA")
 
@@ -380,10 +380,16 @@ Here is an example of using `rspamc` + `dovecot` as LDA implemented using `fetch
 
 In this mode, `rspamc` cannot reject or greylist messages, but it appends the following headers that can be used for further filtering by means of the LDA (for example, `sieve` or `procmail`):
 
-- `X-Spam-Scanner`: name and version of rspamd
-- `X-Spam`: has value `yes` if rspamd detects that a message as a spam (either `reject` or `add header` actions)
+- `X-Spam-Scanner`: `rspamc` and its version
+- `X-Spam-Scan-Time`: time taken to scan the message
+- `X-Spam`: has value `yes` if rspamd detects that a message is spam (`reject`, `soft reject`, `rewrite subject` or `add header` actions)
 - `X-Spam-Action`: the desired action for a message (e.g. `no action`, `add header` or `reject`)
+- `X-Spam-Score`: the message score and the required score
+- `X-Spam-Level`: one `*` per point of score, rounded up and capped at 32 (SpamAssassin style)
+- `X-Spam-Symbols`: names of the symbols that matched
 - `X-Spam-Result`: contains base64 encoded `JSON` reply from rspamd if `--json` option was given to `rspamc`
+
+Headers that Rspamd modules add through the milter reply (for example, the [milter headers](/modules/milter_headers) module) and `DKIM-Signature` headers from the reply are appended as well.
 
 It's important to note that while this method can be used with any MTA (or even without an MTA), it has more overhead than other methods and cannot apply certain actions such as greylisting. However, greylisting could also be implemented using external tools.
 
@@ -401,7 +407,26 @@ For further information, please refer to the James' extensions for Rspamd docume
 
 Rspamd can easily be integrated with Stalwart Mail Server using the `milter` protocol. In order to enable Milter support in rspamd, follow the instructions in the [proxy worker](../workers/rspamd_proxy) chapter.
 
-After setting up the proxy worker to handle milter requests, configure Stalwart Mail Server to use rspamd via milter by adding the following entries to the `etc/config.toml` configuration file:
+After setting up the proxy worker to handle milter requests, configure Stalwart Mail Server to use rspamd via milter. Current Stalwart releases define each milter as an `MtaMilter` object (in the WebUI under Settings > MTA > Filters > Milters). The following example scans messages received on the SMTP listener:
+
+```json
+{
+  "hostname": "127.0.0.1",
+  "port": 11332,
+  "stages": {"data": true},
+  "enable": {
+    "match": {
+      "0": {"if": "listener == 'smtp'", "then": "true"}
+    },
+    "else": "false"
+  },
+  "tempFailOnError": true,
+  "maxResponseSize": 52428800,
+  "protocolVersion": "v6"
+}
+```
+
+Older Stalwart releases that use the `etc/config.toml` configuration file take the same settings in this form:
 
 ```toml
 [session.data.milter."rspamd"]
@@ -416,4 +441,4 @@ max-response-size = 52428800 # 50mb
 version = 6
 ```
 
-For more details please refer to the [milter filters](https://stalw.art/docs/smtp/filter/milter) documentation for Stalwart Mail Server.
+For more details please refer to the [milter filters](https://stalw.art/docs/mta/filter/milter/) documentation for Stalwart Mail Server.

@@ -74,12 +74,16 @@ struct fuzzy_cmd  { /* attribute(packed) */
 
 ## Storage format
 
-Rspamd's fuzzy storage uses `sqlite3` for storing hashes. All update operations are
+The shipped configuration (`worker-fuzzy.inc`) stores hashes in Redis (`backend = "redis"`), using the
+servers from `local.d/redis.conf` unless the worker sets its own `servers`. Each hash and its shingles
+are stored as keys with a TTL equal to `expire`, so Redis removes expired hashes itself.
+
+The SQLite backend (`backend = "sqlite"`) is still supported. With SQLite, all update operations are
 performed in a transaction, which is committed to the main database approximately once
 per minute. The `VACUUM` command is executed on startup, and hash expiration is performed
 when the Rspamd fuzzy storage worker terminates.
 
-Here is the internal database structure:
+Here is the internal SQLite database structure:
 
 ```
 CREATE TABLE digests(id INTEGER PRIMARY KEY,
@@ -94,7 +98,8 @@ CREATE TABLE shingles(value INTEGER NOT NULL,
 ```
 
 Since Rspamd uses normal sqlite3 you can use all tools for working with the hashes
-database to perform, for example backup or analysis.
+database to perform, for example backup or analysis. `rspamadm fuzzyconvert` copies the hashes
+from an SQLite database to Redis.
 
 ## Operation notes
 
@@ -114,9 +119,9 @@ Fuzzy storage accepts the following configuration options:
 | Option | Default | Description |
 |--------|---------|-------------|
 | `hashfile` | - | Path to the sqlite storage (aliases: `hash_file`, `file`, `database`) |
-| `backend` | `sqlite` | Storage backend: `sqlite` or `redis` |
+| `backend` | `sqlite` (`redis` in the shipped `worker-fuzzy.inc`) | Storage backend: `redis`, `sqlite` or `noop` |
 | `sync` | 60s | Time interval to perform database sync |
-| `expire` | 2d | Default expire time for hashes |
+| `expire` | 2d (90d in the shipped `worker-fuzzy.inc`) | Default expire time for hashes |
 | `delay` | - | Default delay time for hashes (not enabled by default) |
 
 ### Security options
@@ -131,16 +136,12 @@ Fuzzy storage accepts the following configuration options:
 | `blocked` | - | Block requests from specific networks |
 | `read_only` | false | Work in read-only mode |
 
-### Replication options
+### Replication
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| `master_timeout` | 10s | Master protocol I/O timeout |
-| `sync_keypair` | - | Encryption key for master/slave updates |
-| `masters` | - | IP addresses allowed for master/slave updates |
-| `master_key` | - | Key allowed for master/slave updates |
-| `slave` | - | List of slave hosts |
-| `mirror` | - | Alias for `slave` |
+The fuzzy storage worker has no replication of its own: the `master_timeout`, `sync_keypair`,
+`masters`, `master_key`, `slave` and `mirror` options were removed in Rspamd 2.0. With the Redis
+backend, use Redis replication instead; see [Hashes replication](/tutorials/fuzzy_storage#hashes-replication-1)
+in the fuzzy storage tutorial.
 
 ### Advanced options
 
@@ -154,30 +155,30 @@ Fuzzy storage accepts the following configuration options:
 | `weak_ids` | - | Flags treated as weak (don't overwrite strong flags) |
 | `dynamic_keys_map` | - | Map for dynamic encryption keypairs |
 
-Here is an example configuration of fuzzy storage:
+Here is an example configuration of fuzzy storage. The shipped worker is disabled
+(`count = -1` in `rspamd.conf`), so the example enables it with `count`. `local.d/worker-fuzzy.inc`
+is included inside the worker section, so it has no `worker "fuzzy" { }` wrapper:
 
 ~~~hcl
-worker "fuzzy" {
-   bind_socket = "*:11335";
-   hashfile = "${DBDIR}/fuzzy.db"
-   expire = 90d;
-   allow_update = ["127.0.0.1", "::1"];
-   keypair = [
-   {
-     pubkey = ...
-     privkey = ...
-   },
-   {
-     pubkey = ...
-     privkey = ...
-   },
-   {
-     pubkey = ...
-     privkey = ...
-   }
-   ]
-}
+# /etc/rspamd/local.d/worker-fuzzy.inc
+count = 1;
+bind_socket = "*:11335";
+backend = "redis";        # uses the servers from local.d/redis.conf
+expire = 90d;
+allow_update = ["127.0.0.1", "::1"];
+keypair = [
+  {
+    pubkey = "...";
+    privkey = "...";
+  },
+  {
+    pubkey = "...";
+    privkey = "...";
+  }
+]
 ~~~
+
+Generate each keypair with `rspamadm keypair -u`.
 
 ## Compatibility notes
 
