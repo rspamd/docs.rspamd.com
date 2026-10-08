@@ -282,10 +282,10 @@ acl_check_spam:
   warn
     set acl_m_report     = ${sg{$spam_report}{\\v\\s+}{\\n}}
     set acl_m_milter_add = ${sg{\
-      ${sg{$acl_m_report}{(?m)^(?!X-Milter-Add: ).*(\\n|$)}{}}}\
+      ${sg{$acl_m_report}{(?m)^(?!X-Milter-Add: ).*(\\n|\$)}{}}}\
       {(?m)^X-Milter-Add: ([^\\[:\\n]+)(?:\\[\\d+\\])?: }{$1: }}
     set acl_m_milter_del = ${sg{\
-      ${sg{$acl_m_report}{(?m)^(?!X-Milter-Del: ).*(\\n|$)}{}}}\
+      ${sg{$acl_m_report}{(?m)^(?!X-Milter-Del: ).*(\\n|\$)}{}}}\
       {(?m)^X-Milter-Del: ([^\\[\\n]+).*}{$1}}
 
   # use greylisting available in rspamd v1.3+
