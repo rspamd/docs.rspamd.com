@@ -5,32 +5,31 @@ sidebar_position: 1
 
 # Understanding Rspamd
 
-Before diving into installation and configuration, it's essential to understand what Rspamd is, how it works, and what you can configure. This foundation will help you make informed decisions and avoid common pitfalls.
+This page explains what Rspamd does with a message, the terms used throughout the documentation (symbols, scores, actions, groups, workers) and where your configuration goes. Read it before you install Rspamd if you are new to it.
 
-## What is Rspamd?
+## What Rspamd is
 
-Rspamd is a **high-performance email processing daemon** that analyzes messages and provides classification results to mail transfer agents (MTAs). Unlike simple content filters, Rspamd uses a sophisticated multi-layered approach combining:
+Rspamd is a mail filtering daemon. Your MTA passes each message to Rspamd, which runs its checks and returns a score and an action, such as "add header" or "reject". The checks cover:
 
-- **Authentication protocols** (SPF, DKIM, DMARC, ARC)
-- **Content analysis** (regex, heuristics, HTML/text patterns)
-- **Statistical classification** (Bayesian filtering, neural networks)
-- **Reputation systems** (DNS blacklists, URL reputation, IP scoring)
-- **Fuzzy hashing** (near-duplicate detection)
-- **Machine learning** (adaptive scoring, pattern recognition)
+- sender authentication: SPF, DKIM, DMARC and ARC
+- content: regular expression and Lua rules for headers, text and HTML parts
+- statistics: the Bayes classifier and, optionally, a neural network
+- reputation: DNS blocklists for sender IP addresses, domains and URLs
+- fuzzy hashes: near-duplicates of known spam
 
-### Key Characteristics
+### Design
 
-**Event-driven architecture**: Rspamd uses non-blocking I/O to handle thousands of concurrent connections efficiently, allowing a single server to process millions of messages per day.
+Rspamd is event-driven. Each worker process scans many messages at once with non-blocking I/O, so a slow DNS or Redis lookup does not hold up other scans. Rspamd is designed to process hundreds of messages per second.
 
-**Modular design**: Functionality is organized into independent modules that can be enabled, disabled, or configured separately.
+Functionality is split into modules that you can enable, disable and configure separately.
 
-**Statistical approach**: Instead of binary decisions, Rspamd calculates a numerical score based on multiple indicators, allowing for nuanced handling of messages.
+Every check that matches inserts a weighted symbol. The weights add up to the message score, and Rspamd compares the score with the action thresholds to choose the action.
 
-**MTA-independent**: Communicates via HTTP/JSON protocol, making it compatible with any MTA without tight coupling or MTA-specific code.
+Rspamd talks HTTP/JSON to any client. Its proxy worker also speaks the milter protocol, which Postfix and Sendmail use.
 
-## How Rspamd Works: The Processing Pipeline
+## How Rspamd processes a message
 
-When an email arrives, it goes through a multi-stage processing pipeline:
+Each message goes through the following stages:
 
 ```mermaid
 flowchart TD
@@ -41,767 +40,592 @@ flowchart TD
     subgraph NW[Normal worker]
         direction TB
         A[Parse MIME structure] --> B[Pre-filters]
-        B -->|pre-result| Reply
+        B -->|pre-result| E
         B -->|continue| C[Filters]
-        C --> D[Classifiers]
+        C -->|pre-result| E
+        C --> D[Bayes classifier]
         D --> E[Composites]
         E --> F[Post-filters]
+        E -.->|pre-result| E2
         F --> G[Autolearn]
-        G --> H[Idempotent filters]
+        G --> E2[Composites, second pass]
+        E2 --> H[Idempotent filters]
         H --> Reply[Score and action]
     end
 
     C ---|async I/O| Ext[DNS / Redis / HTTP]
 ```
 
-**Pipeline stages at a glance:**
-
 | Stage | What runs | Can short-circuit? |
 |-------|-----------|-------------------|
 | 1. Parse MIME | Headers, text parts, URLs, attachments | No |
-| 2. Pre-filters | Settings, whitelisting, rate limiting | Yes (pre-result) |
-| 3. Filters | SPF, DKIM, DMARC, RBL, regexp, phishing, fuzzy, ... | No |
-| 4. Classifiers | Bayes, neural network | No |
-| 5. Composites | Combine symbols with boolean logic | No |
-| 6. Post-filters | Force actions, milter headers | No |
+| 2. Pre-filters | Settings, rDNS and ASN lookups; ratelimit and the greylist check when Redis is configured | Yes (pre-result) |
+| 3. Filters | SPF, DKIM, DMARC, RBL, regexp, phishing, fuzzy, whitelist, multimap, force_actions, ... | Yes (multimap or force_actions rules with an action) |
+| 4. Classifiers | Bayes | No |
+| 5. Composites | Combine symbols with boolean expressions | No |
+| 6. Post-filters | Neural network and greylisting decision (both need Redis), force_actions rules with `require_action` or `honor_action` | No |
 | 7. Autolearn | Optional Bayes training | No |
-| 8. Idempotent | History, metadata export, ClickHouse | No |
+| 8. Composites, second pass | Composites that depend on post-filter symbols | No |
+| 9. Idempotent | History, ClickHouse, metadata export, milter headers | No (always run) |
 
-### Stage-by-Stage Breakdown
+### Stage by stage
 
-#### 1. Message Reception
+#### Message reception
 
-The MTA sends the message to Rspamd either via the **milter protocol** (through the [proxy worker](/workers/rspamd_proxy)) or via a direct **HTTP POST** to the [normal worker](/workers/normal):
+The MTA sends the message either over the milter protocol to the [proxy worker](/workers/rspamd_proxy), which by default forwards it to the normal worker, or as an HTTP POST directly to the [normal worker](/workers/normal):
 
 ```http
 POST /checkv2 HTTP/1.1
 From: sender@example.com
+Rcpt: user@example.org
 IP: 203.0.113.42
 Helo: mail.example.com
 
 [raw message content]
 ```
 
-Rspamd receives not just the message, but also **envelope data** (sender IP, SMTP commands, authentication info) that is crucial for accurate analysis.
+Besides the message itself, Rspamd receives envelope data: the sender IP, HELO name, SMTP sender, SMTP recipients and the authenticated user. Checks such as SPF and IP blocklists depend on it.
 
-#### 2. MIME Parsing
+#### MIME parsing
 
-Rspamd parses the message structure:
-- Headers (including authentication results)
-- Text parts (plain text, HTML)
-- Attachments and embedded content
-- URLs and email addresses
-- Metadata (received headers, message-ID)
+Rspamd parses the headers, the text parts (plain text and HTML), attachments, URLs and email addresses, and the `Received` chain. Every module can read the result through the task object.
 
-This parsed structure is made available to all modules through the **task object**.
+#### Pre-filters
 
-#### 3. Pre-filters: Early Decisions
+Pre-filters run before the main checks. By default they include the [settings](/configuration/settings) module, which applies per-user and per-domain settings, and helpers for rDNS, ASN and address aliases. When Redis is configured, the [ratelimit](/modules/ratelimit) and [greylist](/modules/greylisting) checks also run here.
 
-**Pre-filters** run before main analysis and can short-circuit processing by setting a **pre-result**:
+Pre-filters can end processing early:
 
-- **Settings application**: Load user-specific or domain-specific configuration
-- **Whitelisting**: Trusted senders bypass spam checks entirely
-- **Rate limiting**: Reject messages exceeding rate limits immediately
+- A settings rule with `whitelist = yes` (or `want_spam = yes`) skips all checks for matching messages.
+- The ratelimit module sets a "soft reject" pre-result (a temporary failure) when a limit is exceeded. It needs Redis and ships with no limits defined.
 
-If a pre-filter sets a pre-result (e.g. `accept` or `soft reject`), remaining stages are skipped and Rspamd replies to the MTA immediately.
+A pre-result (unless it is flagged `least`) stops most of the remaining filters, the classifiers and the post-filters. Filters flagged `fine`, such as the SPF, ARC, fuzzy and DNSWL checks, still run. So do symbols flagged `ignore_passthrough`, such as DKIM signing by the [dkim_signing](/modules/dkim_signing) module, and the idempotent filters, such as history and ClickHouse export. Composites are still evaluated, except for messages that a settings rule skips entirely.
 
-#### 4. Filters: Core Analysis
+The [whitelist](/modules/whitelist) module runs in the filters stage, not as a pre-filter. Its rules (`WHITELIST_SPF`, `WHITELIST_DMARC` and others) add negative scores and do not skip any checks.
 
-This is where the bulk of spam detection happens. Multiple modules run **concurrently** (for I/O-bound checks like DNS and Redis lookups) or sequentially (for CPU-bound checks):
+#### Filters
 
-**Authentication checks** (SPF, DKIM, DMARC):
-```
-Message: From: ceo@company.com
-SPF: FAIL (IP not authorized)
-DKIM: None
-→ Symbols: R_SPF_FAIL, FORGED_SENDER_FORWARD
-```
+Most checks run here. Checks that wait for the network (DNS, Redis, HTTP) run concurrently: while one waits for a reply, the worker carries on with others.
 
-**Content analysis** (regexp, heuristics):
-```
-Subject: "BUY V1AGRA NOW!!!"
-Body: Contains suspicious patterns
-→ Symbols: SUBJ_ALL_CAPS, DRUGS_ERECTILE
-```
+Filters can also short-circuit. A [multimap](/modules/multimap) rule with `action`, or a [force_actions](/modules/force_actions) rule that does not use `require_action` or `honor_action`, runs early in this stage and, when it matches, sets a pre-result. Use these to accept trusted sources or reject known-bad ones without running most of the remaining checks.
 
-**Reputation checks** (RBLs, URL lists):
-```
-Sender IP: Listed in zen.spamhaus.org
-URL: example-spam.com listed in SURBL
-→ Symbols: RBL_SPAMHAUS_PBL, SURBL_MULTI
-```
-
-#### 5. Classifiers
-
-After the main filters complete, **statistical classifiers** run:
-
-- **Bayes** (OSB tokenizer): Compares token frequencies against learned spam/ham corpora stored in Redis.
-- **Neural network**: Analyses the pattern of symbols already inserted by previous stages and produces its own score.
+Authentication checks (SPF, DKIM, DMARC):
 
 ```
-Bayes token analysis: 85% match with spam corpus → BAYES_SPAM (+3.5)
-Neural network: 0.92 spam probability → NEURAL_SPAM_LONG (+2.0)
+From: ceo@example.com  (example.com publishes SPF "-all" and DMARC "p=reject")
+SPF: fail, the sending IP is not authorized
+DKIM: no signature
+→ Symbols: R_SPF_FAIL, R_DKIM_NA, DMARC_POLICY_REJECT
 ```
 
-#### 6. Composites
-
-**Composites** combine symbols using boolean logic to create meta-symbols or adjust scores:
+Content checks (regexp and Lua rules):
 
 ```
-# If both SPF and DKIM fail, it is very suspicious
-SUSPICIOUS_FORGERY = (R_SPF_FAIL | R_SPF_SOFTFAIL) & DKIM_REJECT
+Subject: BUY CHEAP PILLS NOW!
+→ Symbol: SUBJ_ALL_CAPS
 ```
 
-Composites can also remove redundant symbols or zero out scores when combinations indicate a false positive.
-
-#### 7. Post-filters
-
-**Post-filters** run after composites and can override the score-based action:
-
-- **Force actions**: Override the score-based decision (e.g. always reject if a specific RBL matches).
-- **Milter headers**: Add or modify headers (`X-Spam-Status`, DKIM signatures, etc.).
-
-#### 8. Autolearn and Idempotent Filters
-
-Two final stages run after the action has been determined:
-
-- **Autolearn**: If configured, Rspamd feeds the message to the Bayes classifier as spam or ham based on the final score. This stage never changes the action.
-- **Idempotent filters**: Export results to external systems ([history_redis](/modules/history_redis), [ClickHouse](/modules/clickhouse), [metadata exporter](/modules/metadata_exporter)). These filters are guaranteed to never modify the scan result.
-
-### Score Calculation and Action Selection
-
-After all stages complete, Rspamd sums all symbol scores to get a **total score**:
+Reputation checks (DNS blocklists for IPs and URLs):
 
 ```
-R_SPF_FAIL:              +1.0
-FORGED_SENDER_FORWARD:   +0.5
-BAYES_SPAM:              +3.5
-NEURAL_SPAM_LONG:        +2.0
-RBL_SPAMHAUS_PBL:        +2.5
-                        ------
-TOTAL:                   +9.5
+Sender IP: listed in Spamhaus PBL (zen.spamhaus.org)
+URL: domain listed in SURBL as abused
+→ Symbols: RBL_SPAMHAUS_PBL, ABUSE_SURBL
 ```
 
-Based on configured **action thresholds**, an action is selected:
+#### Classifiers
+
+After the filters, the Bayes classifier compares the message's tokens (OSB tokenizer) with the spam and ham it has learned, which are stored in Redis. It inserts `BAYES_SPAM` (weight 5.1) or `BAYES_HAM` (weight -3.0), scaled by its confidence:
 
 ```
-Score: 9.5
-Threshold: reject (15.0) - No
-Threshold: add header (6.0) - Yes
-→ Action: add header
+Bayes: 95.00% spam → BAYES_SPAM 3.38 (of a possible 5.1)
 ```
 
-### Response to MTA
+The neural network is not part of this stage; it runs as a post-filter.
 
-Rspamd returns a JSON response:
+#### Composites
+
+Composites combine symbols with boolean expressions into a new symbol, and can remove the symbols they combine or their weights:
+
+```hcl
+# /etc/rspamd/local.d/composites.conf
+SPF_AND_DKIM_FAIL {
+  expression = "(R_SPF_FAIL | R_SPF_SOFTFAIL) & R_DKIM_REJECT";
+  score = 3.0;
+}
+```
+
+The shipped composites use this to cancel false positives. For example, `SPF_FAIL_FORWARDING` removes the weight of an SPF failure when the message was forwarded. See [composites](/configuration/composites).
+
+#### Post-filters
+
+Post-filters run after composites and can change the action. Without Redis, the default configuration has none. With Redis configured, they are:
+
+- the [neural network](/modules/neural) (`NEURAL_CHECK`), which inserts `NEURAL_SPAM` or `NEURAL_HAM`
+- the greylisting decision (`GREYLIST_SAVE`), which answers "soft reject" to the first delivery attempt of a message that scores at or above the greylist threshold but below reject
+
+Rules of the force_actions module that use `require_action` or `honor_action` also run here, as do optional modules such as `gpt` when you enable them.
+
+#### Autolearn, second composites pass and idempotent filters
+
+If autolearn is configured, Rspamd then trains Bayes with the message as spam or ham, depending on its action and score. Learning does not change the score.
+
+Composites that depend on post-filter symbols are evaluated next, in a second pass. The final score and action are known after this pass.
+
+Idempotent filters run last and cannot change the result. Examples are [history_redis](/modules/history_redis), [ClickHouse](/modules/clickhouse), [metadata exporter](/modules/metadata_exporter) and [milter_headers](/modules/milter_headers). The milter_headers module adds only the header routines listed in its `use` option, which is empty by default.
+
+The reply goes to the MTA after the idempotent stage.
+
+### Score and action
+
+Rspamd adds up the symbol scores. For a message that triggers all the examples above, the breakdown looks like this (simplified; a real scan shows more symbols):
+
+```
+R_SPF_FAIL            1.00
+R_DKIM_NA             0.00
+DMARC_POLICY_REJECT   2.00
+SUBJ_ALL_CAPS         1.50   (3.0, scaled by subject length)
+RBL_SPAMHAUS_PBL      2.00
+ABUSE_SURBL           5.00
+BAYES_SPAM            3.38   (5.1, scaled by 95.00% confidence)
+                     -----
+Total                14.88
+```
+
+With the default thresholds, 14.88 is below the `reject` threshold (15) but above the `add_header` threshold (6), so the action is "add header".
+
+### Reply to the MTA
+
+Over HTTP, Rspamd replies with JSON. An abridged reply for the message above:
 
 ```json
 {
-    "action": "add header",
-    "score": 9.5,
+    "is_skipped": false,
+    "score": 14.88,
     "required_score": 15.0,
-    "symbols": {
-        "R_SPF_FAIL": {"score": 1.0},
-        "BAYES_SPAM": {"score": 3.5},
-        "NEURAL_SPAM_LONG": {"score": 2.0}
+    "action": "add header",
+    "thresholds": {
+        "reject": 15.0,
+        "add header": 6.0,
+        "greylist": 4.0
     },
-    "message-id": "msg-12345",
-    "milter": {
-        "add_headers": {
-            "X-Spam": {"value": "Yes", "order": 1}
+    "symbols": {
+        "R_SPF_FAIL": {
+            "name": "R_SPF_FAIL",
+            "score": 1.0,
+            "metric_score": 1.0,
+            "description": "SPF verification failed"
+        },
+        "BAYES_SPAM": {
+            "name": "BAYES_SPAM",
+            "score": 3.38,
+            "metric_score": 5.1,
+            "description": "Message probably spam, probability: ",
+            "options": ["95.00%"]
         }
-    }
+    },
+    "message-id": "msg-12345"
 }
 ```
 
-The MTA uses this response to decide what to do with the message.
+The reply has no `milter` block by default. One appears only when a module, such as milter_headers, asks for header changes. In milter mode the proxy itself adds `X-Spam: Yes` for the "add header" action (worker option `spam_header`). How the action is applied is described under [Actions](#actions).
 
-## Core Concepts in Detail
+## Core concepts
 
-### Modules: Functional Units
+### Modules
 
-**Modules** are independent units of functionality. Each module can:
-- Register one or more symbols
-- Perform synchronous or asynchronous checks
-- Access shared resources (Redis, DNS, HTTP APIs)
-- Be enabled/disabled independently
+A module registers one or more symbols and runs the checks behind them, often asynchronously over DNS, Redis or HTTP. You can enable and disable each module on its own.
 
-**Module types:**
+Four modules are written in C and compiled into the binary: `chartable`, `dkim`, `regexp` and `fuzzy_check`. The rest are Lua plugins, including `spf`, `dmarc`, `arc`, `rbl`, `multimap`, `phishing`, `ratelimit`, `greylist` and `neural`. Packages install them in `/usr/share/rspamd/plugins/`; your own plugins go in `/etc/rspamd/plugins.d/`.
 
-**C modules** (compiled into binary):
-- `spf` - SPF validation
-- `dkim` - DKIM signature verification
-- `regexp` - High-performance pattern matching
-- `chartable` - Character set analysis
-- `fuzzy_check` - Fuzzy hash checking
+Each module's defaults are in `/etc/rspamd/modules.d/<module>.conf`. Do not edit those files. Instead:
 
-**Lua modules** (scripts in `/usr/share/rspamd/`):
-- `rbl` - DNS blacklist queries
-- `multimap` - Generic map-based checks
-- `phishing` - Phishing detection
-- `dmarc` - DMARC policy checking
-- `arc` - ARC validation
+- `/etc/rspamd/local.d/<module>.conf` is merged with the defaults.
+- `/etc/rspamd/override.d/<module>.conf` replaces the default value of each key it sets (an object is replaced, not merged). Keys you do not mention keep their defaults.
 
-**Configuration location:**
-- Module defaults: `/etc/rspamd/modules.d/module_name.conf`
-- Local overrides: `/etc/rspamd/local.d/module_name.conf`
-- Complete replacement: `/etc/rspamd/override.d/module_name.conf`
+To disable a module, put `enabled = false;` in its `local.d` file.
 
-### Symbols: Test Results with Scores
+### Symbols
 
-A **symbol** represents a specific detection or characteristic found in a message.
+A symbol records one finding about a message. `BAYES_SPAM` from the scan above:
 
-**Symbol anatomy:**
 ```
-Symbol name: BAYES_SPAM
-Score: 3.5
-Options: ["0.95"] (probability)
-Description: "Bayesian classifier: spam"
+Name:        BAYES_SPAM
+Weight:      5.1 (scaled by the classifier's confidence; 3.38 in this scan)
+Options:     ["95.00%"]
+Group:       statistics
+Description: "Message probably spam, probability: "
 ```
 
-**Symbol naming conventions:**
-- `R_` prefix: Result symbols from standard checks (e.g., `R_SPF_ALLOW`)
-- `UPPERCASE_UNDERSCORES`: Descriptive names (e.g., `FORGED_SENDER`)
-- Module-specific prefixes: `BAYES_`, `NEURAL_`, `DKIM_`
+Many symbols carry their module's name as a prefix (`BAYES_`, `DMARC_`, `ARC_`, `NEURAL_`). Some older ones have an `R_` prefix (`R_SPF_*`, `R_DKIM_*`).
 
-**Symbol properties:**
-
-| Property | Purpose | Example |
+| Property | Meaning | Example |
 |----------|---------|---------|
-| **Name** | Unique identifier | `R_DKIM_ALLOW` |
-| **Score** | Weight in score calculation | 0.0 to 20.0 (typical range) |
-| **Group** | Organizational grouping | `dkim`, `bayes`, `policies` |
-| **Description** | Human-readable explanation | "DKIM signature valid" |
-| **Options** | Additional context | `["key=selector1"]` |
+| Name | Unique identifier | `R_DKIM_ALLOW` |
+| Score | Weight added to the total: positive for spam indicators, negative for ham indicators. Default scores run from -7.0 to +15.0 | `-0.1` |
+| Group | Primary group; a symbol can also belong to extra groups | `policies` (extra group `dkim`) |
+| Description | Human-readable explanation | "DKIM verification succeed" |
+| Options | Details added by the check | `["example.com:s=selector1"]` |
 
-### Scores: Weighting System
+### Scores
 
-Each symbol has a **configured score** that represents how much it contributes to the final spam probability.
+Each symbol has a configured weight, which adds to (or subtracts from) the message's total score. Some rules scale the weight by a factor, as Bayes does with its confidence and `SUBJ_ALL_CAPS` with the subject length.
 
-**Score principles:**
-
-**Positive scores** = Spam indicators:
 ```
-BAYES_SPAM: 3.50        # Strong spam signal
-R_SPF_FAIL: 1.00        # Moderate spam signal
-SUBJ_ALL_CAPS: 0.50     # Weak spam signal
-```
+# Spam indicators
+BAYES_SPAM       up to  5.10
+SUBJ_ALL_CAPS    up to  3.00
+R_SPF_FAIL              1.00
 
-**Negative scores** = Ham indicators:
-```
-BAYES_HAM: -3.00        # Strong ham signal
-R_SPF_ALLOW: -0.20      # Weak ham signal
-DKIM_SIGNED: -0.10      # Weak ham signal
+# Ham indicators
+BAYES_HAM        up to -3.00
+R_SPF_ALLOW            -0.20
+R_DKIM_ALLOW           -0.10
 ```
 
-**Score tuning philosophy:**
-- Start with defaults (years of community tuning)
-- Adjust based on **observed false positives/negatives**
-- Consider **score caps per group** to prevent single modules from dominating
-- Use **composites** for complex scoring logic
+Start with the default scores. Change a score when you see it cause false positives or negatives, cap a family of checks with a group `max_score`, and use composites when a combination of symbols means something different from each symbol alone.
 
-### Actions: What to Do with Messages
+### Actions
 
-Based on the total score, Rspamd recommends an **action**:
+Rspamd picks the action from the total score:
 
-| Action | Default Threshold | Behavior | Use Case |
-|--------|------------------|----------|----------|
-| **no action** | Score < 0 | Deliver normally | Clean messages |
-| **greylist** | 0 ≤ Score < 6 | Temporary delay | Suspicious but uncertain |
-| **add header** | 6 ≤ Score < 15 | Deliver with spam marking | Probable spam (folder filtering) |
-| **rewrite subject** | N/A (optional) | Modify subject line | User-visible spam marking |
-| **soft reject** | N/A (special) | Temporary rejection | Rate limiting, policy violations |
-| **reject** | Score ≥ 15 | Refuse message | Definite spam |
+| Action | Default threshold | What happens |
+|--------|-------------------|--------------|
+| no action | score below 4 | Deliver normally |
+| greylist | 4 to 6 | Temporary delay. Needs the greylist module, which needs Redis. In milter mode without it, the message is accepted |
+| add header | 6 to 15 | Deliver with a spam header (`X-Spam: Yes` in milter mode), which the delivery agent or mail client can use to file the message into a spam folder |
+| rewrite subject | not set | Deliver with the subject changed, by default to `*** SPAM *** <subject>` |
+| soft reject | no threshold | Temporary failure (4xx); set by modules such as ratelimit and greylist |
+| reject | 15 and above | Reject the message (5xx) |
 
-**Important notes:**
+How the action is applied depends on the integration. With the milter proxy, the default for Postfix and Sendmail, Rspamd applies it through milter replies: reject, temporary failure or header changes. Clients that talk to the normal worker directly, such as Exim (legacy RSPAMC protocol, through `spamd_address ... variant=rspamd`) or Haraka (HTTP), receive the action in the reply and decide what to do with it.
 
-1. **Recommendations, not commands**: Rspamd suggests actions; the MTA decides whether to follow them.
+You change thresholds in `/etc/rspamd/local.d/actions.conf` (see [action thresholds](#1-action-thresholds) below), and per user or domain with the [settings](/configuration/settings) module.
 
-2. **Thresholds are configurable**:
-   ```nginx
-   actions {
-       reject = 15.0;
-       add_header = 6.0;
-       greylist = 4.0;
-   }
-   ```
+You can declare custom actions in the same file. An action with the `no_threshold` flag is never chosen by score, only set by rules:
 
-3. **Custom actions possible**: Via force_actions module or Lua scripts.
-
-4. **Per-user/domain thresholds**: Using settings module.
-
-### Groups: Symbol Organization
-
-**Groups** organize related symbols for management and score capping:
-
-```nginx
-group "spf" {
-    symbols {
-        "R_SPF_ALLOW" { score = -0.20; }
-        "R_SPF_FAIL" { score = 1.00; }
-        "R_SPF_SOFTFAIL" { score = 0.50; }
-        "R_SPF_NEUTRAL" { score = 0.00; }
-    }
-    max_score = 3.0;  # Cap total contribution from SPF group
+```hcl
+# /etc/rspamd/local.d/actions.conf
+my_action {
+  flags = ["no_threshold"];
 }
 ```
 
-**Benefits of groups:**
-- **Score limiting**: Prevent single authentication method from dominating
-- **Bulk operations**: Enable/disable entire families of checks
-- **Organization**: Logical grouping in WebUI and reports
+A force_actions rule or Lua code can then set it. Rules cannot set an action that is not declared.
 
-### Workers: Process Types
+### Groups
 
-Rspamd runs multiple **worker** processes, each with a specific role:
+Groups organize symbols and can cap their combined contribution with `max_score`. A symbol has one primary group and can belong to extra groups; the cap of each of its groups applies. To limit how much the DNS blocklists in the `rbl` group can add together:
 
-#### Normal Worker
-
-The main message processing worker:
-- Accepts HTTP connections on port 11333 (default)
-- Performs spam/ham classification
-- Executes all configured modules
-- Returns results to MTA
-
-**Configuration:**
-```nginx
-worker "normal" {
-    bind_socket = "localhost:11333";
-    count = 4;  # Number of worker processes
+```hcl
+# /etc/rspamd/local.d/groups.conf
+group "rbl" {
+  max_score = 6.0;
 }
 ```
 
-**Scaling**: Typically 1-4 workers per CPU core.
+Groups also let you switch families of checks on or off. A [settings](/configuration/settings) rule can disable whole groups for a user or domain with `groups_disabled`, or run only the groups listed in `groups_enabled`.
 
-#### Controller Worker
+The WebUI Symbols tab shows each symbol's group.
 
-Web interface and management API:
-- Serves WebUI on port 11334 (default)
-- Provides REST endpoints for learning, stats, maps
-- Requires authentication (password or enable_password)
-- Should be protected (localhost/firewall)
+### Workers
 
-**Configuration:**
-```nginx
-worker "controller" {
-    bind_socket = "localhost:11334";
-    password = "your_password";
-}
+Rspamd runs several kinds of worker processes:
+
+| Worker | Default socket | Role |
+|--------|----------------|------|
+| normal | localhost:11333 | Scans messages received over HTTP |
+| controller | localhost:11334 | WebUI and management API |
+| rspamd_proxy | localhost:11332 | Milter interface for the MTA; forwards to the normal worker |
+| fuzzy | localhost:11335 | Fuzzy hash storage; disabled by default |
+
+Worker options go in `/etc/rspamd/local.d/worker-normal.inc`, `worker-controller.inc`, `worker-proxy.inc` and `worker-fuzzy.inc`. These files are already included inside the right `worker { }` section, so write the options without a wrapper.
+
+#### Normal worker
+
+The [normal worker](/workers/normal) runs the checks and returns results. By default Rspamd starts as many normal worker processes as there are CPU cores minus two, with a minimum of 1 and a maximum of 4. On a busy server you can raise the count:
+
+```hcl
+# /etc/rspamd/local.d/worker-normal.inc
+count = 8;
 ```
 
-#### Proxy Worker
+#### Controller worker
 
-Milter protocol bridge and load balancer:
-- Accepts Milter connections from MTAs (Postfix, Sendmail)
-- Translates Milter ↔ HTTP protocol
-- Can forward to multiple Rspamd instances
-- Supports [HTTPCrypt encryption](/developers/encryption)
+The [controller](/workers/controller) serves the WebUI and the API for learning, statistics and maps. Requests from `secure_ip` addresses (127.0.0.1 and ::1 by default) and from unix sockets need no password. Remote clients must authenticate with the password set in `password`. If you also set `enable_password`, state-changing commands such as learning require that password, and `password` gives read-only access. Store a hash made with `rspamadm pw`, not plain text. The placeholder `q1` in the shipped config is refused for remote access.
 
-**Configuration:**
-```nginx
-worker "rspamd_proxy" {
-    bind_socket = "localhost:11332";
-    upstream "local" {
-        default = yes;
-        hosts = "localhost:11333";
-    }
-}
+```hcl
+# /etc/rspamd/local.d/worker-controller.inc
+password = "$2$...";  # output of: rspamadm pw
 ```
 
-**Use case**: Postfix integration via `smtpd_milters = inet:localhost:11332`
+The controller listens on localhost by default. If you open it to other hosts, set a password and restrict access with a firewall.
 
-#### Fuzzy Storage Worker
+#### Proxy worker
 
-Manages fuzzy hash database:
-- Stores fuzzy hashes for near-duplicate detection
-- Handles add/check/delete operations
-- Supports replication and sharding
-- Uses custom protocol over UDP/TCP
+The [proxy worker](/workers/rspamd_proxy) is enabled by default in milter mode on localhost:11332. It forwards each message to the normal worker on localhost:11333. It can also balance load across several Rspamd hosts and [encrypt](/developers/encryption) the traffic. Point Postfix at it (see [MTA integration](/tutorials/integration#using-rspamd-with-postfix-mta)):
 
-**Use case**: Shared spam reputation across multiple servers.
-
-## Configuration Overview
-
-### The Configuration Hierarchy
-
-Rspamd uses a **layered configuration system** with clear precedence:
-
-```
-/etc/rspamd/rspamd.conf          (main config, rarely edited)
-  ├── /etc/rspamd/modules.d/     (module defaults)
-  │   ├── local.d/               (merge with defaults) ← Your changes here
-  │   └── override.d/            (replace defaults)    ← Advanced only
-  └── /etc/rspamd/local.d/       (global overrides)
-      └── actions.conf           (action thresholds)
+```ini
+# /etc/postfix/main.cf
+smtpd_milters = inet:localhost:11332
 ```
 
-**Best practice**: Use `local.d/` for all customizations. This merges your settings with defaults, surviving updates.
+The default proxy configuration needs no changes. To have the proxy scan messages itself instead of forwarding them:
 
-### What You Can Configure
-
-#### 1. Action Thresholds (Most Common)
-
-**File**: `/etc/rspamd/local.d/actions.conf`
-
-```nginx
-reject = 15.0;          # Refuse message
-add_header = 6.0;       # Mark as spam
-greylist = 4.0;         # Temporary delay
-```
-
-**When to adjust:**
-- Too much spam getting through: Lower thresholds
-- Too many false positives: Raise thresholds
-- Different policies per domain: Use settings module
-
-#### 2. Symbol Scores (Fine-Tuning)
-
-**File**: `/etc/rspamd/local.d/groups.conf` or module-specific configs
-
-```nginx
-group "content" {
-    symbols {
-        "FORGED_SENDER" {
-            score = 0.5;      # Default: 0.3
-        }
-    }
-}
-```
-
-**When to adjust:**
-- Specific symbol causing many false positives
-- Local testing shows different effectiveness
-- Custom symbols need appropriate weights
-
-#### 3. Module Settings (Feature Control)
-
-**Example**: `/etc/rspamd/local.d/bayes.conf`
-
-```nginx
-autolearn = true;         # Learn automatically
-autolearn {
-    spam_threshold = 12.0;  # Score needed to learn as spam
-    ham_threshold = -5.0;   # Score needed to learn as ham
-}
-
-backend = "redis";
-servers = "localhost:6379";
-```
-
-**When to configure:**
-- Enable/disable specific features
-- Tune module behavior for your environment
-- Connect to external services (Redis, databases)
-
-#### 4. Worker Configuration (Integration)
-
-**Example**: `/etc/rspamd/local.d/worker-proxy.inc`
-
-```nginx
-# Enable proxy worker for Postfix milter
-bind_socket = "localhost:11332";
-milter = yes;
-
+```hcl
+# /etc/rspamd/local.d/worker-proxy.inc
 upstream "local" {
-    default = yes;
-    self_scan = yes;
+  self_scan = yes;  # scan in the proxy instead of forwarding to the normal worker
 }
 ```
 
-**When to configure:**
-- MTA integration setup
-- Performance optimization
-- Multi-instance deployments
+#### Fuzzy storage worker
 
-#### 5. System Options (Advanced)
+The [fuzzy storage](/workers/fuzzy_storage) worker stores fuzzy hashes and answers `fuzzy_check` queries over UDP and TCP. Out of the box, `fuzzy_check` queries the public rspamd.com storage, which is configured read-only. Run your own storage to learn your own hashes and share them between your servers. The worker keeps hashes in Redis (the default backend); use Redis replication for redundancy.
 
-**File**: `/etc/rspamd/local.d/options.inc`
+The local worker is disabled by default. It needs Redis: configure servers in `/etc/rspamd/local.d/redis.conf` or set `servers` in `worker-fuzzy.inc`. Without Redis the worker exits at startup. Once Redis is configured, enable the worker:
 
-```nginx
+```hcl
+# /etc/rspamd/local.d/worker-fuzzy.inc
+count = 1;
+```
+
+## Configuration overview
+
+### Where configuration lives
+
+| Location | Purpose |
+|----------|---------|
+| `/etc/rspamd/rspamd.conf`, `common.conf`, `actions.conf`, `groups.conf`, `options.inc`, `statistic.conf`, `worker-*.inc`, `modules.d/*.conf` | Shipped defaults. Do not edit: upgrades ship new versions of these files, and local edits conflict with them |
+| `/etc/rspamd/local.d/<same file name>` | Merged into the section that file configures (see the exceptions below). Put most changes here |
+| `/etc/rspamd/override.d/<same file name>` | Replaces the default value of each key it sets |
+| `/etc/rspamd/rspamd.conf.local`, `/etc/rspamd/rspamd.conf.override` | Additions and overrides at the top level of the configuration |
+
+Almost every `local.d` and `override.d` file is included inside its section, so do not repeat the section name: write `reject = 12;` in `local.d/actions.conf`, not `actions { reject = 12; }`. Two files differ:
+
+- `groups.conf` is merged at the top level. It takes `group "name" { ... }` blocks, or a top-level `symbols { ... }` block that changes weights without moving symbols to another group (see [Changing a score](/guides/configuration/fundamentals#changing-a-score)).
+- `statistic.conf` is included at the top level without merging. A `classifier "bayes" { ... }` block there replaces the whole shipped classifier, statfiles included. Put Bayes changes in `local.d/classifier-bayes.conf` instead, without a wrapper.
+
+### What you can configure
+
+#### 1. Action thresholds
+
+```hcl
+# /etc/rspamd/local.d/actions.conf
+reject = 12;     # default 15
+add_header = 5;  # default 6
+```
+
+Lower the thresholds if too much spam gets through; raise them if you see false positives. For different thresholds per domain, use the settings module.
+
+#### 2. Symbol scores
+
+Change a score inside the symbol's own group. If you set it under a different group, you also move the symbol into that group. `rspamadm configdump -d` shows each symbol's own group (`group`) and its extra groups (`groups`).
+
+```hcl
+# /etc/rspamd/local.d/groups.conf
+group "headers" {
+  symbols {
+    "FORGED_SENDER" {
+      weight = 0.5;  # default 0.3
+    }
+  }
+}
+```
+
+The same change in the group's own file, without the `group` block:
+
+```hcl
+# /etc/rspamd/local.d/headers_group.conf
+symbols {
+  "FORGED_SENDER" {
+    weight = 0.5;  # default 0.3
+  }
+}
+```
+
+#### 3. Module settings
+
+For example, Bayes autolearning:
+
+```hcl
+# /etc/rspamd/local.d/classifier-bayes.conf
+autolearn {
+  spam_threshold = 15.0;  # learn as spam: "reject" action
+  junk_threshold = 6.0;   # also learn "add header" messages as spam
+  ham_threshold = -0.5;   # learn as ham: "no action" and score <= -0.5
+  check_balance = true;
+}
+```
+
+Autolearn checks the action before the score. Without `junk_threshold`, only messages with the "reject" action are learned as spam, so with the default `reject` threshold of 15 no message scoring below 15 would be learned as spam. See [Bayes autolearn](/getting-started/first-setup#bayes-autolearn-optional) for what each option does.
+
+Bayes uses the Redis servers from `/etc/rspamd/local.d/redis.conf` unless you set `servers` in this file.
+
+#### 4. Worker settings
+
+Worker options go in `/etc/rspamd/local.d/worker-<name>.inc`, written without a `worker { }` wrapper. See [Workers](#workers) for examples.
+
+#### 5. Global options
+
+Use a local recursive resolver. Spamhaus, for example, answers queries that come through open resolvers with an error code instead of a listing, which Rspamd reports as `RBL_SPAMHAUS_BLOCKED_OPENRESOLVER`.
+
+```hcl
+# /etc/rspamd/local.d/options.inc
 dns {
-    timeout = 2s;
-    retransmits = 3;
+  nameserver = ["127.0.0.1"];  # default: the servers in /etc/resolv.conf
 }
-
-# Limit message size
-max_message = 10485760;  # 10MB
+max_message = 10mb;  # 10 MiB, default 50 MiB
 ```
 
-**When to configure:**
-- Network environment requires tuning
-- Resource limits needed
-- Debugging and troubleshooting
+`max_message` sets the largest message Rspamd accepts for scanning.
 
-## Configuration Strategies
+## How much to customize
 
-### Strategy 1: Minimal (Quick Start)
+- To evaluate Rspamd or run a small server, keep the default modules and scores, connect your MTA and adjust the action thresholds if needed.
+- For production tuning, review false positives and negatives in the WebUI history, then adjust individual symbol scores, module settings and thresholds.
+- For multi-tenant setups or custom policies, add per-domain settings, multimap rules backed by file, HTTP, Redis or CDB maps, and your own Lua plugins.
 
-**Goal**: Get working spam filtering ASAP
+## Common configuration patterns
 
-**Changes:**
-1. Adjust action thresholds only
-2. Configure MTA integration
-3. Use all default modules and scores
+### Reducing false positives
 
-**Best for**:
-- Testing and evaluation
-- Small deployments (<1000 users)
-- Low customization needs
-
-**Pros**: Fast setup, easy to maintain
-**Cons**: May not be optimal for your traffic
-
-### Strategy 2: Tuned (Production)
-
-**Goal**: Optimize for your specific environment
-
-**Changes:**
-1. Baseline with defaults for 1-2 weeks
-2. Analyze false positives via WebUI
-3. Adjust specific symbol scores
-4. Fine-tune module settings
-5. Set appropriate action thresholds
-
-**Best for**:
-- Production deployments
-- Specific industry requirements (finance, healthcare)
-- Environments with known patterns
-
-**Pros**: Optimized false positive/negative balance
-**Cons**: Requires monitoring and iteration
-
-### Strategy 3: Custom (Enterprise)
-
-**Goal**: Maximum control and integration
-
-**Changes:**
-1. All from "Tuned" strategy
-2. Custom rules via multimap/regexp modules
-3. External data integration (LDAP, databases)
-4. Per-user/domain settings
-5. Custom Lua modules
-
-**Best for**:
-- Large deployments (10,000+ users)
-- Complex requirements
-- Multi-tenant environments
-
-**Pros**: Maximum flexibility
-**Cons**: Requires Rspamd expertise
-
-## Common Configuration Patterns
-
-### Pattern: Reducing False Positives
-
-**Problem**: Legitimate emails marked as spam
-
-**Solution:**
-1. **Identify problematic symbol**:
-   ```bash
-   # Check WebUI history or logs
-   # Look for common symbols in false positives
-   ```
-
-2. **Reduce symbol score**:
-   ```nginx
-   # /etc/rspamd/local.d/groups.conf
-   symbol "SUSPICIOUS_SYMBOL" {
-       score = 0.1;  # Was 2.0
-   }
-   ```
-
-3. **Or whitelist trusted senders**:
-   ```nginx
-   # /etc/rspamd/local.d/multimap.conf
-   WHITELIST_IP {
-       type = "ip";
-       map = "/etc/rspamd/whitelist_ip.map";
-       score = -10.0;
-       prefilter = true;
-   }
-   ```
-
-### Pattern: Stricter Spam Filtering
-
-**Problem**: Too much spam getting through
-
-**Solution:**
-1. **Lower action threshold**:
-   ```nginx
-   actions {
-       reject = 10.0;  # Was 15.0
-   }
-   ```
-
-2. **Increase critical symbol scores**:
-   ```nginx
-   symbol "BAYES_SPAM" {
-       score = 5.0;  # Was 3.5
-   }
-   ```
-
-3. **Enable additional checks**:
-   ```nginx
-   # /etc/rspamd/local.d/rbl.conf
-   rbls {
-       spamhaus {
-           rbl = "zen.spamhaus.org";
-           enabled = true;
-       }
-   }
-   ```
-
-### Pattern: Per-Domain Settings
-
-**Problem**: Different spam tolerance per domain
-
-**Solution:**
-```nginx
-# /etc/rspamd/local.d/settings.conf
-settings {
-    domain_strict {
-        rcpt = "@strict-domain.com";
-        apply {
-            actions {
-                reject = 8.0;  # Stricter than default
-                add_header = 4.0;
-            }
-        }
-    }
-
-    domain_relaxed {
-        rcpt = "@relaxed-domain.com";
-        apply {
-            actions {
-                reject = 20.0;  # More lenient
-                add_header = 10.0;
-            }
-        }
-    }
-}
-```
-
-## Understanding Rspamd Behavior
-
-### Why Scores, Not Rules?
-
-**Traditional approach** (SpamAssassin-style):
-- Each rule has fixed score
-- Score directly added to total
-- Binary logic: match or no match
-
-**Rspamd approach**:
-- Symbols can have **dynamic scores** (Bayes: 0-5, Neural: 0-10)
-- **Composites** combine multiple conditions
-- **Groups** can cap total contribution
-- **Settings** can override scores per user/domain
-
-**Advantage**: More nuanced decisions, fewer false positives.
-
-### Why Multiple Small Checks Beat Few Large Rules?
-
-Rspamd philosophy: **Many weak learners > Few strong rules**
-
-**Example scenario:**
-```
-Traditional: "Contains 'viagra' → +10 points" (brittle)
-
-Rspamd approach:
-- SUBJ_HAS_DRUG_NAME: +0.5
-- BODY_HAS_DRUG_REF: +1.0
-- HTML_OBFUSCATION: +1.5
-- NO_DKIM: +0.3
-- SPF_SOFTFAIL: +0.5
-- BAYES_SPAM: +3.5
-Total: +7.3 → add header
-```
-
-**Benefits:**
-- Resistant to evasion techniques
-- Graceful degradation (one check fails, others still work)
-- Easier to tune individual components
-
-### Why Statistical Methods Matter
-
-**Bayesian classifier**:
-- Learns from your specific email patterns
-- Adapts to evolving spam techniques
-- Provides probability-based scores
-
-**Neural networks**:
-- Learn from symbol patterns (not content)
-- Adapt to your unique rule configuration
-- Provide complementary signal to Bayes
-
-**Together**: Strong spam detection without manual rule updates.
-
-## Testing and Validation
-
-### Before Going Live
-
-1. **Test mode**: Use `greylist` action for new installs to observe without blocking
-   ```nginx
-   actions {
-       reject = 99999.0;  # Effectively disable
-       add_header = 99999.0;
-       greylist = 4.0;     # Only greylist
-   }
-   ```
-
-2. **Monitor for 1-2 weeks**: Check WebUI history for patterns
-
-3. **Gradually lower thresholds**: Based on observed scores
-
-### Validation Commands
+Find the symbol responsible in the WebUI history, or search the log for the message:
 
 ```bash
-# Test a message file
+rspamadm grep -s '<message-id>' /var/log/rspamd/rspamd.log
+```
+
+Lower that symbol's score in its group:
+
+```hcl
+# /etc/rspamd/local.d/hfilter_group.conf
+symbols {
+  "HFILTER_HOSTNAME_UNKNOWN" {
+    weight = 1.0;  # default 2.5
+  }
+}
+```
+
+Or give trusted senders a negative score:
+
+```hcl
+# /etc/rspamd/local.d/multimap.conf
+WHITELIST_IP {
+  type = "ip";
+  map = "${LOCAL_CONFDIR}/local.d/maps.d/whitelist_ip.map";
+  score = -10.0;
+  # action = "accept";  # uncomment to skip most of the remaining checks for matching IPs
+}
+```
+
+### Stricter filtering
+
+Lower `reject` and `add_header` in `local.d/actions.conf` (see [action thresholds](#1-action-thresholds)).
+
+Raise the scores of symbols you trust:
+
+```hcl
+# /etc/rspamd/local.d/statistics_group.conf
+symbols {
+  "BAYES_SPAM" {
+    weight = 6.0;  # default 5.1
+  }
+}
+```
+
+Enable checks that are off by default. Spamhaus ZEN is already enabled; Sender Score is not:
+
+```hcl
+# /etc/rspamd/local.d/rbl.conf
+rbls {
+  senderscore {
+    enabled = true;  # needs a registered Validity account
+  }
+}
+```
+
+### Per-domain settings
+
+To use different action thresholds for different recipient domains, add [settings](/configuration/settings) rules:
+
+```hcl
+# /etc/rspamd/local.d/settings.conf
+domain_strict {
+  rcpt = "@strict-domain.com";
+  apply {
+    actions {
+      reject = 8.0;
+      add_header = 4.0;
+    }
+  }
+}
+
+domain_relaxed {
+  rcpt = "@relaxed-domain.com";
+  apply {
+    actions {
+      reject = 20.0;
+      add_header = 10.0;
+    }
+  }
+}
+```
+
+## Understanding Rspamd behavior
+
+### How the score is built
+
+Like SpamAssassin, Rspamd adds up rule scores and compares the total with thresholds. A few features shape that total:
+
+- A rule can scale its configured weight. `BAYES_SPAM` contributes from 0 to +5.1 and `BAYES_HAM` from 0 to -3.0, depending on the classifier's confidence. `NEURAL_SPAM` and `NEURAL_HAM` scale whatever score you assign them by the network's output.
+- Composites combine symbols and can remove the symbols they combine, or their weights.
+- Group `max_score` caps how much a family of checks can add.
+- Settings change scores, thresholds and enabled checks per user, domain or IP address.
+
+### Why many small checks
+
+In the [breakdown above](#score-and-action), no single symbol reaches the "add header" threshold of 6, yet together they score 14.88. A spammer who gets past one check still has to get past the others. If one check fails, for example a DNS list times out, the rest still produce a score. Each symbol can be tuned on its own.
+
+### Statistical methods
+
+The Bayes classifier learns from the mail you train it with, by hand or through autolearn, so it adapts to your own traffic.
+
+The [neural network](/modules/neural) needs Redis. By default it learns from the pattern of symbols in each message. Through feature providers it can also use content features: LLM, fastText and static embeddings, and text hashes. `NEURAL_SPAM` and `NEURAL_HAM` have no score until you set one in `/etc/rspamd/local.d/neural_group.conf`.
+
+## Testing and validation
+
+### Before going live
+
+To see what Rspamd would do without rejecting or delaying any mail, set `reject = null;` and `greylist = null;` in `local.d/actions.conf` and disable the greylist module. [Testing alongside SpamAssassin](/getting-started/installation#testing-alongside-spamassassin) has the exact settings and the headers to enable for comparing results. Review the scores in the WebUI history or the logs, and remove these settings once you are confident in the results.
+
+### Validation commands
+
+```bash
+# Scan a message and show its symbols
 rspamc < test_message.eml
 
-# Check configuration
+# Check the configuration
 rspamadm configtest
 
-# Verify module status
+# Show which modules are enabled or disabled
+rspamadm configdump -m
+
+# Show scan and learning counters
 rspamc stat
 
-# Test specific symbol
+# Show log lines for scans that mention a symbol
 rspamadm grep -s SYMBOL_NAME /var/log/rspamd/rspamd.log
 ```
 
-## Performance Expectations
+## Performance
 
-**Typical performance** (modern server, default config):
+Throughput and latency depend mostly on your DNS resolver, Redis and other network lookups, on message size and on which modules are enabled. Measure on your own traffic: the WebUI has a throughput graph and a scan time column in the history, and `rspamc --profile` shows how long each symbol took.
 
-| Metric | Value |
-|--------|-------|
-| **Messages/second** | 100-500 per worker |
-| **Latency** | 50-200ms per message |
-| **Memory** | 256-512MB per worker |
-| **CPU** | 1-2 cores (4 workers) |
+## Next steps
 
-**Scaling factors:**
-- **Message size**: Larger messages take longer
-- **Enabled modules**: More checks = more time
-- **External lookups**: DNS/Redis latency matters
-- **Statistical modules**: Bayes/Neural add CPU load
-
-## Next Steps
-
-Now that you understand Rspamd's architecture and capabilities:
-
-1. **[Installation Guide](/getting-started/installation)** - Choose your installation method
-2. **[First Setup](/getting-started/first-setup)** - Get your first working configuration
-3. **[Configuration Fundamentals](/guides/configuration/fundamentals)** - Learn UCL syntax and structure
-4. **[Architecture Details](/developers/architecture)** - Deep dive for advanced users
-
-## Key Takeaways
-
-✅ **Rspamd is event-driven**: Handles high volume efficiently
-✅ **Modular design**: Enable/disable features independently
-✅ **Score-based decisions**: Nuanced handling vs. binary rules
-✅ **Statistical methods**: Adapt to your email patterns
-✅ **Configuration layers**: local.d/ for all customizations
-✅ **Start simple**: Adjust thresholds first, tune scores later
-✅ **Monitor before blocking**: Use greylist to test safely
-
-Understanding these fundamentals will help you configure Rspamd effectively and troubleshoot issues confidently.
+1. [Installation](/getting-started/installation): choose an installation method
+2. [First setup](/getting-started/first-setup): get a first working configuration
+3. [UCL configuration language](/configuration/ucl): the syntax of Rspamd configuration files
+4. [Configuration fundamentals](/guides/configuration/fundamentals): an overview of modules, scores, actions and workers
+5. [Architecture](/developers/architecture): internals for advanced users

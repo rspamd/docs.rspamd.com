@@ -3,505 +3,421 @@ title: Configuration Fundamentals
 sidebar_position: 1
 ---
 
-# Configuration Fundamentals
+# Configuration fundamentals
 
-Now that you have [working spam filtering](/getting-started/first-setup), let's understand **what you can configure** and **how to configure it effectively**. This knowledge will help you customize Rspamd for your specific needs.
+This page follows [first setup](/getting-started/first-setup). It explains what you can change in Rspamd and which file each change goes in.
 
-## The "What and How" Framework
+## Configuration areas
 
-Based on user feedback and common questions, here's what there is to configure in Rspamd:
+| Area | What it controls | Where you change it |
+|------|------------------|---------------------|
+| [Modules](#modules) | Which checks run and how they are set up | `local.d/<module>.conf` |
+| [Scores](#scores) | How much each symbol adds to the message score | `local.d/groups.conf` or `local.d/<group>_group.conf`, or the web interface (WebUI) |
+| [Actions](#actions) | What Rspamd tells the MTA to do at each score | `local.d/actions.conf` |
+| [Workers](#workers) | The processes that scan mail, serve the WebUI and talk to the MTA | `local.d/worker-<name>.inc` |
+| [General options](#general-options) | DNS, timeouts, size limits | `local.d/options.inc` |
+| [Logging](#logging) | Log level, destination and format | `local.d/logging.inc` |
 
-| Configuration Area | What It Controls | How to Configure | When to Modify | Common Pitfalls |
-|-------------------|------------------|------------------|----------------|-----------------|
-| **[Modules](#modules-what-tests-to-run)** | Which tests run on messages | `local.d/` files | Different security needs | Disabling core modules |
-| **[Scores](#scores-how-much-tests-matter)** | Symbol weights in spam calculation | Actions & metrics files | Fine-tuning accuracy | Score inflation |
-| **[Actions](#actions-what-to-do-with-scores)** | Response at different score levels | Actions configuration | Setting spam tolerance | Missing greylisting |
-| **[Workers](#workers-how-rspamd-operates)** | Process behavior and integration | Worker-specific configs | MTA integration, performance | Port conflicts |
-| **[General Options](#general-options-system-behavior)** | System timeouts, DNS, logging | Global settings | Infrastructure adaptation | DNS timeouts |
+Paths on this page are relative to `/etc/rspamd/`. A file in `local.d/` holds only the settings you change, and Rspamd merges it with the shipped defaults. Don't wrap its content in the section name: `local.d/actions.conf` contains `reject = 20;`, not `actions { reject = 20; }`. [Configuration file structure](#configuration-file-structure) has the details.
 
-## Modules: What Tests to Run
+## Modules
 
-**Modules** are the workhorses of Rspamd - they analyze messages and produce symbols when tests match.
+Modules run the checks. When a check matches, it adds a symbol to the result, and the symbol's score is added to the message score.
 
-### Understanding Module Types
+Four modules are compiled into the binary: `chartable`, `dkim`, `regexp` and `fuzzy_check`. The `filters` option lists the built-in modules to load, and these four are its default value. The others are Lua plugins, for example `rbl`, `spf`, `dmarc`, `multimap` and `dkim_signing`. You configure and disable both kinds the same way.
 
-```mermaid
-graph TB
-    A[Rspamd Modules] --> B[Core Modules]
-    A --> C[Lua Modules]
-    
-    B --> D[Built into binary]
-    B --> E[Always available]
-    B --> F[Examples: Bayes, Fuzzy]
-    
-    C --> G[Scripted functionality]
-    C --> H[Most modules]
-    C --> I[Examples: RBL, DKIM]
-```
+| Module | What it does | Default state |
+|--------|--------------|---------------|
+| [rbl](/modules/rbl) | DNS blocklist lookups for IP addresses, domains and URLs | Enabled |
+| [spf](/modules/spf) | SPF checks | Enabled |
+| [dkim](/modules/dkim) | DKIM signature verification | Enabled |
+| [dmarc](/modules/dmarc) | DMARC policy checks | Enabled |
+| [fuzzy_check](/modules/fuzzy_check) | Fuzzy hash lookups, by default against the rspamd.com storage | Enabled; free use has limits, see [Fuzzy check and the usage policy](#fuzzy-check-and-the-usage-policy) |
+| [multimap](/modules/multimap) | Rules based on lists (maps) | Enabled with shipped freemail, disposable and redirector rules; add your own in `local.d/multimap.conf` |
+| [greylist](/modules/greylisting) | Greylisting | Enabled, but switches itself off until Redis is configured |
+| [antivirus](/modules/antivirus) | Passes messages to a virus scanner | Inactive until you configure a scanner |
 
-### Essential Modules You Should Know
+Bayesian filtering is not a module. It is the statistical classifier, configured in `local.d/classifier-bayes.conf` (see [statistics](/configuration/statistic)). It keeps its data in Redis, so it needs Redis servers, usually set in `local.d/redis.conf` (see [Redis configuration](/configuration/redis)). It adds `BAYES_SPAM` or `BAYES_HAM` only after it has learned at least 200 spam and 200 ham messages.
 
-| Module | Purpose | Configuration File | Default Status |
-|--------|---------|-------------------|----------------|
-| **[bayes](/modules/bayes)** | Statistical classification | N/A (core module) | ✅ Enabled |
-| **[rbl](/modules/rbl)** | DNS blacklist checks | `rbl.conf` | ✅ Enabled |
-| **[dkim](/modules/dkim)** | DKIM signature validation | `dkim.conf` | ✅ Enabled |
-| **[spf](/modules/spf)** | SPF record validation | `spf.conf` | ✅ Enabled |
-| **[dmarc](/modules/dmarc)** | DMARC policy validation | `dmarc.conf` | ✅ Enabled |
-| **[fuzzy_check](/modules/fuzzy_check)** | Fuzzy hash matching | `fuzzy_check.conf` | ✅ Enabled (check usage policies) |
-| **[multimap](/modules/multimap)** | Custom rule engine | `multimap.conf` | ⚠️ Requires setup |
-| **[antivirus](/modules/antivirus)** | Virus scanning integration | `antivirus.conf` | ❌ Manual setup |
+### Changing and disabling modules
 
-### How to Configure Modules
+Put only the options you want to change in `local.d/<module>.conf`, without a `<module> { }` wrapper. To turn a module off, set `enabled = false;` in that file:
 
-**Enable/Disable Modules**:
 ```bash
-# Disable a module (create empty file)
-sudo touch /etc/rspamd/local.d/module_name.conf
-echo 'enabled = false;' | sudo tee /etc/rspamd/local.d/module_name.conf
-
-# Enable with custom settings
-sudo nano /etc/rspamd/local.d/module_name.conf
+# Replace MODULE with the module name, for example phishing.
+# This overwrites any settings already in the file.
+echo 'enabled = false;' | sudo tee /etc/rspamd/local.d/MODULE.conf
 ```
 
-**Example: Configure RBL Module**:
+If the file already has settings, add the line to it instead. An empty file does not disable anything. `rspamadm configdump -m` lists the enabled modules and the reason each of the others is disabled.
+
+### Example: add a DNS blocklist
+
 ```hcl
 # /etc/rspamd/local.d/rbl.conf
-# Add custom DNS blacklist
-
 rbls {
   "CUSTOM_RBL" {
     symbol = "CUSTOM_RBL";
     rbl = "custom.blocklist.example.com";
-    ipv6 = true;
-    score = 2.0;
+    checks = ["from"];   # look up the IP address that sent the message
   }
 }
-
-# Exclude internal networks from RBL checks
-local_networks = "192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12";
 ```
 
-**Important: Fuzzy Check Usage Policies**
+An RBL rule has no `score` option. Rspamd disables a rule that contains an unknown option and logs an error. Set the score in the `rbl` group instead:
 
-The fuzzy_check module connects to external fuzzy storage servers. Be aware of usage policies:
+```hcl
+# /etc/rspamd/local.d/rbl_group.conf
+symbols {
+  "CUSTOM_RBL" {
+    weight = 2.0;
+  }
+}
+```
 
-- **Public fuzzy servers** (like rspamd.com) have usage limits and policies
-- **Commercial environments** should consider running private fuzzy storage
-- **High-volume sites** may need to configure custom fuzzy servers
-- **Privacy concerns** - fuzzy hashes are sent to external servers
+RBL rules skip loopback addresses and the networks in the global `local_addrs` option (private and link-local ranges by default), so you don't need to exclude your internal networks. To exclude more addresses from RBL checks only, set `local_exclude_ip_map` in `local.d/rbl.conf` to a map of addresses.
+
+### Fuzzy check and the usage policy
+
+`fuzzy_check` sends hashes of message parts to the public rspamd.com fuzzy storage. That feed is free only for non-commercial use below 5,000 queries per day; see the [usage policy](/other/usage_policy). Commercial sites, and sites that send more queries than that, must either use the premium feed or turn off the rspamd.com rule:
 
 ```hcl
 # /etc/rspamd/local.d/fuzzy_check.conf
-# Configure custom fuzzy server for privacy/policy compliance
+rule "rspamd.com" {
+  enabled = false;
+}
+```
+
+You can also run your own fuzzy storage. It holds only the hashes you learn yourself and does not replace the rspamd.com data. The storage worker is disabled by default and keeps its data in Redis, using the servers from `local.d/redis.conf`. To start it:
+
+```hcl
+# /etc/rspamd/local.d/worker-fuzzy.inc
+count = 1;
+```
+
+It listens on `localhost:11335` and accepts learning only from the addresses in `allow_update` (`localhost` by default). If the scanners reach it over the network, as in the rule below, also set `bind_socket` in this file (for example `bind_socket = "*:11335";`) and list the hosts that learn in `allow_update`. A list set in `local.d/` is added to the default `localhost`. The [fuzzy storage tutorial](/tutorials/fuzzy_storage) covers access control and encryption.
+
+To query your storage, add a rule for it:
+
+```hcl
+# /etc/rspamd/local.d/fuzzy_check.conf
 rule "local" {
+  algorithm = "mumhash";
   servers = "fuzzy.internal.example.com:11335";
-  symbol = "LOCAL_FUZZY_DENIED";
+  symbol = "LOCAL_FUZZY_UNKNOWN";
   mime_types = ["*"];
-  read_only = false;
-  skip_unknown = true;
+  read_only = false;     # allow learning to this storage
+  skip_unknown = true;   # ignore flags that are not in fuzzy_map
+  fuzzy_map = {
+    LOCAL_FUZZY_DENIED {
+      hits_limit = 20.0;
+      flag = 11;
+    }
+  }
 }
 ```
 
-### When to Modify Modules
-
-| Scenario | Action | Example |
-|----------|--------|---------|
-| **Performance issues** | Disable expensive modules | Disable antivirus if external scanning exists |
-| **False positives** | Adjust module sensitivity | Lower RBL scores, exclude internal networks |
-| **Custom requirements** | Add specialized modules | Enable multimap for custom business rules |
-| **Compliance needs** | Enable specific checks | Add antivirus for regulatory requirements |
-
-## Scores: How Much Tests Matter
-
-**Scores** (also called weights) determine how much each test contributes to the message's spam score.
-
-### Understanding the Scoring System
-
-```mermaid
-graph LR
-    A[Message Analysis] --> B[Test 1: +0.5]
-    A --> C[Test 2: +2.0]
-    A --> D[Test 3: -0.1]
-    B --> E[Total Score: +2.4]
-    C --> E
-    D --> E
-    E --> F[Action Decision]
-```
-
-### Default Score Categories
-
-| Score Range | Meaning | Examples | Typical Actions |
-|-------------|---------|----------|-----------------|
-| **+5.0 to +15.0** | Strong spam indicators | `BAYES_SPAM`, `FORGED_SENDER` | Major score contribution |
-| **+1.0 to +4.9** | Moderate indicators | `R_SPF_FAIL`, `RBL hits` | Moderate score contribution |
-| **+0.1 to +0.9** | Minor indicators | `MISSING_DATE`, formatting issues | Small score contribution |
-| **0.0** | Informational only | `R_DKIM_ALLOW` | No score impact |
-| **-0.1 to -2.0** | Ham indicators | `BAYES_HAM`, `DKIM_VALID` | Reduce spam score |
-
-### How to Adjust Scores
-
-**Method 1: Actions Configuration** (Recommended for beginners)
-```bash
-sudo nano /etc/rspamd/local.d/actions.conf
-```
+Symbols from `fuzzy_map` have no score by default, so a match adds 0 to the message score (Rspamd also logs `symbol ... has no score registered` at startup). Give them one:
 
 ```hcl
-# Adjust thresholds instead of individual scores
-reject = 15;        # Increase to reduce false positives
-add_header = 6;     # Decrease to catch more spam
-greylist = 4;       # Adjust based on tolerance for delays
+# /etc/rspamd/local.d/fuzzy_group.conf
+symbols {
+  "LOCAL_FUZZY_DENIED" {
+    weight = 12.0;
+  }
+}
 ```
 
-**Method 2: Metrics Configuration** (Advanced users)
-```bash
-sudo nano /etc/rspamd/local.d/metrics.conf
-```
+## Scores
+
+A symbol's weight, also called its score, is the amount it adds to the message score. The message score is the sum of the weights of all symbols that matched. Some symbols scale their weight by the confidence of the check: `BAYES_SPAM`, for example, adds up to 5.1 depending on the Bayes probability.
+
+Some default weights:
+
+| Symbol | Default weight | Meaning |
+|--------|----------------|---------|
+| `FUZZY_DENIED` | 12.0 | Matches a hash in the rspamd.com fuzzy blocklist |
+| `SPOOF_DISPLAY_NAME` | 8.0 | Display name is used to spoof the recipient |
+| `BAYES_SPAM` | up to 5.1 | Bayes classifier says spam |
+| `MISSING_MID` | 2.5 | No Message-ID header |
+| `R_SPF_FAIL` | 1.0 | SPF verification failed |
+| `MISSING_DATE` | 1.0 | No Date header |
+| `FORGED_SENDER` | 0.3 | From header and SMTP MAIL FROM differ |
+| `R_DKIM_NA` | 0.0 | No DKIM signature |
+| `R_DKIM_ALLOW` | -0.1 | DKIM signature verified |
+| `R_SPF_ALLOW` | -0.2 | SPF allows the sender |
+| `DMARC_POLICY_ALLOW` | -0.5 | DMARC check passed |
+| `BAYES_HAM` | down to -3.0 | Bayes classifier says ham |
+
+`rspamadm configdump -g` prints every symbol with the score set in the configuration files. It does not include scores saved from the WebUI (see below); the WebUI Symbols tab shows the scores the running Rspamd uses.
+
+### Changing a score
+
+Set weights in `local.d/groups.conf`:
 
 ```hcl
-# Override specific symbol scores
-symbol "FORGED_SENDER" {
-  score = 1.0;     # Increase from default 0.3
-}
-
-symbol "BAYES_SPAM" {
-  score = 4.0;     # Adjust Bayesian spam weight
-}
-```
-
-### Score Tuning Strategy
-
-**Step 1: Collect Data**
-```bash
-# Analyze current scoring patterns
-rspamc stat | grep "Total messages"
-
-# Review recent message scores in web interface
-# Look for patterns in false positives/negatives
-```
-
-**Step 2: Identify Problem Areas**
-```bash
-# Find messages with wrong classifications
-# Check web interface History tab
-# Look for common symbols in misclassified messages
-```
-
-**Step 3: Make Incremental Adjustments**
-```hcl
-# Example: Reducing false positives from SPF failures
-# /etc/rspamd/local.d/metrics.conf
-
-symbol "R_SPF_FAIL" {
-  score = 0.5;     # Reduced from default 1.0
+# /etc/rspamd/local.d/groups.conf
+symbols {
+  "FORGED_SENDER" {
+    weight = 1.0;
+  }
+  "R_SPF_FAIL" {
+    weight = 0.5;
+  }
 }
 ```
 
-**Step 4: Test and Monitor**
-```bash
-# Restart Rspamd after changes  
-sudo systemctl restart rspamd
+The same `symbols { }` block also works in the file of the symbol's group, for example `local.d/headers_group.conf` for `FORGED_SENDER` or `local.d/policies_group.conf` for `R_SPF_FAIL`. The `group` line in `rspamadm configdump -d` output tells you which group a symbol belongs to.
 
-# Monitor for 24-48 hours before further adjustments
-# Use web interface to track effectiveness
-```
+Scores you change in the WebUI are saved to `/var/lib/rspamd/rspamd_dynamic` and take precedence over `local.d/`. If a `local.d/` change has no effect, check whether `rspamd_dynamic` holds a value for the same symbol.
 
-## Actions: What to Do with Scores
+Older guides set scores in `local.d/metrics.conf`. That file has been deprecated since Rspamd 1.7; use the group files.
 
-**Actions** define what happens when messages reach certain spam score thresholds.
+### Tuning scores
 
-### Standard Action Types
+Adjust the action thresholds first (see [Setting thresholds](#setting-thresholds)). Change individual weights when specific symbols cause wrong results.
 
-| Action | Purpose | When It Triggers | Effect |
-|--------|---------|------------------|--------|
-| **no action** | Clean message | Score below greylist threshold | Normal delivery |
-| **greylist** | Temporary delay | Score between greylist and add_header | Message delayed, legitimate senders retry |
-| **add_header** | Mark as spam | Score between add_header and reject | Headers added, usually filed to spam folder |
-| **reject** | Refuse message | Score above reject threshold | Message bounced back to sender |
+1. Check the counters:
+   ```bash
+   rspamc stat | grep -E 'Messages (scanned|with action|treated)'
+   ```
+2. In the WebUI History tab, open misclassified messages and note which symbols matched.
+3. Change one weight at a time, run `sudo rspamadm configtest`, then restart Rspamd with `sudo systemctl restart rspamd`.
+4. Watch the History tab and `rspamc stat` before you make the next change.
 
-### How Actions Work
+## Actions
+
+The action is Rspamd's verdict for the MTA. Rspamd compares the message score with the action thresholds and picks the action with the highest threshold that the score has reached (score >= threshold).
+
+| Action | Default threshold | Result |
+|--------|-------------------|--------|
+| no action | below 4 | The message is accepted. |
+| greylist | 4 | If the [greylist](/modules/greylisting) module is active (it needs Redis), first-time senders get a temporary failure (soft reject) and must retry. Messages that score high enough for `add header` or `rewrite subject` are greylisted too; rejected messages are not. Without Redis the message is accepted. |
+| add header | 6 | The message is delivered with a spam header (`X-Spam: Yes` when the MTA uses the milter proxy). Mail filters or the mail client usually move it to a spam folder. |
+| rewrite subject | none | The subject line is rewritten. Applies only if you set a threshold. |
+| soft reject | none | Temporary failure. Modules such as greylist and ratelimit set it. |
+| reject | 15 | The MTA refuses the message during the SMTP session (`554 5.7.1 Spam message rejected` with the milter proxy). The sending server reports the failure to its user; your server sends no bounce. |
+
+With the default thresholds, a message that scores 8.5 gets `add header` (if greylisting is active, a first-time sender gets a soft reject first):
 
 ```mermaid
 graph TB
-    A[Message Score: 8.5] --> B{Check Thresholds}
-    B --> C{< 4.0?}
+    A[Message score: 8.5] --> C{score < 4?}
     C -->|Yes| D[no action]
-    C -->|No| E{< 6.0?}
-    E -->|Yes| F[greylist] 
-    E -->|No| G{< 15.0?}
-    G -->|Yes| H[add_header]
+    C -->|No| E{score < 6?}
+    E -->|Yes| F[greylist]
+    E -->|No| G{score < 15?}
+    G -->|Yes| H[add header]
     G -->|No| I[reject]
 ```
 
-### Configuration Examples
+### Setting thresholds
 
-**Conservative Setup** (Avoid false positives):
+`local.d/actions.conf` is merged with the defaults, so list only the thresholds you change. In this file, action names are written with underscores (`add_header`, `rewrite_subject`):
+
 ```hcl
 # /etc/rspamd/local.d/actions.conf
-reject = 20;        # Very high threshold
-add_header = 8;     # Conservative spam marking
-greylist = 5;       # Moderate greylisting
+reject = 20;       # default 15
+add_header = 8;    # default 6
 ```
 
-**Aggressive Setup** (Catch more spam):
-```hcl
-# /etc/rspamd/local.d/actions.conf  
-reject = 12;        # Lower reject threshold
-add_header = 4;     # Mark more messages as spam
-greylist = 3;       # More aggressive greylisting
-```
+Which way to move each threshold:
 
-**Balanced Setup** (Default recommendation):
-```hcl
-# /etc/rspamd/local.d/actions.conf
-reject = 15;        # Standard threshold
-add_header = 6;     # Balanced spam detection  
-greylist = 4;       # Standard greylisting
-```
+| Threshold | Raise it when | Lower it when |
+|-----------|---------------|---------------|
+| `reject` | legitimate mail gets rejected | obvious spam is only marked, not rejected |
+| `add_header` | legitimate mail lands in spam folders | spam reaches inboxes unmarked |
+| `greylist` | legitimate senders complain about delays | spam that scores just below the threshold is delivered without greylisting |
 
-### Action Tuning Guidelines
+## Workers
 
-**Adjust `reject` threshold when**:
-- ⬆️ **Increase** if you're getting false positive rejections
-- ⬇️ **Decrease** if obvious spam is getting through
+Each worker type has its own file in `local.d/`. Put only the options you change in it, without a `worker { }` wrapper.
 
-**Adjust `add_header` threshold when**:
-- ⬆️ **Increase** if too many legitimate messages marked as spam
-- ⬇️ **Decrease** if spam is reaching inboxes
+| Worker type | Role | Local file | Default socket |
+|-------------|------|------------|----------------|
+| `normal` | Scans messages | `local.d/worker-normal.inc` | `localhost:11333` |
+| `controller` | WebUI, HTTP API, learning, statistics | `local.d/worker-controller.inc` | `localhost:11334` |
+| `rspamd_proxy` | Milter interface for the MTA; passes messages to scanners or scans them itself | `local.d/worker-proxy.inc` | `localhost:11332` |
+| `fuzzy` | Local fuzzy hash storage (Redis backend) | `local.d/worker-fuzzy.inc` | `localhost:11335`, disabled by default |
 
-**Adjust `greylist` threshold when**:
-- ⬆️ **Increase** if legitimate senders complain about delays
-- ⬇️ **Decrease** if you want more aggressive spam blocking
+### Controller
 
-## Workers: How Rspamd Operates
+Set a password for the WebUI and API. `rspamadm pw` asks for a password and prints its hash:
 
-**Workers** are different processes that handle specific Rspamd functions.
-
-### Worker Types and Their Roles
-
-| Worker | Purpose | Configuration File | Default Port |
-|--------|---------|-------------------|--------------|
-| **normal** | Message scanning | `worker-normal.inc` | 11333 |
-| **controller** | Web interface, API | `worker-controller.inc` | 11334 |
-| **proxy** | MTA integration | `worker-proxy.inc` | 11332 |
-| **fuzzy** | Fuzzy hash storage | `worker-fuzzy.inc` | 11335 |
-
-### Essential Worker Configurations
-
-**Controller Worker** (Web Interface):
 ```hcl
 # /etc/rspamd/local.d/worker-controller.inc
-password = "$2$your_password_hash";
-bind_socket = "localhost:11334";
-secure_ip = "127.0.0.1";  # Restrict access
+password = "$2$...";   # hash printed by rspamadm pw
 ```
 
-**Proxy Worker** (MTA Integration):
+`secure_ip` lists the addresses that may use the controller without a password (`127.0.0.1` and `::1` by default). It does not restrict who can connect: use `bind_socket` (default `localhost:11334`) and a firewall for that. A `secure_ip` value in `local.d/` replaces the default list instead of adding to it.
+
+### Proxy
+
+The proxy is enabled by default. It speaks the milter protocol on port 11332 and passes messages to the normal worker on localhost. On a single server it can scan messages itself (self-scan mode):
+
 ```hcl
 # /etc/rspamd/local.d/worker-proxy.inc
-milter = yes;                    # Enable milter protocol
-timeout = 120s;                  # MTA timeout
-
-# For small installations, proxy can work in self-scan mode
-# (combines proxy and scanner functionality)
 upstream "local" {
-  default = yes;
-  self_scan = yes;               # Enable self-scan for small setups
+  self_scan = yes;
 }
-
-# Benefits of self-scan mode:
-# - Reduces process overhead for small installations
-# - Simplifies configuration (no separate scanner worker needed)
-# - Maintains full scanning functionality
-# - Suitable for installations with < 1000 messages/day
 ```
 
-**Normal Worker** (Scanning):
+The normal worker keeps running after this change. If nothing else uses it, disable it:
+
 ```hcl
 # /etc/rspamd/local.d/worker-normal.inc
-bind_socket = "localhost:11333";
-task_timeout = 8s;               # Per-message timeout
-max_tasks = 0;                   # Unlimited concurrent tasks
+enabled = false;
 ```
 
-### When to Modify Worker Configuration
+`rspamc` then has to use the controller port (11334). It does so by default when it connects to localhost; for a remote host, pass `-h host:11334`. See [self-scan mode](/workers/rspamd_proxy#self-scan-mode) for details.
 
-| Scenario | Worker | Modification | Example |
-|----------|--------|--------------|---------|
-| **Performance tuning** | normal | Adjust timeouts, limits | Increase `max_tasks` for high volume |
-| **Security hardening** | controller | Restrict access | Bind to specific IP addresses |
-| **MTA integration** | proxy | Configure milter settings, self-scan mode | Set appropriate timeouts, enable self-scan for small installations |
-| **High availability** | all | Multiple instances | Configure load balancing |
+### Normal worker
 
-## General Options: System Behavior
+To scan more messages in parallel, run more scanner processes with `count`:
 
-**General options** control system-wide behavior like DNS resolution, logging, and timeouts.
+```hcl
+# /etc/rspamd/local.d/worker-normal.inc
+count = 8;
+```
 
-### Key General Options
+The default `count` is the number of CPU cores minus two, at least 1 and at most 4. `max_tasks` (default 0, unlimited) caps how many messages one process handles at the same time, so set it only to limit load, not to increase throughput.
+
+## General options
+
+Global options go in `local.d/options.inc`. The ones you are most likely to change:
+
+| Option | Default | Meaning |
+|--------|---------|---------|
+| `dns.nameserver` | servers from `/etc/resolv.conf` | DNS servers Rspamd queries |
+| `dns.timeout` | 1s | Time to wait for each DNS attempt |
+| `dns.retransmits` | 5 | Attempts before a lookup fails |
+| `dns.sockets` | 16 | Sockets per DNS server |
+| `dns_max_requests` | 64 | DNS requests allowed per message |
+| `task_timeout` | 8s | Maximum processing time for one message |
+| `max_message` | 50 MiB | Largest message Rspamd scans |
+| `max_urls` | 10240 | Maximum number of URLs processed per message |
+| `max_recipients` | 1024 | Maximum number of recipients processed per message |
+| `local_addrs` | private and link-local ranges | Addresses treated as local, for example skipped by RBL checks |
+
+### DNS
+
+Use a local recursive resolver; [DNS resolver](/getting-started/installation#dns-resolver) explains why.
 
 ```hcl
 # /etc/rspamd/local.d/options.inc
-
-# DNS Configuration
 dns {
-  timeout = 1s;                  # DNS query timeout
-  sockets = 16;                  # Concurrent DNS queries
-  # Use local resolver - avoid public DNS servers like 8.8.8.8
-  # Public DNS servers can cause:
-  # - Higher latency and timeouts
-  # - Rate limiting issues
-  # - Different RBL responses than your ISP expects
-  # - Privacy concerns (DNS queries visible to third parties)
-  # nameserver = ["127.0.0.1"];  # Use system resolver (recommended)
+  nameserver = ["127.0.0.1"];   # local recursive resolver
 }
-
-# Logging
-logging {
-  level = "info";                # Logging verbosity
-  log_file = "/var/log/rspamd/rspamd.log";
-}
-
-# Performance
-tempdir = "/tmp";                # Temporary files location
-max_message = 50M;               # Maximum message size
 ```
 
-### Common Configuration Scenarios
+Without `nameserver`, Rspamd uses the servers listed in `/etc/resolv.conf`. Set `127.0.0.1` only if a resolver listens there.
 
-**Slow Network Environment**:
+On a slow network, raise the DNS timeout and keep `task_timeout` above the longest DNS wait. Each attempt waits a full timeout, so one lookup can take up to `timeout` × `retransmits`:
+
 ```hcl
-# Increase timeouts for slow networks
+# /etc/rspamd/local.d/options.inc
 dns {
-  timeout = 3s;
-  retransmits = 5;
-  # Still use local resolver even with increased timeouts
-  # nameserver = ["127.0.0.1"];
+  timeout = 3s;      # 5 attempts (default): up to 15s per lookup
 }
+task_timeout = 20s;
 ```
 
-**High Security Environment**:
+### Message size limit
+
+Rspamd does not scan messages larger than `max_message`, so keep it at or above the message size limit of your MTA:
+
 ```hcl
-# Restrict message size
-max_message = 10M;
-
-# Note: Debug logging is very verbose and not recommended for production
-# Use "info" level for normal operations
+# /etc/rspamd/local.d/options.inc
+max_message = 100mb;
 ```
 
-**Performance Optimization**:
+Write sizes with `mb`. In UCL, `mb` means 1024 × 1024 bytes and `M` means 1,000,000 bytes, so `max_message = 50M;` sets a limit slightly below the 50 MiB default.
+
+## Logging
+
+Logging has its own section and file, `local.d/logging.inc`. Logging settings placed in `options.inc` are ignored. By default Rspamd logs at `info` level to `/var/log/rspamd/rspamd.log`. To get debug output from one module without switching the whole log to `debug`:
+
 ```hcl
-# Optimize for high volume
-dns {
-  sockets = 32;                  # More concurrent queries
-}
+# /etc/rspamd/local.d/logging.inc
+debug_modules = ["dkim"];
 ```
 
-## Configuration File Structure
+See [logging](/configuration/logging) for all options.
 
-Understanding where and how to place configuration files:
-
-### Directory Structure
+## Configuration file structure
 
 ```
 /etc/rspamd/
-├── rspamd.conf                  # Main config (don't edit)
-├── local.d/                     # Your customizations
+├── rspamd.conf          # main file (shipped, do not edit)
+├── actions.conf         # shipped defaults, one file per section
+├── groups.conf
+├── options.inc
+├── worker-*.inc
+├── modules.d/           # shipped module defaults (do not edit)
+├── scores.d/            # shipped symbol scores (do not edit)
+├── local.d/             # your changes, merged with the defaults
 │   ├── actions.conf
-│   ├── metrics.conf
-│   └── worker-*.inc
-├── override.d/                  # Complete replacements
-└── modules.d/                   # Module defaults (don't edit)
+│   ├── groups.conf
+│   ├── options.inc
+│   └── worker-normal.inc
+└── override.d/          # your changes, replacing defaults key by key
 ```
 
-### Configuration Precedence
+A comment at the top of most shipped files names the `local.d/` and `override.d/` files that extend them. Don't edit the shipped files: upgrades bring new versions of them, and an edited file is either replaced (FreeBSD) or left for you to merge by hand (`.rpmnew` files, dpkg prompts). See [Key paths](/getting-started/installation#key-paths).
 
-1. **`override.d/`** - Completely replaces default configuration
-2. **`local.d/`** - Merges with default configuration  
-3. **`modules.d/`** - Default module configuration
-4. **`rspamd.conf`** - Main configuration file
+### Precedence
 
-**Best Practice**: Always use `local.d/` unless you need to completely replace a configuration section.
+From lowest to highest:
 
-## Configuration Testing and Validation
+1. Shipped defaults: `rspamd.conf` and the files next to it, `modules.d/`, `scores.d/`.
+2. `local.d/` (priority 1): merged into the defaults. Settings you don't mention keep their default values.
+3. Scores and action thresholds saved from the WebUI (`/var/lib/rspamd/rspamd_dynamic`). They take precedence over `local.d/` but not over `override.d/`.
+4. `override.d/` (priority 10): every key or block you define replaces the default as a whole, without merging. Keys you don't define keep their defaults.
 
-### Test Configuration Syntax
+For example, `override.d/actions.conf` containing only `reject = 20;` keeps the default `add_header` and `greylist` thresholds. But `override.d/options.inc` containing `dns { timeout = 3s; }` replaces the whole `dns` block: the `sockets` and `retransmits` lines from the shipped `options.inc` no longer apply, and Rspamd uses its built-in values for them.
+
+Use `local.d/` unless you need to replace a whole block. Top-level sections that have no file in `local.d/` go into `rspamd.conf.local`, or `rspamd.conf.override` to override at priority 10.
+
+## Testing changes
 
 ```bash
-# Check configuration for syntax errors
-sudo rspamadm configtest
-
-# Check configuration with verbose output
-sudo rspamadm configtest -v
+sudo rspamadm configtest      # prints "syntax OK" or the errors
+sudo rspamadm configtest -s   # also fails if any module logged an error
 ```
 
-### Monitor Configuration Changes
+Plain `configtest` can print `syntax OK` while a module has rejected part of its configuration. An RBL rule with an unknown option, for example, is disabled with an error message. With `-s`, any logged error makes the test fail with `syntax BAD`.
+
+Check the configuration as Rspamd loads it:
 
 ```bash
-# View configuration dump
-rspamadm configdump
+rspamadm configdump actions                      # one section
+rspamadm configdump -g                           # symbol groups with scores from the config files
+rspamadm configdump -d | grep -A10 'MISSING_DATE {'   # details of one symbol
+rspamadm configdump -m                           # enabled and disabled modules
+```
 
-# Check specific symbols and scores
-rspamadm configdump | grep -A5 -B5 "symbol_name"
+Plain `rspamadm configdump` shows only the configuration files, so symbols registered by Lua rules, such as `MISSING_DATE`, do not appear in it. Use `-g` or `-d` to see scores, including those of Lua rules. Neither includes scores saved from the WebUI.
 
-# Monitor real-time changes
+Scan a message and follow the log:
+
+```bash
+rspamc /path/to/message.eml
+rspamc /path/to/message.eml | grep SYMBOL_NAME
 tail -f /var/log/rspamd/rspamd.log
 ```
 
-### Validate Changes with Test Messages
+## Common setups
 
-```bash
-# Test message processing after configuration changes
-echo "Test message" | rspamc
+| Setup | What you change | Files |
+|-------|-----------------|-------|
+| Minimal | Redis, the controller password and MTA integration; modules, scores and thresholds stay at their defaults | `local.d/redis.conf`, `local.d/worker-controller.inc`; `local.d/worker-proxy.inc` only if the MTA runs on another host |
+| Tuned | Also action thresholds, symbol scores, extra blocklists, your own map rules, Bayes | adds `local.d/actions.conf`, `local.d/groups.conf` (or `<group>_group.conf`), `local.d/rbl.conf`, `local.d/multimap.conf`, `local.d/classifier-bayes.conf` |
+| High volume | Number of scanner processes, DNS and timeouts, separate scanner hosts behind the proxy | `local.d/worker-normal.inc`, `local.d/options.inc`, `local.d/worker-proxy.inc` |
 
-# Check specific symbols are working
-echo "Test message with suspicious content" | rspamc | grep "SYMBOL_NAME"
-```
+## Next steps
 
-## Common Configuration Patterns
-
-### The Minimal Configuration Pattern
-- Only modify action thresholds
-- Use default modules and scores
-- Focus on MTA integration
-
-**Files to modify**:
-- `local.d/actions.conf`
-- `local.d/worker-proxy.inc`
-- `local.d/worker-controller.inc`
-
-### The Tuned Environment Pattern
-- Customize scores based on testing
-- Enable/disable specific modules
-- Adjust learning mechanisms
-
-**Additional files**:
-- `local.d/metrics.conf`
-- `local.d/rbl.conf`
-- `local.d/multimap.conf`
-
-### The High Performance Pattern
-- Optimize worker configuration
-- Tune system limits
-- Focus on speed over features
-
-**Additional considerations**:
-- Worker timeouts and limits
-- DNS configuration optimization
-- Memory and CPU tuning
-
-## What's Next?
-
-Now that you understand configuration fundamentals:
-
-1. **[Choose the right tools](/configuration/tool-selection)** for your specific tasks
-2. **[Apply scenario-specific configurations](/scenarios/)** for your environment
-3. **[Learn rule writing](/developers/writing_rules)** for custom detection logic
-4. **[Set up monitoring](/maintenance/monitoring/)** to track configuration effectiveness
-
-## Key Takeaways
-
-✅ **Configuration has five main areas**: modules, scores, actions, workers, and general options
-✅ **Start with actions and thresholds** before diving into detailed score tuning  
-✅ **Use `local.d/` for customizations** to preserve upgradeability
-✅ **Test configuration changes** before applying to production
-✅ **Monitor effectiveness** and adjust based on real-world performance
+- [Tool selection guide](/guides/configuration/tool-selection): which mechanism to use for a custom check
+- [MTA integration](/tutorials/integration)
+- [Writing rules](/developers/writing_rules)
+- [Actions and scores reference](/configuration/metrics)
+- Monitoring: [metric exporter](/modules/metric_exporter) and [log analysis with rspamadm](/administration/rspamadm/log-analysis)

@@ -3,331 +3,128 @@ title: Getting Started with Rspamd
 sidebar_position: 1
 ---
 
-# Getting Started with Rspamd
+# Getting started with Rspamd
 
-Welcome to Rspamd! This guide will take you from complete beginner to running a production spam filtering system. Whether you're setting up a small business mail server or migrating from SpamAssassin, you'll find a clear path forward.
-
-## The Quick Path (2-3 Hours)
-
-If you're starting fresh, follow these three steps in order:
-
-### 1. [Understanding Rspamd](understanding-rspamd)
-
-**Time: 30 minutes reading**
-
-Build the right mental model before installing anything:
-- How Rspamd processes messages (processing pipeline)
-- What symbols, scores, and actions mean
-- Why statistical learning matters
-- How modules work together
-
-**Why start here?** Understanding Rspamd's design prevents common configuration mistakes. You'll know *why* to configure things a certain way, not just *what* to configure.
-
-### 2. [Installation Guide](installation)
-
-**Time: 30-60 minutes**
-
-Choose your installation method and get Rspamd running:
-- **Package installation** (recommended for production) - Ubuntu/Debian, CentOS/RHEL, FreeBSD
-- **Docker** (testing and development) - Quick setup with web interface
-- **Kubernetes** (cloud-native deployments) - Scalable production deployment
-
-**Includes**: Repository setup, Redis installation, service verification, security checklist
-
-### 3. [First Setup](first-setup)
-
-**Time: 30-45 minutes**
-
-Configure working spam filtering:
-- Set action thresholds (reject, add header, greylist)
-- Connect to Redis for statistics
-- Configure web interface password
-- Integrate with your MTA (Postfix, Exim, Sendmail)
-- Test with real messages
-- Optional: Enable Bayesian learning
-
-**Result**: A functioning spam filter that you can monitor via web interface
-
-After completing these three guides, continue with [Configuration Fundamentals](/guides/configuration/fundamentals) to learn what else you can customize.
-
-## Alternative Starting Points
-
-### 🔄 Migrating from SpamAssassin
-
-If you're currently using SpamAssassin, follow this migration path:
-
-**1. Understand the differences** (Read [Understanding Rspamd](understanding-rspamd) first)
-- Event-driven vs process-per-message architecture
-- Different Bayes implementation (databases not compatible)
-- DMARC/ARC support not in SA
-- 10-100x faster processing
-- Different scoring system
-
-**2. Parallel deployment** (Follow [Installation](installation) + [First Setup](first-setup))
-- Install Rspamd alongside SpamAssassin
-- Configure both to add headers (not reject) for testing
-- Compare results for several days
-
-**3. Migration steps** (See [SpamAssassin Migration Guide](/tutorials/migrate_sa))
-- Retrain Bayesian classifier with your mail corpus
-- Import custom SA rules if needed (spamassassin module)
-- Adjust thresholds based on comparison
-- Gradually transition traffic to Rspamd
-- Monitor false positives/negatives
-
-**4. Cutover**
-- Switch MTA to Rspamd
-- Keep SA available for emergency rollback
-- Monitor for 1-2 weeks before removing SA
-
-**Time investment**: 4-6 hours for complete migration + monitoring period
-
-### 📦 Specific MTA Integration
-
-If you already understand spam filtering and just need to integrate Rspamd:
-
-**Quick integration paths**:
-
-**Postfix** (most common):
-```nginx
-# /etc/postfix/main.cf
-smtpd_milters = inet:localhost:11332
-non_smtpd_milters = inet:localhost:11332
-milter_default_action = accept
-milter_protocol = 6
-```
-
-**Exim**:
-```perl
-# ACL check
-warn
-  spam = nobody:true
-  add_header = X-Spam-Score: $spam_score
-```
-
-**Sendmail**: Use milter configuration (same as Postfix)
-
-**Full instructions**: See [Integration Tutorial](/tutorials/integration) for complete setup with all MTAs
-
-### 🐳 Docker/Kubernetes Deployment
-
-If you're deploying to containers:
-
-**Docker quick start**:
-```bash
-docker run -d --name rspamd \
-  -p 11334:11334 -p 11332:11332 \
-  -v $(pwd)/config:/etc/rspamd/local.d \
-  -v $(pwd)/data:/var/lib/rspamd \
-  rspamd/rspamd:latest
-```
-
-**Important for production**:
-- Mount `/etc/rspamd/local.d/` for persistent configuration
-- Mount `/var/lib/rspamd/` for statistics data
-- Deploy Redis container or external Redis service
-- Use local recursive DNS resolver (not 8.8.8.8)
-- Configure resource limits (CPU: 1-2 cores, RAM: 512MB-1GB)
-- Set up health checks: liveness `/ping`, readiness `/stat`
-
-**Kubernetes**: See [Installation Guide](installation#cloudcontainer-deployment) for manifests and production considerations
-
-## What You'll Achieve
-
-By the end of the Getting Started section, you will have:
-
-### ✅ Working System
-- Rspamd installed and running
-- Integrated with your MTA
-- Redis connected for statistics
-- Web interface accessible
-- Messages being scanned and scored
-
-### ✅ Core Understanding
-- How Rspamd processes email
-- Relationship between modules, symbols, scores, actions
-- Why Redis is critical
-- How authentication (SPF/DKIM/DMARC) works
-- What statistical learning does
-
-### ✅ Operational Skills
-- Configure action thresholds
-- Train Bayesian classifier
-- Monitor via web interface
-- Test message scanning
-- Basic troubleshooting
-
-### ✅ Foundation for Advanced Topics
-- Ready to configure specific modules
-- Prepared to write custom rules
-- Able to optimize performance
-- Understanding for scaling deployment
+The pages below take you from a new server to Rspamd checking mail for your MTA. If you are new to Rspamd, read them in order. If you are migrating from SpamAssassin, connecting an existing installation to your MTA, or running Rspamd in containers, see [Other starting points](#other-starting-points).
 
 ## Prerequisites
 
-Before starting, ensure you have:
+- Debian, Ubuntu or a RHEL-compatible distribution (the EL packages need EPEL), FreeBSD, or any host that runs Docker. [Downloads](/downloads) lists the supported releases, packages for other systems and how to build from source.
+- Root or sudo access to install packages and edit the Rspamd configuration in `/etc/rspamd` (`/usr/local/etc/rspamd` on FreeBSD).
+- Redis, for Bayes and the other features listed under [Is Redis required?](#is-redis-required). You can install it during setup.
+- A local recursive DNS resolver, for example Unbound. Spamhaus and other DNS blocklists refuse queries that arrive through public resolvers.
+- An MTA to connect Rspamd to.
+- Working knowledge of the Unix command line, DNS, SMTP and message headers.
 
-### Technical Requirements
-- **Linux system** - Ubuntu 20.04+, Debian 11+, CentOS/RHEL 8+, or FreeBSD
-- **Root/sudo access** - To install packages and modify configuration
-- **Redis server** - For statistics (can install during setup)
-- **Mail Transfer Agent** - Postfix, Exim, Sendmail, or other MTA
-- **Disk space** - ~500MB for software, 1-5GB for statistics/logs
+## Reading order
 
-### Knowledge Requirements
-- **Linux command line** - Basic file editing, systemd/service management
-- **Email fundamentals** - SMTP, message headers, MTA concepts
-- **Network basics** - DNS, ports, localhost vs remote access
-- **Text editing** - Vim, nano, or any editor for configuration files
+1. [Understanding Rspamd](/getting-started/understanding-rspamd) explains how a message moves through Rspamd: the processing pipeline, symbols, scores and actions, and the worker processes. Read it before you change any configuration.
+2. [Installation](/getting-started/installation) covers installing Rspamd and Redis from the official packages or running the official Docker image, connecting Rspamd to Redis, setting the web interface password and checking that the workers are listening. [Downloads](/downloads) also has the experimental and ASAN packages.
+3. [First setup](/getting-started/first-setup) checks the Redis connection and the web interface password, then covers the action thresholds, Postfix integration, an end-to-end test and Bayes training (by hand with `rspamc learn_spam` and `rspamc learn_ham`, or with autolearn). For Exim, Sendmail and other MTAs, use the [MTA integration tutorial](/tutorials/integration).
+4. [Configuration fundamentals](/guides/configuration/fundamentals) covers modules, scores, actions, workers and the `local.d`/`override.d` layout, so you know where each change goes.
+5. [Tool selection](/guides/configuration/tool-selection) helps you choose between regexp rules, multimap, Lua rules, plugins and composites when you write your own rules.
 
-### Recommended (Not Required)
-- **Redis knowledge** - Understanding of key-value stores helpful
-- **Regular expressions** - For writing custom content rules
-- **Lua basics** - For advanced custom rules (can learn later)
+## Other starting points
 
-## Learning Philosophy
+### Migrating from SpamAssassin
 
-This guide follows a specific approach:
+Read [Understanding Rspamd](/getting-started/understanding-rspamd), then follow the [SpamAssassin migration guide](/tutorials/migrate_sa). The main differences from SpamAssassin:
 
-### 1. Concepts Before Commands
-We explain *why* Rspamd works a certain way before showing *how* to configure it. This prevents cargo-cult configuration where you copy settings without understanding them.
+- SpamAssassin Bayes databases cannot be imported. Retrain Rspamd from your own ham and spam with `rspamc learn_ham` and `rspamc learn_spam`.
+- Rspamd returns an action (such as `add header` or `reject`) together with the score. The default thresholds in `actions.conf` are `greylist = 4`, `add_header = 6` and `reject = 15`. Tune them against your own mail instead of copying SpamAssassin's `required_score`.
+- Rspamd has its own modules for SPF, DKIM, DMARC, DNS blocklists, Bayes and fuzzy hashes. Import only custom rules you wrote yourself, using the [SpamAssassin module](/modules/spamassassin).
+- Rspamd can also sign outbound mail ([DKIM signing](/modules/dkim_signing), [ARC](/modules/arc)) and send [DMARC](/modules/dmarc) aggregate reports. SpamAssassin only checks DMARC and ARC.
+- Rspamd is event-driven: each worker scans many messages at once and does DNS and Redis lookups without blocking, while each SpamAssassin `spamd` child process handles one message at a time. The project reports roughly ten times SpamAssassin's throughput with the same rules; see [Performance](/about/performance).
 
-### 2. Working System First
-Get a basic but functional system running, then incrementally add features. Don't try to configure everything perfectly on first attempt.
+The migration guide describes a staged [rollout](/tutorials/migrate_sa#rollout-strategy). Run Rspamd next to SpamAssassin without rejecting mail ([Testing alongside SpamAssassin](/getting-started/installation#testing-alongside-spamassassin) shows the action settings) and compare the verdicts. Tune the thresholds, then switch the MTA over. Keep SpamAssassin installed until you no longer need a rollback.
 
-### 3. Real Examples
-All configuration examples are tested and production-ready. No simplified "toy" examples that won't work in real environments.
+### Connecting a mail server
 
-### 4. Progressive Depth
-- **Getting Started**: Broad understanding, working system
-- **Configuration Guides**: Specific tasks and decisions
-- **Module Documentation**: Complete parameter reference
-- **Developer Docs**: Internal architecture and APIs
+If Rspamd is already installed and you only need to connect your MTA:
 
-## Common Questions
+| MTA | Protocol | Rspamd worker (default address) | Instructions |
+|---|---|---|---|
+| Postfix | Milter | Proxy (`localhost:11332`) | [First setup](/getting-started/first-setup#step-3-mail-server-integration) |
+| Sendmail | Milter | Proxy (`localhost:11332`) | [MTA integration](/tutorials/integration#using-rspamd-with-sendmail-mta) |
+| Exim | `spamd_address` with `variant=rspamd` (legacy RSPAMC protocol) | Normal (`localhost:11333`) | [MTA integration](/tutorials/integration#integration-with-exim-mta) |
 
-### "How long does this take?"
-- **Basic working setup**: 2-3 hours
-- **Production-ready with testing**: 4-6 hours
-- **Optimized for your environment**: Ongoing process
+The [MTA integration tutorial](/tutorials/integration) also covers Haraka, EmailSuccess, Apache James, Stalwart and LDA mode.
 
-### "Do I need to understand everything before starting?"
-No. Start with [Understanding Rspamd](understanding-rspamd) to get the big picture, then follow the practical guides. You'll learn details as you go.
+### Docker and Kubernetes
 
-### "Can I skip Understanding Rspamd and go straight to installation?"
-You *can*, but you'll likely make configuration mistakes that waste more time than reading would take. The understanding guide is 30 minutes that saves hours of troubleshooting.
+The official image is `rspamd/rspamd`. See the Docker section of [Installation](/getting-started/installation#docker-installation) and the [image README](https://github.com/rspamd/rspamd-docker), which also describes production use with your configuration baked into a derived image. Some things work differently from a package install:
 
-### "What if I get stuck?"
-- Check the [FAQ](/faq) for common questions
-- Review the specific module documentation for detailed parameters
-- Ask in community channels (Discord, Telegram, GitHub Discussions)
-- Search GitHub issues for similar problems
+- Put your configuration in `/etc/rspamd/local.d` (and `override.d` if needed): mount a host directory there, or copy the files into a derived image.
+- The image binds every worker to all container interfaces. Publish the ports on `127.0.0.1` only. Set a controller password before you use the web interface: connections through a published port come from outside `secure_ip` (loopback by default), and the controller refuses the default password `q1` from such addresses.
+- Bayes, neural, ratelimit and greylisting data live in Redis, so run Redis too and persist its data. `/var/lib/rspamd` holds caches, history and counters. It is already a volume in the image; if you bind-mount a host directory there, it must be writable by uid/gid 11333.
+- Use a local recursive DNS resolver. The [Compose example](https://github.com/rspamd/rspamd-docker/tree/main/examples/compose) runs Rspamd with Redis and Unbound.
+- The image has a `HEALTHCHECK` on the controller's `/ping` endpoint, which needs no password; use `/ping` for liveness probes too. For readiness use `/ready` on the controller, which needs the controller password unless the probe comes from `secure_ip`. See [Production notes](/getting-started/installation#production-notes).
 
-### "Do I need to know Lua?"
-Not for basic setup. Lua is only needed for:
-- Writing complex custom rules
-- Developing plugins
-- Advanced integrations
+For Kubernetes, see [Kubernetes](/getting-started/installation#kubernetes) in the installation guide and the [Tanka example](https://github.com/rspamd/rspamd-docker/tree/main/examples/k8s/tanka) in the same repository.
 
-Most users never write Lua code and just configure built-in modules.
+## Common questions
 
-### "Is Redis really required?"
-Yes, for production use. Redis stores:
-- Bayesian statistics (tokens, probabilities)
-- Rate limiting counters
-- Greylisting triplets
-- Neural network weights
-- DMARC report data
-- Fuzzy hash checksums
+### Is Redis required?
 
-Without Redis, statistical learning doesn't work, which significantly reduces spam detection accuracy.
+Rspamd starts without Redis, but install it for any production setup. Set the servers in `/etc/rspamd/local.d/redis.conf`. In the default configuration, these features keep their data in Redis and do not work without it:
 
-### "Can I use Rspamd without statistics/learning?"
-Yes. Rspamd will still check:
-- SPF/DKIM/DMARC/ARC authentication
-- RBL/SURBL blacklists
-- Content regex rules
-- MIME structure
-- URL analysis
+- the Bayes classifier (per-token spam and ham counters)
+- the neural module
+- ratelimit and greylisting
+- DMARC aggregate reporting
+- your own [fuzzy storage worker](/workers/fuzzy_storage), if you run one (disabled by default)
 
-But you won't have:
-- Bayesian classification
-- Neural networks
-- Fuzzy hash matching
-- Rate limiting
-- Greylisting
+The `history_redis` module also stores the scan history for the web interface's History tab in Redis. Without Redis, the History tab shows the controller's built-in history instead. Fuzzy checks against the public rspamd.com storage need no local Redis.
 
-Static rules catch ~70-80% of spam. Adding statistics improves to ~95-98%.
+### What works without training?
 
-## After Getting Started
+Most checks need no training: SPF, DKIM, DMARC and ARC verification, DNS blocklists for IP addresses and URLs, regexp content rules, MIME and URL checks, and fuzzy checks against the public rspamd.com storage. Bayes gives no result until it has learned at least 200 spam and 200 ham messages (the `min_learns` setting), and the neural module also has to collect training data first. Training Bayes on your own mail usually improves detection noticeably over static rules alone.
 
-Once you complete the Getting Started guides, explore:
+### Is Lua required?
 
-### Configuration Guides
-- **[Configuration Fundamentals](/guides/configuration/fundamentals)** - Understand the configuration system
-- **[Tool Selection](/guides/configuration/tool-selection)** - Choose multimap vs regexp vs Lua vs selectors
-- **[Multimap Guide](/tutorials/multimap_guide)** - Powerful pattern matching
-- **[Settings Guide](/tutorials/settings_guide)** - Per-domain/per-user configuration
-- **[DKIM Signing](/tutorials/dkim_signing_guide)** - Cryptographically sign outbound mail
+No. You configure the built-in modules with UCL files in `/etc/rspamd/local.d/`, and multimap, regexp rules, selectors and composites cover many custom rules without code. You need Lua only for writing plugins and for rules these tools can't express. Put such rules in `/etc/rspamd/rspamd.local.lua` or in a `*.lua` file in `/etc/rspamd/lua.local.d/`. [Tool selection](/guides/configuration/tool-selection) explains which to use.
 
-### Module Documentation
-- **[Modules Overview](/modules/)** - Complete list of 60+ modules
-- **[SPF](/modules/spf)**, **[DKIM](/modules/dkim)**, **[DMARC](/modules/dmarc)**, **[ARC](/modules/arc)** - Authentication
-- **[Bayes Statistics](/configuration/statistic)** - Statistical learning
-- **[RBL Module](/modules/rbl)** - Real-time blacklists
-- **[Greylisting](/modules/greylisting)**, **[Rate Limit](/modules/ratelimit)** - Anti-abuse
+## After getting started
 
-### Advanced Topics
-- **[Architecture](/developers/architecture)** - How Rspamd works internally
-- **[Writing Rules](/developers/writing_rules)** - Custom detection logic
-- **[Protocol](/developers/protocol)** - HTTP API and Milter protocol
-- **[Lua API](/lua/)** - Programming interface
+Configuration guides:
 
-### Scaling and Operations
-- High availability setups
-- Horizontal scaling patterns
-- Performance optimization
-- Monitoring and alerting
-- Backup and disaster recovery
+- [Multimap guide](/tutorials/multimap_guide) for allow and block lists keyed on senders, IP addresses, URLs and other message data
+- [Settings guide](/tutorials/settings_guide) for different settings per domain, user or source
+- [DKIM signing guide](/tutorials/dkim_signing_guide) for signing outbound mail
 
-## Support and Community
+Module reference:
 
-### Community Help
-- **[Discord](https://discord.gg/RsBM5KXtgX)** - Real-time chat for quick questions
-- **[Telegram](https://t.me/rspamd)** - Alternative community chat
-- **[GitHub Discussions](https://github.com/rspamd/rspamd/discussions)** - Long-form Q&A
-- **[Mailing Lists](https://lists.rspamd.com)** - Traditional email-based discussion
+- [Modules](/modules/) lists the built-in modules
+- [SPF](/modules/spf), [DKIM](/modules/dkim), [DMARC](/modules/dmarc) and [ARC](/modules/arc) for sender authentication
+- [Statistics](/configuration/statistic) for the Bayes classifier, its Redis storage and autolearn
+- [RBL](/modules/rbl) for DNS blocklists
+- [Greylisting](/modules/greylisting) and [Ratelimit](/modules/ratelimit)
 
-### Bug Reports and Features
-- **[GitHub Issues](https://github.com/rspamd/rspamd/issues)** - Bug reports and feature requests
-- **[Pull Requests](https://github.com/rspamd/rspamd/pulls)** - Code contributions
+Internals and development:
 
-### Commercial Support
-Professional support available from Rspamd developers and certified partners. See [Support page](/support).
+- [Architecture](/developers/architecture) for processes, the event loop and the processing pipeline
+- [Writing rules](/developers/writing_rules) for custom rules, from simple symbols to selectors, Lua and plugins
+- [Protocol](/developers/protocol) for the HTTP scanning protocol and reply format
+- [Controller endpoints](/developers/controller_endpoints) for the controller's HTTP API
+- [Lua API](/lua/) reference
 
-### Security Issues
-Report security vulnerabilities privately to: security@rspamd.com
+Operations:
 
-Do **not** open public GitHub issues for security problems.
+- [Proxy worker](/workers/rspamd_proxy) for milter mode and spreading load over several scanners
+- [Redis replication](/tutorials/redis_replication)
+- [ClickHouse analytics](/tutorials/clickhouse_analytics) for storing scan results and building dashboards
+- [Performance](/about/performance)
 
-## Documentation Improvements
+## Getting help
 
-Found a problem in the documentation?
-- **Typos/errors**: Open a [documentation issue](https://github.com/rspamd/rspamd/issues)
-- **Missing information**: Suggest what should be added
-- **Confusing explanations**: Tell us what's unclear
-- **Want to contribute**: Pull requests welcome for documentation improvements
+| You need | Go to |
+|---|---|
+| Answers to common questions | [FAQ](/faq) |
+| Help from other users | [Discord](https://discord.gg/RsBM5KXtgX), [Telegram](https://t.me/rspamd), [GitHub Discussions](https://github.com/rspamd/rspamd/discussions) or the [mailing lists](https://lists.rspamd.com) |
+| To report a bug or request a feature | [GitHub Issues](https://github.com/rspamd/rspamd/issues) |
+| To contribute code | [Pull requests](https://github.com/rspamd/rspamd/pulls) on rspamd/rspamd |
+| Commercial support (consulting, NDA, dedicated access to fuzzy storage or DNS lists) | support@rspamd.com, see [Support](/support#commercial-support) |
+| To report a security vulnerability | [GitHub private vulnerability reporting](https://github.com/rspamd/rspamd/security/advisories/new) (preferred), or email vsevolod@rspamd.com with `[SECURITY]` in the subject |
+| To report a documentation problem | [docs.rspamd.com issues](https://github.com/rspamd/docs.rspamd.com/issues), or a pull request through the "Edit this page" link |
 
-Good documentation helps everyone. Your feedback makes it better.
-
----
-
-## Ready to Start?
-
-**New users**: Begin with [Understanding Rspamd →](understanding-rspamd)
-
-**SpamAssassin users**: Read [Understanding Rspamd](understanding-rspamd), then [SpamAssassin Migration Guide](/tutorials/migrate_sa)
-
-**Quick integration**: Jump to [Installation →](installation) if you already understand spam filtering
-
-**Remember**: Start simple, get it working, then optimize. Don't try to configure everything perfectly on day one.
+Do not open public GitHub issues for security problems. [SECURITY.md](https://github.com/rspamd/rspamd/blob/master/SECURITY.md) explains what the project treats as a vulnerability.
