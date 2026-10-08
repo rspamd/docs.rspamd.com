@@ -34,6 +34,7 @@ const sidebars = {
         "tutorials/migration",
         "tutorials/migrate_sa",
         "tutorials/scanning_outbound",
+        "tutorials/helo_spoofing",
         "tutorials/fuzzy_storage",
         "tutorials/redis_replication",
         "tutorials/stunnel_setup",
