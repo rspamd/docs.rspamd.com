@@ -24,6 +24,7 @@ Each rule block requires a `type` option that selects the backend. The following
 | `expurgate` | eXpurgate AntiSpam Filter (Retarus) |
 | `p0f` | Passive OS fingerprinting via [p0f](https://lcamtuf.coredump.cx/p0f3/) — sets symbols based on detected OS |
 | `virustotal` | [VirusTotal](https://www.virustotal.com/) file-report lookup (see [Virustotal details](#virustotal-details)) |
+| `peekaboo` | [PeekabooAV](https://github.com/scVENUS/PeekabooAV) sandbox threat scanner (see [Peekaboo details](#peekaboo-specific-details)) |
 
 The following antivirus engines (avast, clamav, fprot, kaspersky_av, kaspersky_se, metadefender, savapi, sophos) are handled by the **[Antivirus module](/modules/antivirus)**, not this module. They use the same shared backend code but are configured in `local.d/antivirus.conf`.
 
@@ -48,10 +49,11 @@ In case of connection errors or failures reported by the external service, the f
 
 By default, the complete email will be sent to the external service system. You can and you have to change this behavior for some services by setting `scan_mime_parts = true;` to send all mime parts detected as attachments separately. If you also want to scan text mimes and images using the AV scanner, you can set the `scan_text_mime` or `scan_image_mime` parameter to "true".
 
-Furthermore, there are two types of MIME part filters available:
+Furthermore, there are two types of MIME part filters available, each with an `_exclude` counterpart:
 
 ~~~hcl
 ...
+  # include filters - a part is scanned if it matches any of these
   mime_parts_filter_regex {
     FILE1 = "^invoice\.xls$"
     DOC1 = "application\/msword";
@@ -66,7 +68,33 @@ Furthermore, there are two types of MIME part filters available:
 ...
 ~~~
 
-`mime_parts_filter_regex` will match on the content-type detected by rspamd or mime part header or the declared filename of an attachment or an archive file listing. `mime_parts_filter_ext` will only match the extension of the declared filename or an archives file list.
+The matching `_exclude` filters remove a part from scanning even if it also matches an include filter above:
+
+~~~hcl
+...
+  mime_parts_filter_regex_exclude {
+    SIGNATURE = "^smime\.p7s$";
+  }
+  mime_parts_filter_ext_exclude {
+    p7s = "p7s";
+  }
+...
+~~~
+
+`mime_parts_filter_regex` will match on the content-type detected by Rspamd, mime part headers, or the declared filename of an attachment or an archive file listing. `mime_parts_filter_ext` matches the detected extension, the extension of the declared filename, or an archive file listing. `mime_parts_filter_regex_exclude` and `mime_parts_filter_ext_exclude` use the same matching rules but remove a part from scanning instead of adding it.
+
+**How include and exclude filters interact:**
+
+| Include filters set? | Exclude filters set? | Result |
+|---|---|---|
+| no | no | every part is scanned (normal `scan_mime_parts` behavior) |
+| yes | no | only parts matching an include filter are scanned |
+| no | yes | every part is scanned **except** those matching an exclude filter |
+| yes | yes | only parts matching an include filter **and not** matching an exclude filter are scanned |
+
+In other words, an exclude match always wins over an include match on the same part. Exclude-only configuration selects all parts except excluded ones. Enabling `scan_text_mime` or `scan_image_mime` can additionally select text or image parts that do not match an include filter, but explicit exclusions still prevent those parts from being scanned.
+
+By default, filenames inside archives are also checked against these filters (`mime_parts_match_archive` defaults to `true`, except for scanners such as Peekaboo that override it). Set `mime_parts_match_archive = false;` to only match on the archive's own filename/content-type and skip inspecting the files listed inside it. An exclusion matching the archive part itself always suppresses it. Exclusions matching files inside an archive suppress the whole archive only when **every** listed file matches an exclude filter; a mixed archive remains eligible for scanning under the include rules.
 
 Apart from the default settings, specific configuration options need to be set for each rule as described below.
 
@@ -85,7 +113,7 @@ icap {
   symbol = "ICAP_VIRUS";
 
   # type of scanner: "icap", "oletools", "dcc", "pyzor", "razor", "spamassassin",
-  #                  "vadesecure", "cloudmark", "expurgate", "p0f", "virustotal"
+  #                  "vadesecure", "cloudmark", "expurgate", "p0f", "virustotal", "peekaboo"
   type = "icap";
 
   # Scan mime_parts separately - otherwise the complete mail will be transferred
@@ -103,6 +131,8 @@ icap {
     doc = "doc";
     docx = "docx";
   }
+  # also match files listed inside archives against the filters above (default: true)
+  #mime_parts_match_archive = true;
 
   # If set force this action if any threat is found (default unset: no action is forced)
   # action = "reject";
@@ -126,8 +156,10 @@ icap {
   # In version 1.7.0+ patterns could be extended
   #patterns = {SANE_MAL = 'Sanesecurity\.Malware\.*', CLAM_UNOFFICIAL = 'UNOFFICIAL$'};
 
-  # `whitelist` points to a map of IP addresses. Mail from these addresses is not scanned.
-  whitelist = "/etc/rspamd/antivirus.wl";
+  # `whitelist` points to a map of threat names/signatures to ignore. When a
+  # detected threat name is found in this map, the `_IGNORE` symbol (see
+  # `symbol_ignore`) is set instead of the main symbol.
+  whitelist = "/etc/rspamd/external_services.wl";
 }
 ~~~
 
@@ -142,7 +174,14 @@ The following options are available across most scanner backends. They are proce
 | `max_size` | integer | unset | Skip scanning content larger than this many bytes. |
 | `no_cache` | boolean | `false` | Disable Redis caching of scan results for this rule. |
 | `dynamic_scan` | boolean | `false` (oletools: `true`) | Skip scanning if the message already has a score exceeding twice the reject threshold or a pre-result of `reject`. |
-| `text_part_min_words` | integer | `0` (disabled) | When `scan_text_mime = true`, only scan text parts that contain at least this many words. |
+| `text_part_min_words` | integer | `0` (disabled) | Only scan the message or a text part if the message has a text part with at least this many words. Non-text attachments are always scanned regardless of this limit. |
+| `symbol` | string | (auto) | Symbol to set when the scanner reports a threat. |
+| `symbol_fail` | string | `{SYMBOL}_FAIL` | Symbol to set on scan failure (connection error or scanner-reported failure). |
+| `symbol_encrypted` | string | `{SYMBOL}_ENCRYPTED` | Symbol to set when the scanner reports encrypted content. Its configured score applies (dynamic weight `1.0`) and it triggers `action` if set. |
+| `symbol_macro` | string | `{SYMBOL}_MACRO` | Symbol to set when the scanner reports Office macros. Its configured score applies (dynamic weight `1.0`) and it triggers `action` if set. |
+| `symbol_ignore` | string | `{SYMBOL}_IGNORE` | Symbol set instead of the main symbol when a detected threat name matches the `whitelist` map. |
+
+A few scanners (e.g. `peekaboo`) submit content for scanning and only get the verdict back later from a separate polling endpoint. For those, the rule also exposes a `symbol_report` (scheduled per `symbol_report_type`, default `postfilter`) which performs that poll independently of the main check symbol. See [Peekaboo specific details](#peekaboo-specific-details) for an example.
 
 ## ICAP protocol specific details
 
@@ -898,3 +937,98 @@ symbols =  {
   }
 }
 ~~~
+
+## Peekaboo specific details
+
+[PeekabooAV](https://github.com/scVENUS/PeekabooAV) ([peekabooav.de](https://peekabooav.de/)) is an open-source sandbox-based malware analysis tool that inspects attachments in a set of behavioral analysis sandboxes (e.g. Cuckoo) and returns a verdict. Since analysis can take a while, Peekaboo works asynchronously: a rule submits each attachment to a `check` endpoint which returns a job ID, and a separate `report` step polls for the result of that job.
+
+To model this two-step workflow, the `peekaboo` rule registers two symbols:
+
+* the main check symbol (`PEEKABOO` by default, `symbol_type = "callback"`) submits attachments for analysis;
+* the report symbol (`PEEKABOO_REPORT` by default, `symbol_report_type = "postfilter"`, runs as a `postfilter` so it executes after the main checks) polls Peekaboo for the verdict of jobs submitted earlier in the same scan.
+
+Because analysis is asynchronous, results are usually not available in the same Rspamd scan in which the file was submitted; rely on `PEEKABOO_IN_PROCESS` to detect this case.
+
+### Handling pending analysis and threats
+
+The recommended way to act on Peekaboo results is the **[Force Actions module](/modules/force_actions)**. Use it to apply a `soft reject` while analysis is still pending (`PEEKABOO_IN_PROCESS`), so that the MTA requeues the message and retries after Peekaboo has finished. `honor_action = ["reject"]` ensures that a `reject` decision (e.g. from a `bad` verdict on another attachment) is not downgraded to a deferral, regardless of the order in which attachment reports arrive:
+
+~~~hcl
+# local.d/force_actions.conf
+
+rules {
+  PEEKABOO_DEFER {
+    action = "soft reject";
+    honor_action = ["reject"];
+    expression = "PEEKABOO_IN_PROCESS";
+    message = "Message temporarily deferred pending attachment analysis, please try again later";
+  }
+}
+~~~
+
+Alternatively, the `peekaboo` rule provides built-in options that do not require the Force Actions module:
+
+* `action` forces the given action (e.g. `action = "reject";`) when a `bad` verdict (`PEEKABOO`) is found. Clean, pending, and failed results do not trigger it.
+* `defer_if_no_result = true;` applies a `soft reject` when the report endpoint returns HTTP 404 (`PEEKABOO_IN_PROCESS`). It defaults to `false`; a `reject` verdict takes precedence regardless of the order in which attachment reports arrive. Use `defer_message` to customize the deferral message. Connection errors and failed analyses remain `PEEKABOO_FAIL` results and do not trigger this deferral.
+
+### Example configuration
+
+~~~hcl
+# local.d/external_services.conf
+
+peekaboo {
+  type = "peekaboo";
+  servers = "127.0.0.1:8100";
+
+  # force this action only when a threat is found
+  #action = "reject";
+  # defer messages while attachment analysis is pending (default: false)
+  #defer_if_no_result = true;
+  #defer_message = "Message temporarily deferred pending attachment analysis, please try again later";
+
+  # scan_mime_parts is enabled by default for this scanner
+  #scan_mime_parts = true;
+  # also scan text mime parts
+  #scan_text_mime = false;
+  # also scan image mime parts
+  #scan_image_mime = false;
+
+  # use TLS for the connection to Peekaboo
+  #use_https = false;
+  # skip TLS certificate verification (use with care)
+  #no_ssl_verify = true;
+  # connection timeout in seconds
+  #timeout = 3.0;
+  # number of retransmits on connection failure
+  #retransmits = 2;
+
+  # cache the result in Redis for this many seconds
+  #cache_expire = 7200;
+  # skip scanning content smaller than this many bytes
+  #min_size = 300;
+  # set to true to also set a symbol for files reported as clean
+  #set_clean_symbol = false;
+  # log a message for clean (non-threat) results as well
+  #log_clean = false;
+
+  # metric score for the threat symbol
+  #score = 1.0;
+  # dynamic multiplier applied to bad verdicts
+  #default_score = 1.0;
+
+  symbol = "PEEKABOO";
+  symbol_report = "PEEKABOO_REPORT";
+}
+~~~
+
+Depending on the verdict returned by the `report` endpoint, one of the following symbols is set:
+
+| Symbol | Condition | Default score |
+|---|---|---|
+| `PEEKABOO_IN_PROCESS` | Job is not finished yet (`report` endpoint returned HTTP 404) | 0.0 |
+| `PEEKABOO` | Job result is `bad` (a threat was found) | 1.0 (`score` multiplied by `default_score`) |
+| `PEEKABOO_GOOD` | File matched a Peekaboo whitelist entry | -1.0 |
+| `PEEKABOO_PASS` | Job result is `unknown` (no threat found) — only set when `set_clean_symbol = true` | 0.0 |
+| `PEEKABOO_FAIL` | Connection error, submit response missing a job ID, or job result is `failed`/`unchecked` | 0.0 |
+
+Results of `ignored` jobs do not set any symbol.
