@@ -104,7 +104,8 @@ sudo rspamadm configtest
 sudo systemctl restart rspamd
 
 # Test DKIM signing
-echo "Test message" | rspamc -d example.com -f test@example.com
+printf 'From: test@example.com\nTo: test@example.com\nSubject: DKIM test\n\nTest message\n' | \
+  rspamc --user test@example.com --from test@example.com --mime
 ```
 
 ## Advanced Configurations
