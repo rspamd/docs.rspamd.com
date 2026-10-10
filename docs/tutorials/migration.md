@@ -1704,3 +1704,127 @@ Envelope and header addresses were compared as raw strings, so `johndoe@googlema
 equivalent_domains = "/etc/rspamd/maps.d/equivalent_domains.inc";
 ~~~
 3. Expect fewer `FORGED_RECIPIENTS` and `FORGED_SENDER` hits. The symbol options still show the wire addresses, and the addresses on the task are not modified — the identity is used for comparison only, never written back, since the domains stay distinct for SPF, DKIM and DMARC.
+
+## Migration to Rspamd 4.2.2
+
+### 1. metadata_exporter: Invalid Rules Are Now Disabled
+
+Rules are now checked against a schema when the configuration loads ([63743c613](https://github.com/rspamd/rspamd/commit/63743c613), [#6292](https://github.com/rspamd/rspamd/pull/6292)). The built-in backends are `http`, `send_mail`, `redis_pubsub`, `redis_stream`, `redis_list` and `json_raw_tcp`, and their schema is closed. If one of their rules has an unknown key (a typo or a leftover option) or a value of the wrong type, the whole rule is now disabled. Older versions ignored the bad key and ran the rule anyway. If no valid rule is left, the module is disabled too. Rules with a `custom_push` backend still accept extra keys.
+
+**Who is affected:** Anyone with `metadata_exporter` rules. When a rule is disabled, its alerts or exports stop and nothing else warns you.
+
+**Migration procedure:**
+
+1. On a test node running 4.2.2 with your production configuration, run:
+```bash
+rspamadm configtest
+```
+2. Each error looks like `rule <name>: invalid configuration -> rule DISABLED: ...`. Fix or remove the reported key in `local.d/metadata_exporter.conf`.
+3. Repeat until `rspamadm configtest` reports no errors, then roll the configuration out.
+
+Also, with `defer = true`, an `email_alert` that cannot be built now soft-rejects the scanned message, just as a failed push does ([b2e7fb524](https://github.com/rspamd/rspamd/commit/b2e7fb524)). An alert with a non-ASCII email address in its headers is one such case. Older versions sent it with invalid 8-bit headers, but 4.2.2 refuses to build it. If you combine `defer = true` with `email_alert_sender` or `email_alert_recipients`, make sure you are fine with those messages being deferred.
+
+### 2. known_senders: `max_ttl` Is Now Enforced
+
+Older versions accepted `max_ttl` (default `30d`) but never applied it, and each sender's score in the Redis zset was the time it was first seen ([6d9161886](https://github.com/rspamd/rspamd/commit/6d9161886)). Now the score is refreshed each time the sender is seen, and senders not seen within `max_ttl` are forgotten.
+
+Entries written by older versions still hold their first-seen time. The first new sender recorded after the upgrade therefore removes every sender first seen more than `max_ttl` ago, even if it wrote yesterday. The next message from each removed sender gets `UNKNOWN_SENDER` instead of `KNOWN_SENDER`.
+
+**Who is affected:** Users who enabled `known_senders` (it is disabled by default) in zset mode (`use_bloom = false`, the default). Bloom filter mode is not affected, because bloom filters cannot expire entries.
+
+**Choose one option:**
+
+- **Keep existing senders and start their ageing at the upgrade.** Just before restarting on 4.2.2, set every score to the current time:
+  - Run the command against each Redis server that `known_senders` writes to.
+  - Add your usual `-h`, `-p`, `-n` and authentication options.
+  - Replace `rs_known_senders` if you changed `redis_key`.
+```bash
+redis-cli EVAL "local m = redis.call('ZRANGE', KEYS[1], 0, -1) for _, s in ipairs(m) do redis.call('ZADD', KEYS[1], 'XX', ARGV[1], s) end return #m" 1 rs_known_senders "$(date +%s)"
+```
+- **Keep the old behaviour, where senders never expire.** Add to `local.d/known_senders.conf`:
+~~~hcl
+max_ttl = 0;
+~~~
+
+### 3. replies and known_senders: `reply_sender_privacy` Now Takes Effect
+
+Both modules read the privacy options under the wrong prefix ([03e91c028](https://github.com/rspamd/rspamd/commit/03e91c028)). Because of that, `reply_sender_privacy`, `reply_sender_privacy_alg`, `reply_sender_privacy_prefix` and `reply_sender_privacy_length` were ignored, and sender keys were always built from the plain address.
+
+These options now work. With `reply_sender_privacy = true`, sender keys are built from the hashed address, so reply sets written by older versions are no longer found. `INC_MAIL_KNOWN_LOCALLY` and `INC_MAIL_KNOWN_GLOBALLY` stop matching earlier correspondents until users send new mail. The old sets expire on their own.
+
+**Who is affected:** Users who set `reply_sender_privacy = true` for `replies` or `known_senders`.
+
+**Choose one option:**
+
+- **Keep the existing data and the behaviour you actually had.** Remove `reply_sender_privacy = true` from both `local.d/replies.conf` and `local.d/known_senders.conf`.
+- **Turn hashing on.** Set identical `reply_sender_privacy*` values in `local.d/replies.conf` and `local.d/known_senders.conf`. `known_senders` looks up the keys that `replies` writes, so if the two files disagree, the `INC_MAIL_KNOWN_*` symbols never match.
+
+### 4. milter_headers: `X-Spamd-Bar` Follows `skip_local` and `skip_authenticated`
+
+The `x-spamd-bar` routine checked the wrong routine name, so `skip_local`, `skip_authenticated`, `local_headers` and `authenticated_headers` never applied to it ([dec1e68b8](https://github.com/rspamd/rspamd/commit/dec1e68b8)). Now they do. Since `skip_local` and `skip_authenticated` are both `true` by default, these messages no longer get `X-Spamd-Bar`:
+
+- messages from loopback addresses
+- messages from `local_addrs` (private networks by default)
+- messages from authenticated users
+
+**Who is affected:** Users with `x-spamd-bar` in the `milter_headers` `use` list who rely on the header for local or authenticated mail, for example in Sieve or mail client filters.
+
+To keep the header on those messages, add the routine to `local.d/milter_headers.conf`. If you already have these lists, extend them:
+~~~hcl
+local_headers = ["x-spamd-bar"];
+authenticated_headers = ["x-spamd-bar"];
+~~~
+
+### 5. MIME: Message and Part Digests Changed for Multipart Messages
+
+Following RFC 2046, the line break before a boundary delimiter now belongs to the delimiter, not to the part before it ([d4bb61357](https://github.com/rspamd/rspamd/commit/d4bb61357)). In multipart messages, this changes the digest of every part that is not base64-encoded (quoted-printable, 7bit, 8bit). The message digest changes as well. Base64 parts keep their digests, and that covers most binary attachments and images.
+
+**Who is affected:**
+
+- **Local fuzzy storages:** hashes of non-base64 attachments learned by older versions (`fuzzy_check` rules with `mime_types`) no longer match.
+- **Digest-keyed maps and rules:** anything keyed on the `digest` or `attachments` selectors, `task:get_digest()` or `mime_part:get_digest()`.
+- **Stored digests:** ClickHouse (`Digest`, `Attachments.Digest`), Elasticsearch and `metadata_exporter` data. The same message has a different digest before and after the upgrade, so do not deduplicate or join on digests across the upgrade.
+
+**Migration procedure:**
+
+1. Re-learn the affected fuzzy samples with 4.2.2:
+```bash
+rspamc -f <flag> -w <weight> fuzzy_add /path/to/samples/*.eml
+```
+2. Regenerate digest-based map entries from the original messages. This command prints the digest of each non-text part as 4.2.2 computes it:
+```bash
+rspamadm mime stat -F /path/to/message.eml
+```
+
+### 6. Bitcoin Rules Replaced by Multi-Currency Wallet Detection
+
+`rules/bitcoin.lua` has been removed and `rules/crypto.lua` replaces it ([bf60a2940](https://github.com/rspamd/rspamd/commit/bf60a2940), [#6294](https://github.com/rspamd/rspamd/pull/6294)). `BITCOIN_ADDR` keeps its name.
+
+New symbols, all with a score of 0:
+
+- `CRYPTO_ADDR_CHECK`
+- verified currencies: `LITECOIN_ADDR`, `DOGECOIN_ADDR`, `TRON_ADDR`, `XRP_ADDR`, `ZCASH_ADDR`, `CARDANO_ADDR`, `COSMOS_ADDR`, `STELLAR_ADDR`, `TON_ADDR`
+- format-only matches: `ETHEREUM_ADDR_MAYBE`, `MONERO_ADDR_MAYBE`
+
+The `LEAKED_PASSWORD_SCAM` composite (score 7.0) now fires for every currency whose checksum can be verified, not only Bitcoin ([eb948c019](https://github.com/rspamd/rspamd/commit/eb948c019)). The word "wallet" no longer counts as a scam signal for any currency ([37814a080](https://github.com/rspamd/rspamd/commit/37814a080)).
+
+**Who is affected:**
+
+- Custom Lua configuration that loads `bitcoin.lua` directly, for example a modified copy of `rules/rspamd.lua`. It now fails to load.
+- Sites that tuned scores or composites on the assumption that `LEAKED_PASSWORD_SCAM` only matches Bitcoin.
+
+**Migration procedure:**
+
+1. Find references to the removed file and change them to `crypto.lua`:
+```bash
+grep -rn "bitcoin.lua" /etc/rspamd/
+```
+2. To keep `LEAKED_PASSWORD_SCAM` Bitcoin-only, add to `local.d/composites.conf`:
+~~~hcl
+LEAKED_PASSWORD_SCAM {
+  expression = "BITCOIN_ADDR & (LEAKED_PASSWORD_SCAM_RE | R_MIXED_CHARSET | R_EMPTY_IMAGE)";
+  policy = "leave";
+  score = 7.0;
+  group = "scams";
+}
+~~~
