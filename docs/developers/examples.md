@@ -154,7 +154,7 @@ rspamd_config.SAVE_MAILDIR = {
     elseif bar_var then
       save_task(task, 'bar', {['X-Rspamd-BAR'] = bar_var})
     elseif task:has_symbol('LEAKED_PASSWORD_SCAM') then
-      save_task(task, 'bitcoin', {})
+      save_task(task, 'crypto_scam', {})
     elseif task:has_symbol('DMARC_POLICY_REJECT') or task:has_symbol('R_DKIM_REJECT') then
       save_task(task, 'policy_failure', {})
     elseif res.score <= 0 then
