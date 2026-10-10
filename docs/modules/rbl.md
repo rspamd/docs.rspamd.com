@@ -107,7 +107,7 @@ Optional parameters (and their defaults if applicable) are as follows:
 - `is_empty` (false) - allow this RBL to run on empty (no body) messages
 - `is_whitelist` (false) - denotes that this RBL is an whitelist
 - `local_exclude_ip_map` - map containing IPv4/IPv6 addresses/subnets which should be considered private (and treated as local by `exclude_local`)
-- `merge_checks` (true) - when several checks produce the same DNS query, combine their names into one option per symbol instead of inserting that symbol once per check; set to `false` for the pre-4.1.6 behaviour of one insertion per check. Under `symbols_prefixes` this applies only to checks sharing a prefix, since checks mapped to different symbols are never combined. See section on request merging for more information
+- `merge_checks` (true) - when several checks produce the same DNS query, combine their names into one option per symbol instead of inserting that symbol once per check; set to `false` for the pre-4.2.2 behaviour of one insertion per check. Under `symbols_prefixes` this applies only to checks sharing a prefix, since checks mapped to different symbols are never combined. See section on request merging for more information
 - `monitored_address` (`1.0.0.127`) - fixed address to check for absence; see section on monitoring for more information
 - `no_ip` (false) - do not look up IP addresses in this RBL
 - `received_flags` - only check `Received` headers that have all of the listed flags set (e.g. `["authenticated"]`)
@@ -520,9 +520,9 @@ However, some lists use a direct encoding method where specific addresses are as
 
 ### Request merging and symbol options
 
-A single RBL rule can gather lookup values from several checks at once (for example `helo` and `rdns`, or two different `selector` entries). When more than one check produces the *same* DNS query name, Rspamd sends that query only once instead of repeating it per check.
+A single RBL rule can gather lookup values from several checks at once (for example `helo` and `rdns`, or two different `selector` entries). When more than one check produces the *same* DNS query name, Rspamd sends that query only once instead of repeating it per check. Lookups that serve different purposes, such as resolving a hostname for `resolve_ip` versus checking a listing, are not merged.
 
-Query names are compared case-insensitively, and a trailing dot in the looked-up value is ignored, so `example.org`, `EXAMPLE.ORG` and `example.org.` all collapse into one lookup against the list suffix. Empty values are dropped entirely rather than being sent as a bare query for the list suffix itself.
+Query names are compared case-insensitively, and a single trailing dot in the looked-up value is ignored, so `example.org`, `EXAMPLE.ORG` and `example.org.` all collapse into one lookup against the list suffix. A value with more trailing dots (`example.org..`) is invalid and is not looked up. Names built by a `process_script` follow the same rules. With `hash` enabled, the trailing dot is still stripped before hashing, but the value is hashed as is, so `example.org` and `EXAMPLE.ORG` produce different hashes and separate lookups. A `hash_format = "base64"` result is also case-sensitive data, so such hashed names keep their case. Empty values are dropped entirely rather than being sent as a bare query for the list suffix itself.
 
 Symbol options record which check produced a given value, in the form:
 
@@ -550,16 +550,21 @@ For rules using `resolve_ip`, the option also carries the address the name resol
 
 If the list returns an unexpected reply and `unknown` is enabled, the reply address is appended as a third component (`<value>:<check>:<reply>`).
 
-Scoring follows the symbol rather than the query. A symbol takes its weight once per matched reply; repeating that *same* symbol for further spellings of the same value only adds an option. So the two spellings shown above (`example.org:lower` and `EXAMPLE.ORG:upper`) both appear as options but together add `2.0` for a symbol scored at `2.0`, where before 4.1.6 they were two separate queries and added `4.0`.
+When a merged query fails (for example with `server fail`), the rule's `_FAIL` symbol lists every value that went into it, one option per value, but takes its weight only once. With `merge_checks = false` every value takes its weight, as before:
 
-Distinct symbols are unaffected by this and each take their weight in full. In the `symbols_prefixes` example above, `RBL_CODE_2` and `RECEIVED_CODE_2` are different symbols, so both score fully even though a single DNS query served both checks — merging the query never merges scores across prefixes.
+    FAILTEST.EXAMPLE:server fail
+    failtest.example:server fail
 
-To insert the symbol once per check instead of combining them — the behaviour before 4.1.6 — set `merge_checks = false` on the rule, or `default_merge_checks = false` to change it for every rule at once:
+Scoring follows the symbol rather than the query. A symbol takes its weight once per matched reply; repeating that *same* symbol for further spellings of the same value only adds an option. So the two spellings shown above (`example.org:lower` and `EXAMPLE.ORG:upper`) both appear as options but together add `2.0` for a symbol scored at `2.0`, where before 4.2.2 they were two separate queries and added `4.0`.
+
+Distinct symbols are unaffected by this and each take their weight in full. In the `symbols_prefixes` example above, `RBL_CODE_2` and `RECEIVED_CODE_2` are different symbols, so both score fully even though a single DNS query served both checks. Merging the query never merges scores across prefixes.
+
+To insert the symbol once per check instead of combining them (the behaviour before 4.2.2), set `merge_checks = false` on the rule, or `default_merge_checks = false` to change it for every rule at once:
 
 ~~~hcl
 # local.d/rbl.conf
 
-# keep the pre-4.1.6 behaviour globally
+# keep the pre-4.2.2 behaviour globally
 default_merge_checks = false;
 
 rbls {
@@ -577,7 +582,7 @@ With `merge_checks = false`, a value found by both checks in the rule above yiel
     example.org:helo
     example.org:rdns
 
-Note that this only affects how results are reported and scored — the duplicate DNS queries are still merged either way. Set `one_shot = true` on a symbol if you additionally want to cap repeated hits coming from genuinely different lookup values.
+This only affects how results are reported and scored; duplicate DNS queries are still merged either way. Set `one_shot = true` on a symbol to also cap repeated hits from different lookup values.
 
 ## IP lists
 
