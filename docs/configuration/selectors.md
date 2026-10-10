@@ -205,6 +205,7 @@ The data definition part specifies what needs to be extracted. Here is the list 
 | `asn` | 1.8+ | Get AS number (ASN module must be executed first)
 | `attachments` | 1.8+ | Get list of all attachments digests
 | `country` | 1.8+ | Get country (ASN module must be executed first)
+| `crypto_addresses` | — | Get cryptocurrency wallet addresses found in the message. The optional first argument restricts the result to one currency (`bitcoin`, `litecoin`, `dogecoin`, `tron`, `xrp`, `zcash`, `cardano`, `cosmos`, `stellar`, `ton`, `ethereum`, `monero`; an empty string means all currencies). Pass `typed` as the second argument to get `currency:address` strings instead of bare addresses. See [detecting crypto wallet addresses](/tutorials/crypto_addresses)
 | `digest` | 1.8+ | Get content digest
 | `emails` | 1.8+ | Get list of all emails. If no arguments specified, returns list of url objects. Otherwise, calls a specific method, e.g. `get_user`
 | `files` | 1.8+ | Get all attachments files
