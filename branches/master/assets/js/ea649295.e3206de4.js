@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkrspamd_docs=self.webpackChunkrspamd_docs||[]).push([[8176],{49672(s){s.exports=JSON.parse('{"name":"changelog-pages-plugin","id":"default"}')}}]);
