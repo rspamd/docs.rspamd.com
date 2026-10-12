@@ -53,6 +53,7 @@ rbls {
 ### Global parameters
 
 - `attached_maps`: list of map definitions that should be kept alive for the lifetime of the module (useful when maps are referenced from selectors or other expressions that do not hold a direct reference)
+- `default_merge_checks` (true): default value of the per-rule `merge_checks` option (since 4.2.3); see section on request merging
 - `disabled_rbl_suffixes_map`: map of RBL DNS zones (`rbl` values) whose rules should be skipped at runtime; allows disabling specific RBLs without editing the main configuration
 - `local_exclude_ip_map`: map containing additional IPv4/IPv6 addresses/subnets that should be considered private and excluded from checks where `exclude_local` is `true` (the default)
 - `url_whitelist`: map containing host names which should be skipped by URL checks (applied to all rules that perform URL/email/DKIM/replyto checks unless a rule sets `ignore_url_whitelist = true`)
@@ -107,7 +108,7 @@ Optional parameters (and their defaults if applicable) are as follows:
 - `is_empty` (false) - allow this RBL to run on empty (no body) messages
 - `is_whitelist` (false) - denotes that this RBL is an whitelist
 - `local_exclude_ip_map` - map containing IPv4/IPv6 addresses/subnets which should be considered private (and treated as local by `exclude_local`)
-- `merge_checks` (true) - when several checks produce the same DNS query, combine their names into one option per symbol instead of inserting that symbol once per check; set to `false` for the pre-4.2.2 behaviour of one insertion per check. Under `symbols_prefixes` this applies only to checks sharing a prefix, since checks mapped to different symbols are never combined. See section on request merging for more information
+- `merge_checks` (true) - when several checks produce the same DNS query, combine their names into one option per symbol instead of inserting that symbol once per check; set to `false` for the pre-4.2.3 behaviour of one insertion per check. Under `symbols_prefixes` this applies only to checks sharing a prefix, since checks mapped to different symbols are never combined. See section on request merging for more information
 - `monitored_address` (`1.0.0.127`) - fixed address to check for absence; see section on monitoring for more information
 - `no_ip` (false) - do not look up IP addresses in this RBL
 - `received_flags` - only check `Received` headers that have all of the listed flags set (e.g. `["authenticated"]`)
@@ -555,16 +556,16 @@ When a merged query fails (for example with `server fail`), the rule's `_FAIL` s
     FAILTEST.EXAMPLE:server fail
     failtest.example:server fail
 
-Scoring follows the symbol rather than the query. A symbol takes its weight once per matched reply; repeating that *same* symbol for further spellings of the same value only adds an option. So the two spellings shown above (`example.org:lower` and `EXAMPLE.ORG:upper`) both appear as options but together add `2.0` for a symbol scored at `2.0`, where before 4.2.2 they were two separate queries and added `4.0`.
+Scoring follows the symbol rather than the query. A symbol takes its weight once per matched reply; repeating that *same* symbol for further spellings of the same value only adds an option. So the two spellings shown above (`example.org:lower` and `EXAMPLE.ORG:upper`) both appear as options but together add `2.0` for a symbol scored at `2.0`, where before 4.2.3 they were two separate queries and added `4.0`.
 
 Distinct symbols are unaffected by this and each take their weight in full. In the `symbols_prefixes` example above, `RBL_CODE_2` and `RECEIVED_CODE_2` are different symbols, so both score fully even though a single DNS query served both checks. Merging the query never merges scores across prefixes.
 
-To insert the symbol once per check instead of combining them (the behaviour before 4.2.2), set `merge_checks = false` on the rule, or `default_merge_checks = false` to change it for every rule at once:
+To insert the symbol once per check instead of combining them (the behaviour before 4.2.3), set `merge_checks = false` on the rule, or `default_merge_checks = false` to change it for every rule at once:
 
 ~~~hcl
 # local.d/rbl.conf
 
-# keep the pre-4.2.2 behaviour globally
+# keep the pre-4.2.3 behaviour globally
 default_merge_checks = false;
 
 rbls {
@@ -583,6 +584,8 @@ With `merge_checks = false`, a value found by both checks in the rule above yiel
     example.org:rdns
 
 This only affects how results are reported and scored; duplicate DNS queries are still merged either way. Set `one_shot = true` on a symbol to also cap repeated hits from different lookup values.
+
+Whitelist rules (`is_whitelist = true`) report their results in the same format. When a whitelist option names several checks (`example.org:sel_from,sel_helo`), it is split per check: a later lookup of that value by any of the listed checks is skipped in rules that honour whitelists, unless they set `ignore_whitelist = true`.
 
 ## IP lists
 
