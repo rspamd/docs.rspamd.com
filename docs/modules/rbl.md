@@ -523,7 +523,7 @@ However, some lists use a direct encoding method where specific addresses are as
 
 A single RBL rule can gather lookup values from several checks at once (for example `helo` and `rdns`, or two different `selector` entries). When more than one check produces the *same* DNS query name, Rspamd sends that query only once instead of repeating it per check. Lookups that serve different purposes, such as resolving a hostname for `resolve_ip` versus checking a listing, are not merged.
 
-Query names are compared case-insensitively, and a single trailing dot in the looked-up value is ignored, so `example.org`, `EXAMPLE.ORG` and `example.org.` all collapse into one lookup against the list suffix. A value with more trailing dots (`example.org..`) is invalid and is not looked up. Names built by a `process_script` follow the same rules. With `hash` enabled, the trailing dot is still stripped before hashing, but the value is hashed as is, so `example.org` and `EXAMPLE.ORG` produce different hashes and separate lookups. A `hash_format = "base64"` result is also case-sensitive data, so such hashed names keep their case. Empty values are dropped entirely rather than being sent as a bare query for the list suffix itself.
+Query names are compared case-insensitively, and a single trailing dot in the looked-up value is ignored, so `example.org`, `EXAMPLE.ORG` and `example.org.` all collapse into one lookup against the list suffix. A value with more trailing dots (`example.org..`) is invalid and is not looked up. Names built by a `process_script` lose a single trailing dot too, but keep their case, since the script may encode data in it. With `hash` enabled, the value is hashed exactly as given, trailing dot included, so `example.org`, `example.org.` and `EXAMPLE.ORG` produce different hashes and separate lookups. A `hash_format = "base64"` result is also case-sensitive data, so such hashed names keep their case. Empty values are dropped entirely rather than being sent as a bare query for the list suffix itself.
 
 Symbol options record which check produced a given value, in the form:
 
@@ -556,11 +556,11 @@ When a merged query fails (for example with `server fail`), the rule's `_FAIL` s
     FAILTEST.EXAMPLE:server fail
     failtest.example:server fail
 
-Scoring follows the symbol rather than the query. A symbol takes its weight once per matched reply; repeating that *same* symbol for further spellings of the same value only adds an option. So the two spellings shown above (`example.org:lower` and `EXAMPLE.ORG:upper`) both appear as options but together add `2.0` for a symbol scored at `2.0`, where before 4.2.3 they were two separate queries and added `4.0`.
+Scoring follows the symbol rather than the query. A symbol is inserted once per matched reply, with one option per spelling of the value, so it takes its weight (and spends one of its `nshots`) once. So the two spellings shown above (`example.org:lower` and `EXAMPLE.ORG:upper`) both appear as options but together add `2.0` for a symbol scored at `2.0`, where before 4.2.3 they were two separate queries and added `4.0`.
 
 Distinct symbols are unaffected by this and each take their weight in full. In the `symbols_prefixes` example above, `RBL_CODE_2` and `RECEIVED_CODE_2` are different symbols, so both score fully even though a single DNS query served both checks. Merging the query never merges scores across prefixes.
 
-To insert the symbol once per check instead of combining them (the behaviour before 4.2.3), set `merge_checks = false` on the rule, or `default_merge_checks = false` to change it for every rule at once:
+To insert the symbol once per check instead of combining them (the behaviour before 4.2.3), set `merge_checks = false` on the rule, or `default_merge_checks = false` to change it for every rule at once, including rules with `ignore_defaults = true`:
 
 ~~~hcl
 # local.d/rbl.conf
@@ -585,7 +585,7 @@ With `merge_checks = false`, a value found by both checks in the rule above yiel
 
 This only affects how results are reported and scored; duplicate DNS queries are still merged either way. Set `one_shot = true` on a symbol to also cap repeated hits from different lookup values.
 
-Whitelist rules (`is_whitelist = true`) report their results in the same format. When a whitelist option names several checks (`example.org:sel_from,sel_helo`), it is split per check: a later lookup of that value by any of the listed checks is skipped in rules that honour whitelists, unless they set `ignore_whitelist = true`.
+Whitelist rules (`is_whitelist = true`) report their results in the same format. When a whitelist option names several checks (`example.org:sel_from,sel_helo`), it is split per check: a later lookup of that value by any of the listed checks is skipped in rules that honour whitelists, unless they set `ignore_whitelist = true`. A value with a trailing dot (`example.org.`) is also checked against the whitelist without that dot, except in rules that hash the value or use a `process_script`.
 
 ## IP lists
 
