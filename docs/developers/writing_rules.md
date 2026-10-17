@@ -112,7 +112,7 @@ end
 Use `re_conditions` to validate complex patterns efficiently and avoid false positives. This lets you keep regexps fast while confirming matches with Lua.
 
 ```lua
--- Example inspired by rules/bitcoin.lua
+-- Illustrative example (not from the current Rspamd source tree)
 config.regexp['BITCOIN_ADDR'] = {
   re = string.format('(%s) + (%s) > 0', normal_wallet_re, btc_bleach_re),
   expression_flags = { 'noopt' },
