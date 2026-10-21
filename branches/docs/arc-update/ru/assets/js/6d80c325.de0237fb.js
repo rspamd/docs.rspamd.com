@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkrspamd_docs=self.webpackChunkrspamd_docs||[]).push([[2216],{15490:s=>{s.exports=JSON.parse('{"authors":[{"name":"Rspamd Team","title":"Rspamd Maintainers","url":"https://github.com/rspamd","imageURL":"https://github.com/rspamd.png","key":"rspamd","page":null,"count":2}]}')}}]);
