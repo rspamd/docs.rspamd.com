@@ -1828,3 +1828,118 @@ LEAKED_PASSWORD_SCAM {
   group = "scams";
 }
 ~~~
+
+## Migration to Rspamd 4.2.3
+
+### 1. RBL: Checks Resolving to the Same Query Are Merged
+
+When several checks of a rule produce the same name (case-insensitive, ignoring a trailing dot), the `rbl` module now sends that DNS query only once ([b7a8744](https://github.com/rspamd/rspamd/commit/b7a874402), [#6303](https://github.com/rspamd/rspamd/pull/6303)). The new default is `default_merge_checks = true`, and with it those checks also share one symbol insertion. The weight counts once per listed name, not once per check, and the check labels go into a single option. For example, a listed domain found in both a URL and a DKIM signature used to give two options, `example.com:dkim` and `example.com:url`. Now it gives one: `example.com:dkim,url`.
+
+The global opt-out also covers rules with `ignore_defaults = true`, which includes the stock URIBL and DBL rules ([0ffa1be](https://github.com/rspamd/rspamd/commit/0ffa1be78)).
+
+**Who is affected:**
+
+- Custom RBL rules with several checks whose symbols are not `one_shot`. Examples: `checks = ["from", "received"]` without `symbols_prefixes`, or `urls` + `emails` + `dkim`. These rules now score lower when more than one check finds the same IP or domain. Stock symbols such as `DBL_SPAM` and `RSPAMD_URIBL` are already `one_shot`, so only their options change.
+- Anything that parses RBL symbol options, such as log parsers, dashboards or Lua code that reads `task:get_symbol()`. The labels now come comma-separated in one option.
+
+**Migration procedure:**
+
+1. Before upgrading, check which of your rules have more than one check:
+```bash
+rspamadm configdump rbl
+```
+2. To keep the old scoring for all rules, add this to `local.d/rbl.conf`:
+
+~~~hcl
+default_merge_checks = false;
+~~~
+
+Or turn it off for one rule only:
+
+~~~hcl
+rbls {
+  my_rbl {
+    merge_checks = false;
+  }
+}
+~~~
+
+3. Update any option parsers to split labels on `,`.
+4. Validate the config and reload:
+```bash
+rspamadm configtest && systemctl reload rspamd
+```
+
+`merge_checks = false` brings back one insertion (and one option) per check. Duplicate DNS queries are still sent only once either way.
+
+### 2. RBL: `require_symbols`, `return_codes` and `dkim_match_from` Now Work as Documented
+
+Three `rbl` rule options did not do what the documentation said, and this release fixes them ([ea78a50](https://github.com/rspamd/rspamd/commit/ea78a5054), [#6330](https://github.com/rspamd/rspamd/pull/6330)). Rules that use these options will behave differently after the upgrade:
+
+- `require_symbols`: a rule with this option never ran. Now it runs whenever all the listed symbols are present, so it starts sending DNS queries and can insert symbols.
+- `return_codes` / `return_bits`: Lua patterns given through these aliases were compared literally, so they never matched. They are now matched as patterns, the same way as with `returncodes` / `returnbits`.
+- `dkim_match_from`: the `dkim_domainonly` test was inverted.
+
+| `dkim_domainonly` | Before 4.2.3 | 4.2.3 |
+|---|---|---|
+| `true` (default) | Matched only when `d=` was exactly the eSLD of the From domain | Matches any `d=` with the same eSLD as the From domain; the eSLD is queried |
+| `false` | `d=` was cut to its eSLD and compared to the full From domain; the eSLD was queried | `d=` must equal the From domain exactly; the full `d=` is queried |
+
+Rules generated from a `surbl {}` section are converted using the new behaviour, so they work the same as before.
+
+**Who is affected:** users with their own RBL rules in `local.d/rbl.conf` or `override.d/rbl.conf` that use any of these options.
+
+**Migration procedure:**
+
+1. Find the affected rules:
+```bash
+grep -rnE 'require_symbols|return_codes|return_bits|dkim_match_from' /etc/rspamd/local.d/ /etc/rspamd/override.d/
+```
+2. For each `require_symbols` rule, decide whether you want it running now. If not, add `enabled = false;` to it.
+3. For each `dkim_match_from` rule that has `dkim_domainonly = false`: if you relied on the old eSLD comparison, change it to `dkim_domainonly = true`.
+4. Run `rspamadm configtest`.
+
+### 3. force_actions: Composite Rules and Pre-result Priority
+
+**Who is affected:** users with `force_actions` rules ([#6304](https://github.com/rspamd/rspamd/pull/6304)).
+
+- A rule whose expression uses a composite symbol now runs as a postfilter, after the composites ([8ff37dd](https://github.com/rspamd/rspamd/commit/8ff37dd40)). Before, it was checked before composites were evaluated, so it never saw the composite. Such rules never matched, or always matched if the composite was negated. Expect them to start or stop firing.
+- A rule without `priority` now records its pre-result at normal priority, as documented, instead of low ([1a7f32c](https://github.com/rspamd/rspamd/commit/1a7f32ce7)). It used to always lose to normal-priority pre-results from other modules; now it competes with them. `least` rules still record at low.
+- A new `priority` setting (`low`, `normal`, `high`, `critical`, or `0`–`3`) decides between matching rules ([3ad213f](https://github.com/rspamd/rspamd/commit/3ad213ff5), [b95f132](https://github.com/rspamd/rspamd/commit/b95f1327b)). If no rule sets `priority`, rules are selected the same way as before.
+
+**Migration procedure:**
+
+1. After the upgrade, list the rules that moved to the postfilter stage:
+```bash
+grep 'as postfilter (expression uses composite' /var/log/rspamd/rspamd.log
+```
+2. Test those rules against sample messages:
+```bash
+rspamc symbols /path/to/message.eml
+```
+3. Where the order between rules or modules matters, set `priority` on the rules involved.
+
+### 4. Lua API: `has_pre_result` and Table-form `set_pre_result`
+
+**Who is affected:** custom Lua rules and plugins that call these functions.
+
+- `task:has_pre_result()` now returns the action name as its second value, just like `task:get_metric_action()` ([d2e3e63](https://github.com/rspamd/rspamd/commit/d2e3e630c)). Nothing changes for standard actions. For a custom action it used to return `custom`; now it returns the action's own name. There is also a new fifth value with the flags, and `task:has_pre_result(true)` returns the pre-result that selects the action.
+- `task:set_pre_result({...})` without `priority` now defaults to `1` (normal), the same as the positional form. Before, it defaulted to `0` (low) ([1a7f32c](https://github.com/rspamd/rspamd/commit/1a7f32ce7)). Combined flags such as `flags = 'least,no_smtp_message'` are now all applied. Before, only one was applied, checked in the order `least`, `no_smtp_message`, `process_all`.
+
+**Migration procedure:**
+
+1. Find the calls in your config and plugin directories:
+```bash
+grep -rnE 'has_pre_result|set_pre_result' /etc/rspamd/
+```
+2. Replace comparisons with `custom` by the name of the custom action:
+
+~~~lua
+local has, action = task:has_pre_result()
+-- before 4.2.3: action was 'custom' for every custom action
+if has and action == 'my_action' then
+  -- ...
+end
+~~~
+
+3. Add `priority = 0` to table-form `set_pre_result` calls that need to stay at low priority.
