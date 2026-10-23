@@ -64,6 +64,7 @@ metadata_exporter {
 
  - `http`: sends content over HTTP POST
  - `json_raw_tcp`: sends JSON content over a raw TCP connection
+ - `redis_list` (4.2.0+): appends content to a Redis list
  - `redis_pubsub`: sends content over Redis Pub/Sub
  - `redis_stream` (4.0+): sends content to a Redis Stream
  - `send_mail`: sends content over SMTP
@@ -133,6 +134,16 @@ See [here](/configuration/redis) for information on configuring Redis servers.
  - `per_recipient`: if `true`, creates per-recipient streams by appending `:recipient@address` to `stream_key`
 
 The backend uses Redis `XADD` command. This is useful for building event-driven pipelines with consumer groups.
+
+### Settings: `redis_list` backend
+
+*Available since version 4.2.0*
+
+ - `list_key` (required): defines Redis list key to append content to
+ - `max_len`: optional maximum length for the list; after each push the list is trimmed with `LTRIM` to the newest `max_len` entries, so the oldest are dropped when consumers fall behind
+ - `per_recipient`: if `true`, creates per-recipient lists by appending `:recipient@address` to `list_key`
+
+The backend uses Redis `RPUSH` command. Unlike Pub/Sub, entries are kept until a consumer takes them, and several consumers popping the same list (`BLPOP`) each receive different entries. This suits consumers that read lists but not streams, such as the Logstash `redis` input.
 
 ### Settings: `json_raw_tcp` backend
 
@@ -363,6 +374,7 @@ Metadata as returned by the `json` formatter can be referenced by key in `email_
 - `symbols`: Symbols in metric
 - `symbols_score` (4.2.2+, `email_template` only): symbols sorted by score, highest first
 - `symbols_sorted` (4.2.2+, `email_template` only): symbols sorted by name
+- `unix_time` (4.2.3+): time the message was received by Rspamd, as a Unix timestamp (GMT, fractional seconds)
 - `user`: authenticated username of message sender
 
 ### Custom functions
