@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="ru" dir="ltr" class="docs-wrapper plugin-docs plugin-id-default docs-version-current docs-doc-page docs-doc-id-administration/rspamadm/index" data-has-hydrated="false">
+<head>
+<meta charset="UTF-8">
+<meta name="generator" content="Docusaurus v3.9.2">
+<title data-rh="true">Rspamadm Administration Utility | Rspamd Documentation</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://rspamd.com/docs.rspamd.com/branches/docs/antivirus-update/ru/administration/rspamadm/"><meta data-rh="true" property="og:locale" content="ru"><meta data-rh="true" property="og:locale:alternate" content="en"><meta data-rh="true" name="docusaurus_locale" content="ru"><meta data-rh="true" name="docsearch:language" content="ru"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Rspamadm Administration Utility | Rspamd Documentation"><meta data-rh="true" name="description" content="The rspamadm command is a powerful administration utility that provides a comprehensive set of tools for managing, debugging, and operating Rspamd installations. It consolidates various administrative functions into a single command-line interface."><meta data-rh="true" property="og:description" content="The rspamadm command is a powerful administration utility that provides a comprehensive set of tools for managing, debugging, and operating Rspamd installations. It consolidates various administrative functions into a single command-line interface."><link data-rh="true" rel="icon" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/img/favicon.png"><link data-rh="true" rel="canonical" href="https://rspamd.com/docs.rspamd.com/branches/docs/antivirus-update/ru/administration/rspamadm/"><link data-rh="true" rel="alternate" href="https://rspamd.com/docs.rspamd.com/branches/docs/antivirus-update/administration/rspamadm/" hreflang="en"><link data-rh="true" rel="alternate" href="https://rspamd.com/docs.rspamd.com/branches/docs/antivirus-update/ru/administration/rspamadm/" hreflang="ru"><link data-rh="true" rel="alternate" href="https://rspamd.com/docs.rspamd.com/branches/docs/antivirus-update/administration/rspamadm/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Administration Tools","item":"https://rspamd.com/docs.rspamd.com/branches/docs/antivirus-update/ru/administration/rspamadm/"}]}</script><link rel="alternate" type="application/rss+xml" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/blog/rss.xml" title="Rspamd Blog RSS Feed">
+<link rel="alternate" type="application/atom+xml" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/blog/atom.xml" title="Rspamd Blog Atom Feed">
+
+
+
+
+<script>window.SEARCH_BACKEND_CONFIG={endpoint:"/api"}</script>
+
+<link rel="alternate" type="application/rss+xml" title="Rspamd Changelog RSS" href="/rss/changelog.xml">
+<link rel="alternate" type="application/rss+xml" title="Rspamd Blog RSS" href="/blog/rss.xml">
+<link rel="alternate" type="application/atom+xml" title="Rspamd Blog Atom" href="/blog/atom.xml"><link rel="stylesheet" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/assets/css/styles.10e2e935.css">
+<script src="/docs.rspamd.com/branches/docs/antivirus-update/ru/assets/js/runtime~main.1106d2d1.js" defer="defer"></script>
+<script src="/docs.rspamd.com/branches/docs/antivirus-update/ru/assets/js/main.e4e3c7f0.js" defer="defer"></script>
+</head>
+<body class="navigation-with-keyboard">
+<svg style="display: none;"><defs>
+<symbol id="theme-svg-external-link" viewBox="0 0 24 24"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/></symbol>
+</defs></svg>
+<script>!function(){var t=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();document.documentElement.setAttribute("data-theme",t||(window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")),document.documentElement.setAttribute("data-theme-choice",t||"system")}(),function(){try{const c=new URLSearchParams(window.location.search).entries();for(var[t,e]of c)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><link rel="preload" as="image" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/img/rspamd_logo_black.png"><link rel="preload" as="image" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/img/rspamd_logo_navbar.png"><div role="region" aria-label="Перейти к основному содержимому"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">Перейти к основному содержимому</a></div><nav aria-label="Main" class="theme-layout-navbar navbar navbar--fixed-top"><div class="navbar__inner"><div class="theme-layout-navbar-left navbar__items"><button aria-label="Переключить навигационную панель" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a href="https://www.rspamd.com" target="_self" rel="noopener noreferrer" class="navbar__brand"><div class="navbar__logo"><img src="/docs.rspamd.com/branches/docs/antivirus-update/ru/img/rspamd_logo_black.png" alt="Rspamd Logo" class="themedComponent_mlkZ themedComponent--light_NVdE"><img src="/docs.rspamd.com/branches/docs/antivirus-update/ru/img/rspamd_logo_navbar.png" alt="Rspamd Logo" class="themedComponent_mlkZ themedComponent--dark_xIcU"></div><b class="navbar__title text--truncate"></b></a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/">Documentation</a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/about/">About</a><a class="navbar__item navbar__link" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/tutorials/">Tutorials</a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/modules/">Modules</a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/other/usage_policy">Usage Policy</a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/faq">FAQ</a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/support">Support</a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/downloads">Downloads</a><a class="navbar__item navbar__link" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/blog">Blog</a><a class="navbar__item navbar__link" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/changelog">Changelog</a></div><div class="theme-layout-navbar-right navbar__items navbar__items--right"><div><div class="elasticsearch-search-container"><form class="elasticsearch-search-form"><div class="elasticsearch-search-input-container"><input type="text" placeholder="Search documentation..." class="elasticsearch-search-input" aria-label="Search documentation" value=""><div class="elasticsearch-search-shortcut"><span>⌘K</span></div></div></form></div></div><div class="navbar__item"><div id="font-size-control-mount"></div></div><a href="https://github.com/rspamd/rspamd" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="system mode" aria-label="Переключение между темным и светлым режимом (сейчас используется system mode)"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP systemToggleIcon_QzmC"><path fill="currentColor" d="m12 21c4.971 0 9-4.029 9-9s-4.029-9-9-9-9 4.029-9 9 4.029 9 9 9zm4.95-13.95c1.313 1.313 2.05 3.093 2.05 4.95s-0.738 3.637-2.05 4.95c-1.313 1.313-3.093 2.05-4.95 2.05v-14c1.857 0 3.637 0.737 4.95 2.05z"></path></svg></button></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="theme-layout-main main-wrapper mainWrapper_z2l0"><div class="docsWrapper_hBAB"><button aria-label="Прокрутка к началу" class="clean-btn theme-back-to-top-button backToTopButton_sjWU" type="button"></button><div class="docRoot_UBD9"><aside class="theme-doc-sidebar-container docSidebarContainer_YfHR"><div class="sidebarViewport_aRkj"><div class="sidebar_njMd"><nav aria-label="Docs sidebar" class="menu thin-scrollbar menu_SIkG"><ul class="theme-doc-sidebar-menu menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/"><span title="About Rspamd" class="linkLabel_WmDU">About Rspamd</span></a></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/getting-started/"><span title="Getting Started" class="categoryLinkLabel_W154">Getting Started</span></a><button aria-label="Expand sidebar category &#x27;Getting Started&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/tutorials/migration"><span title="How-To Guides" class="categoryLinkLabel_W154">How-To Guides</span></a></div></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/faq"><span title="Frequently asked questions" class="linkLabel_WmDU">Frequently asked questions</span></a></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/about/"><span title="About" class="categoryLinkLabel_W154">About</span></a><button aria-label="Expand sidebar category &#x27;About&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/support"><span title="Rspamd Support" class="linkLabel_WmDU">Rspamd Support</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/downloads"><span title="Downloads" class="linkLabel_WmDU">Downloads</span></a></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/configuration/"><span title="Configuration" class="categoryLinkLabel_W154">Configuration</span></a><button aria-label="Expand sidebar category &#x27;Configuration&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/workers/"><span title="Workers" class="categoryLinkLabel_W154">Workers</span></a><button aria-label="Expand sidebar category &#x27;Workers&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/modules/"><span title="Modules" class="categoryLinkLabel_W154">Modules</span></a><button aria-label="Expand sidebar category &#x27;Modules&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/lua/"><span title="Lua API" class="categoryLinkLabel_W154">Lua API</span></a><button aria-label="Expand sidebar category &#x27;Lua API&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/developers/architecture"><span title="Developers" class="categoryLinkLabel_W154">Developers</span></a><button aria-label="Expand sidebar category &#x27;Developers&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item"><div class="menu__list-item-collapsible menu__list-item-collapsible--active"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--active" aria-current="page" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/administration/rspamadm/"><span title="Administration Tools" class="categoryLinkLabel_W154">Administration Tools</span></a><button aria-label="Collapse sidebar category &#x27;Administration Tools&#x27;" aria-expanded="true" type="button" class="clean-btn menu__caret"></button></div><ul class="menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/administration/rspamadm/email-analysis"><span title="Email Analysis &amp; Debugging" class="linkLabel_WmDU">Email Analysis &amp; Debugging</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/administration/rspamadm/email-manipulation"><span title="Email Manipulation" class="linkLabel_WmDU">Email Manipulation</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/administration/rspamadm/dns-tools"><span title="DNS &amp; SPF Management" class="linkLabel_WmDU">DNS &amp; SPF Management</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/administration/rspamadm/dkim-management"><span title="DKIM Key Management" class="linkLabel_WmDU">DKIM Key Management</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/administration/rspamadm/cryptography"><span title="Cryptography &amp; Security" class="linkLabel_WmDU">Cryptography &amp; Security</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/administration/rspamadm/statistics-ml"><span title="Statistics &amp; Machine Learning" class="linkLabel_WmDU">Statistics &amp; Machine Learning</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/administration/rspamadm/operations"><span title="Operations &amp; Monitoring" class="linkLabel_WmDU">Operations &amp; Monitoring</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/administration/rspamadm/configuration"><span title="Configuration Management" class="linkLabel_WmDU">Configuration Management</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/administration/rspamadm/development"><span title="Development &amp; Testing" class="linkLabel_WmDU">Development &amp; Testing</span></a></li></ul></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/other/gtube_patterns"><span title="Other" class="categoryLinkLabel_W154">Other</span></a></div></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/blog"><span title="Blog" class="linkLabel_WmDU">Blog</span></a></li></ul></nav><button type="button" title="Свернуть сайдбар" aria-label="Свернуть сайдбар" class="button button--secondary button--outline collapseSidebarButton_PEFL"><svg width="20" height="20" aria-hidden="true" class="collapseSidebarButtonIcon_kv0_"><g fill="#7a7a7a"><path d="M9.992 10.023c0 .2-.062.399-.172.547l-4.996 7.492a.982.982 0 01-.828.454H1c-.55 0-1-.453-1-1 0-.2.059-.403.168-.551l4.629-6.942L.168 3.078A.939.939 0 010 2.528c0-.548.45-.997 1-.997h2.996c.352 0 .649.18.828.45L9.82 9.472c.11.148.172.347.172.55zm0 0"></path><path d="M19.98 10.023c0 .2-.058.399-.168.547l-4.996 7.492a.987.987 0 01-.828.454h-3c-.547 0-.996-.453-.996-1 0-.2.059-.403.168-.551l4.625-6.942-4.625-6.945a.939.939 0 01-.168-.55 1 1 0 01.996-.997h3c.348 0 .649.18.828.45l4.996 7.492c.11.148.168.347.168.55zm0 0"></path></g></svg></button></div></div></aside><main class="docMainContainer_TBSr"><div class="container padding-top--md padding-bottom--lg"><div class="row"><div class="col docItemCol_VOVn"><div class="docItemContainer_Djhp"><article><nav class="theme-doc-breadcrumbs breadcrumbsContainer_Z_bl" aria-label="Навигационная цепочка текущей страницы"><ul class="breadcrumbs"><li class="breadcrumbs__item"><a aria-label="Главная страница" class="breadcrumbs__link" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/"><svg viewBox="0 0 24 24" class="breadcrumbHomeIcon_YNFT"><path d="M10 19v-5h4v5c0 .55.45 1 1 1h3c.55 0 1-.45 1-1v-7h1.7c.46 0 .68-.57.33-.87L12.67 3.6c-.38-.34-.96-.34-1.34 0l-8.36 7.53c-.34.3-.13.87.33.87H5v7c0 .55.45 1 1 1h3c.55 0 1-.45 1-1z" fill="currentColor"></path></svg></a></li><li class="breadcrumbs__item breadcrumbs__item--active"><span class="breadcrumbs__link">Administration Tools</span></li></ul></nav><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_ITEo"><button type="button" class="clean-btn tocCollapsibleButton_TO0P">Содержание этой страницы</button></div><div class="theme-doc-markdown markdown"><header><h1>Rspamadm Administration Utility</h1></header>
+<p>The <code>rspamadm</code> command is a powerful administration utility that provides a comprehensive set of tools for managing, debugging, and operating Rspamd installations. It consolidates various administrative functions into a single command-line interface.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="quick-start">Quick Start<a href="#quick-start" class="hash-link" aria-label="Прямая ссылка на Quick Start" title="Прямая ссылка на Quick Start" translate="no">​</a></h2>
+<p>To see all available commands:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">rspamadm -l</span><br></span></code></pre></div></div>
+<p>To get help for a specific command:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">rspamadm [command] --help</span><br></span></code></pre></div></div>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="commands-by-category">Commands by Category<a href="#commands-by-category" class="hash-link" aria-label="Прямая ссылка на Commands by Category" title="Прямая ссылка на Commands by Category" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="email-analysis--debugging">Email Analysis &amp; Debugging<a href="#email-analysis--debugging" class="hash-link" aria-label="Прямая ссылка на Email Analysis &amp; Debugging" title="Прямая ссылка на Email Analysis &amp; Debugging" translate="no">​</a></h3>
+<p>Tools for inspecting and analyzing email messages.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Command</th><th>Purpose</th></tr></thead><tbody><tr><td><code>mime extract</code></td><td>Extract text, HTML, or words from messages</td></tr><tr><td><code>mime stat</code></td><td>Extract statistical data (Bayes tokens, fuzzy hashes)</td></tr><tr><td><code>mime urls</code></td><td>Extract and analyze URLs from messages</td></tr><tr><td><code>mime dump</code></td><td>Dump messages in various formats</td></tr></tbody></table>
+<p><a class="" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/administration/rspamadm/email-analysis">Learn more →</a></p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="email-manipulation">Email Manipulation<a href="#email-manipulation" class="hash-link" aria-label="Прямая ссылка на Email Manipulation" title="Прямая ссылка на Email Manipulation" translate="no">​</a></h3>
+<p>Tools for modifying and sanitizing email messages.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Command</th><th>Purpose</th></tr></thead><tbody><tr><td><code>mime anonymize</code></td><td>Remove sensitive information for bug reports</td></tr><tr><td><code>mime modify</code></td><td>Add/remove/rewrite headers and footers</td></tr><tr><td><code>mime strip</code></td><td>Remove attachments from messages</td></tr><tr><td><code>mime sign</code></td><td>Perform DKIM/ARC signing</td></tr></tbody></table>
+<p><a class="" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/administration/rspamadm/email-manipulation">Learn more →</a></p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="dns--spf-management">DNS &amp; SPF Management<a href="#dns--spf-management" class="hash-link" aria-label="Прямая ссылка на DNS &amp; SPF Management" title="Прямая ссылка на DNS &amp; SPF Management" translate="no">​</a></h3>
+<p>Tools for DNS operations and SPF record optimization.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Command</th><th>Purpose</th></tr></thead><tbody><tr><td><code>dnstool spf</code></td><td>Query and debug SPF records</td></tr><tr><td><code>dnstool spf-flatten</code></td><td>Flatten SPF records to avoid lookup limits</td></tr></tbody></table>
+<p><a class="" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/administration/rspamadm/dns-tools">Learn more →</a></p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="dkim-key-management">DKIM Key Management<a href="#dkim-key-management" class="hash-link" aria-label="Прямая ссылка на DKIM Key Management" title="Прямая ссылка на DKIM Key Management" translate="no">​</a></h3>
+<p>Tools for generating and managing DKIM signing keys.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Command</th><th>Purpose</th></tr></thead><tbody><tr><td><code>dkim_keygen</code></td><td>Generate DKIM keypairs</td></tr><tr><td><code>vault</code></td><td>Integrate with Hashicorp Vault for key storage</td></tr><tr><td><code>signtool</code></td><td>Sign and verify files with keypairs</td></tr></tbody></table>
+<p><a class="" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/administration/rspamadm/dkim-management">Learn more →</a></p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="cryptography--security">Cryptography &amp; Security<a href="#cryptography--security" class="hash-link" aria-label="Прямая ссылка на Cryptography &amp; Security" title="Прямая ссылка на Cryptography &amp; Security" translate="no">​</a></h3>
+<p>Tools for encryption, signing, and password management.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Command</th><th>Purpose</th></tr></thead><tbody><tr><td><code>keypair</code></td><td>Generate and manage encryption/signing keypairs</td></tr><tr><td><code>secret_box</code></td><td>Encrypt/decrypt text with symmetric keys</td></tr><tr><td><code>pw</code></td><td>Generate and check password hashes</td></tr><tr><td><code>signtool</code></td><td>Sign and verify files</td></tr></tbody></table>
+<p><a class="" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/administration/rspamadm/cryptography">Learn more →</a></p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="statistics--machine-learning">Statistics &amp; Machine Learning<a href="#statistics--machine-learning" class="hash-link" aria-label="Прямая ссылка на Statistics &amp; Machine Learning" title="Прямая ссылка на Statistics &amp; Machine Learning" translate="no">​</a></h3>
+<p>Tools for managing statistical classifiers and neural networks.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Command</th><th>Purpose</th></tr></thead><tbody><tr><td><code>statistics_dump</code></td><td>Backup and restore Bayes statistics</td></tr><tr><td><code>statconvert</code></td><td>Convert statistics from SQLite to Redis</td></tr><tr><td><code>classifiertest</code></td><td>Evaluate Bayes classifier performance</td></tr><tr><td><code>neuraltest</code></td><td>Test neural network with labeled datasets</td></tr><tr><td><code>clickhouse neural_profile</code></td><td>Generate neural network profiles</td></tr></tbody></table>
+<p><a class="" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/administration/rspamadm/statistics-ml">Learn more →</a></p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="operations--monitoring">Operations &amp; Monitoring<a href="#operations--monitoring" class="hash-link" aria-label="Прямая ссылка на Operations &amp; Monitoring" title="Прямая ссылка на Operations &amp; Monitoring" translate="no">​</a></h3>
+<p>Tools for operational tasks and monitoring.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Command</th><th>Purpose</th></tr></thead><tbody><tr><td><code>grep</code></td><td>Search and collate logs by pattern</td></tr><tr><td><code>fuzzy_ping</code></td><td>Test fuzzy storage connectivity</td></tr><tr><td><code>ratelimit</code></td><td>Manage rate limit buckets</td></tr><tr><td><code>control</code></td><td>Send commands to running Rspamd instance</td></tr><tr><td><code>dmarc_report</code></td><td>Send DMARC aggregate reports</td></tr><tr><td><code>fuzzyconvert</code></td><td>Migrate fuzzy hashes to Redis</td></tr></tbody></table>
+<p><a class="" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/administration/rspamadm/operations">Learn more →</a></p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="configuration-management">Configuration Management<a href="#configuration-management" class="hash-link" aria-label="Прямая ссылка на Configuration Management" title="Прямая ссылка на Configuration Management" translate="no">​</a></h3>
+<p>Tools for configuration validation and inspection.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Command</th><th>Purpose</th></tr></thead><tbody><tr><td><code>configtest</code></td><td>Validate configuration syntax</td></tr><tr><td><code>configdump</code></td><td>Show effective configuration</td></tr><tr><td><code>confighelp</code></td><td>Show configuration option documentation</td></tr><tr><td><code>configgraph</code></td><td>Visualize configuration include hierarchy</td></tr><tr><td><code>configwizard</code></td><td>Interactive configuration setup</td></tr><tr><td><code>template</code></td><td>Apply Jinja templates to files</td></tr></tbody></table>
+<p><a class="" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/administration/rspamadm/configuration">Learn more →</a></p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="development--testing">Development &amp; Testing<a href="#development--testing" class="hash-link" aria-label="Прямая ссылка на Development &amp; Testing" title="Прямая ссылка на Development &amp; Testing" translate="no">​</a></h3>
+<p>Tools for developers and advanced testing.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Command</th><th>Purpose</th></tr></thead><tbody><tr><td><code>corpustest</code></td><td>Test rules against email corpus</td></tr><tr><td><code>cookie</code></td><td>Generate message IDs and cookies</td></tr><tr><td><code>lua</code></td><td>Interactive Lua REPL with Rspamd API</td></tr><tr><td><code>publicsuffix</code></td><td>Compile public suffix lists</td></tr></tbody></table>
+<p><a class="" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/administration/rspamadm/development">Learn more →</a></p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="common-usage-patterns">Common Usage Patterns<a href="#common-usage-patterns" class="hash-link" aria-label="Прямая ссылка на Common Usage Patterns" title="Прямая ссылка на Common Usage Patterns" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="debugging-email-issues">Debugging Email Issues<a href="#debugging-email-issues" class="hash-link" aria-label="Прямая ссылка на Debugging Email Issues" title="Прямая ссылка на Debugging Email Issues" translate="no">​</a></h3>
+<p>When investigating why a message was scored incorrectly:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain"># Extract all data Rspamd sees</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">rspamadm mime extract -t message.eml</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">rspamadm mime urls -f message.eml</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">rspamadm mime stat -b message.eml</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># Search logs for that message</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">rspamadm grep -p &quot;message-id-here&quot; /var/log/rspamd/rspamd.log</span><br></span></code></pre></div></div>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="preparing-bug-reports">Preparing Bug Reports<a href="#preparing-bug-reports" class="hash-link" aria-label="Прямая ссылка на Preparing Bug Reports" title="Прямая ссылка на Preparing Bug Reports" translate="no">​</a></h3>
+<p>Sanitize emails before sharing:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain"># Remove sensitive information</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">rspamadm mime anonymize --gpt message.eml &gt; sanitized.eml</span><br></span></code></pre></div></div>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="spf-management">SPF Management<a href="#spf-management" class="hash-link" aria-label="Прямая ссылка на SPF Management" title="Прямая ссылка на SPF Management" translate="no">​</a></h3>
+<p>Optimize SPF records that hit DNS lookup limits:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain"># Check current SPF</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">rspamadm dnstool spf -d example.com</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># Flatten if needed</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">rspamadm dnstool spf-flatten example.com</span><br></span></code></pre></div></div>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="configuration-validation">Configuration Validation<a href="#configuration-validation" class="hash-link" aria-label="Прямая ссылка на Configuration Validation" title="Прямая ссылка на Configuration Validation" translate="no">​</a></h3>
+<p>Before restarting Rspamd:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain"># Validate syntax</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">rspamadm configtest</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># Check effective configuration</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">rspamadm configdump | less</span><br></span></code></pre></div></div>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="global-options">Global Options<a href="#global-options" class="hash-link" aria-label="Прямая ссылка на Global Options" title="Прямая ссылка на Global Options" translate="no">​</a></h2>
+<p>Most commands support these global options:</p>
+<ul>
+<li class=""><code>-c, --config</code> - Path to configuration file (default: <code>/etc/rspamd/rspamd.conf</code>)</li>
+<li class=""><code>-v, --verbose</code> - Enable verbose logging</li>
+<li class=""><code>--var</code> - Override environment variables</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="getting-help">Getting Help<a href="#getting-help" class="hash-link" aria-label="Прямая ссылка на Getting Help" title="Прямая ссылка на Getting Help" translate="no">​</a></h2>
+<ul>
+<li class="">Run <code>rspamadm -l</code> to list all commands</li>
+<li class="">Run <code>rspamadm [command] --help</code> for detailed command help</li>
+<li class="">Check the category pages linked above for practical examples and scenarios</li>
+</ul></div><footer class="theme-doc-footer docusaurus-mt-lg"><div class="row margin-top--sm theme-doc-footer-edit-meta-row"><div class="col noPrint_WFHX"><a href="https://github.com/rspamd/docs.rspamd.com/edit/master/docs/administration/rspamadm/index.md" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>Отредактировать эту страницу</a></div><div class="col lastUpdated_JAkA"></div></div></footer></article><nav class="docusaurus-mt-lg pagination-nav" aria-label="Страница документа"><a class="pagination-nav__link pagination-nav__link--prev" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/developers/examples"><div class="pagination-nav__sublabel">Предыдущая страница</div><div class="pagination-nav__label">Lua rules examples</div></a><a class="pagination-nav__link pagination-nav__link--next" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/administration/rspamadm/email-analysis"><div class="pagination-nav__sublabel">Следующая страница</div><div class="pagination-nav__label">Email Analysis &amp; Debugging</div></a></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#quick-start" class="table-of-contents__link toc-highlight">Quick Start</a></li><li><a href="#commands-by-category" class="table-of-contents__link toc-highlight">Commands by Category</a><ul><li><a href="#email-analysis--debugging" class="table-of-contents__link toc-highlight">Email Analysis &amp; Debugging</a></li><li><a href="#email-manipulation" class="table-of-contents__link toc-highlight">Email Manipulation</a></li><li><a href="#dns--spf-management" class="table-of-contents__link toc-highlight">DNS &amp; SPF Management</a></li><li><a href="#dkim-key-management" class="table-of-contents__link toc-highlight">DKIM Key Management</a></li><li><a href="#cryptography--security" class="table-of-contents__link toc-highlight">Cryptography &amp; Security</a></li><li><a href="#statistics--machine-learning" class="table-of-contents__link toc-highlight">Statistics &amp; Machine Learning</a></li><li><a href="#operations--monitoring" class="table-of-contents__link toc-highlight">Operations &amp; Monitoring</a></li><li><a href="#configuration-management" class="table-of-contents__link toc-highlight">Configuration Management</a></li><li><a href="#development--testing" class="table-of-contents__link toc-highlight">Development &amp; Testing</a></li></ul></li><li><a href="#common-usage-patterns" class="table-of-contents__link toc-highlight">Common Usage Patterns</a><ul><li><a href="#debugging-email-issues" class="table-of-contents__link toc-highlight">Debugging Email Issues</a></li><li><a href="#preparing-bug-reports" class="table-of-contents__link toc-highlight">Preparing Bug Reports</a></li><li><a href="#spf-management" class="table-of-contents__link toc-highlight">SPF Management</a></li><li><a href="#configuration-validation" class="table-of-contents__link toc-highlight">Configuration Validation</a></li></ul></li><li><a href="#global-options" class="table-of-contents__link toc-highlight">Global Options</a></li><li><a href="#getting-help" class="table-of-contents__link toc-highlight">Getting Help</a></li></ul></div></div></div></div></main></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="row footer__links"><div class="theme-layout-footer-column col footer__col"><div class="footer__title">Documentation</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/tutorials/quickstart">Getting Started</a></li><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/configuration">Configuration</a></li><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/modules">Modules</a></li><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/tutorials">Tutorials</a></li></ul></div><div class="theme-layout-footer-column col footer__col"><div class="footer__title">Resources</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/downloads">Downloads</a></li><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/faq">FAQ</a></li><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/support">Support</a></li><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/changelog">Changelog</a></li></ul></div><div class="theme-layout-footer-column col footer__col"><div class="footer__title">Community</div><ul class="footer__items clean-list"><li class="footer__item"><a href="https://github.com/rspamd/rspamd" target="_blank" rel="noopener noreferrer" class="footer__link-item">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a></li><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/tutorials/site_contributing">Contributing</a></li><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/blog">Blog</a></li></ul></div><div class="theme-layout-footer-column col footer__col"><div class="footer__title">Subscribe</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/rss/changelog.xml">Changelog RSS</a></li><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/blog/rss.xml">Blog RSS</a></li><li class="footer__item"><a class="footer__link-item" href="/docs.rspamd.com/branches/docs/antivirus-update/ru/blog/atom.xml">Blog Atom</a></li></ul></div></div><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2025 Rspamd Project. Built with Docusaurus.</div></div></div></footer></div>
+</body>
+</html>
