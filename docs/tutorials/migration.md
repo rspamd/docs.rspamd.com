@@ -1943,3 +1943,141 @@ end
 ~~~
 
 3. Add `priority = 0` to table-form `set_pre_result` calls that need to stay at low priority.
+
+## Migration to Rspamd 4.3.0
+
+### 1. Symbol options are stored as separate values and escaped on output
+
+Rspamd 4.3.0 stores symbol options exactly as they are inserted. When options are written out as text, any option that contains a delimiter is now escaped ([c08eb7c50](https://github.com/rspamd/rspamd/commit/c08eb7c50), [#6344](https://github.com/rspamd/rspamd/issues/6344)). Three things change:
+
+* Several plugins used to join many values into one comma-separated option. They now insert each value as its own option. This covers `asn`, `reputation`, `rbl` (merged checks), `dmarc`, the content rules (`OOXML_*`, `SVG_*`) and `MULTIPLE_UNIQUE_HEADERS`.
+* Some outputs join options into one string: `X-Spamd-Result`, `X-Virus`, `metadata_exporter`, the ClickHouse `Symbols.Options` column and the symbols field of `rspamd.log`. In these outputs, an option that contains `[`, `]`, `{`, `}`, `;` or `,` is now percent-encoded, and so is any `%` inside it. Options without these characters are written unchanged.
+* The text symbol list of `metadata_exporter` now separates options with `,` instead of `, `.
+
+**Who is affected:** you are affected if you do any of the following:
+
+* parse `X-Spamd-Result`, `X-Virus`, `metadata_exporter` output, ClickHouse `Symbols.Options` or the log
+* match option values in composites, regexp rules, multimap or settings
+* read `options` from `task:get_symbol()` in custom Lua code for the symbols listed above
+
+**Before (4.2.x):**
+
+~~~
+DMARC_POLICY_REJECT(2.00)[example.com : No valid SPF, No valid DKIM,reject]
+ASN(0.00)[asn:15169, ipnet:8.8.8.0/24, country:US]
+RBL_EXAMPLE(1.00)[example.org:first,second]
+TEST_FNAME(1.00)[[invoice].pdf]
+~~~
+
+**After (4.3.0):**
+
+~~~
+DMARC_POLICY_REJECT(2.00)[example.com : No valid SPF,example.com : No valid DKIM,reject]
+ASN(0.00)[asn:15169,ipnet:8.8.8.0/24,country:US]
+RBL_EXAMPLE(1.00)[example.org:first,example.org:second]
+TEST_FNAME(1.00)[%5Binvoice%5D.pdf]
+~~~
+
+**Migration steps:**
+
+1. Find local rules that match options of these symbols:
+```bash
+grep -rnE 'ASN|DMARC_POLICY|OOXML_|SVG_|MULTIPLE_UNIQUE_HEADERS|RBL|options' \
+  /etc/rspamd/local.d /etc/rspamd/override.d /etc/rspamd/lua.local.d 2>/dev/null
+```
+2. Change patterns that expected one joined value, such as `No valid SPF, No valid DKIM`, so that they match a single option instead.
+3. In Lua, iterate over all options instead of splitting `options[1]`:
+~~~lua
+local res = task:get_symbol('ASN')
+for _, opt in ipairs(res and res[1].options or {}) do
+  -- opt is "asn:15169", then "ipnet:8.8.8.0/24", then "country:US"
+end
+~~~
+4. In external parsers, split the option list on `,` first. Then decode `%5B`, `%5D`, `%7B`, `%7D`, `%3B`, `%2C` and `%25` in each option.
+5. In ClickHouse, rows written before the upgrade keep the 4.2 format. Queries that cover both periods must handle both formats.
+
+### 2. ARC trusted forwarders are trusted only for what they vouched for
+
+The `arc` module used to trust a seal from a domain in `whitelisted_signers_map` wherever it appeared in the chain. The trust is now narrower ([71d34a6f2](https://github.com/rspamd/rspamd/commit/71d34a6f2)):
+
+* A forwarder is trusted only when every later ARC instance, up to the newest one, is also whitelisted and verified.
+* The newest ARC-Message-Signature must verify on its own.
+* The DMARC adjustment requires the forwarder's own `dmarc=pass` with a `header.from` equal to the From domain.
+* An ARC-Authentication-Results header that has two DMARC results, or that sender text can make ambiguous, is not trusted ([cf96b2bf2](https://github.com/rspamd/rspamd/commit/cf96b2bf2)).
+
+**Who is affected:** users who set `whitelisted_signers_map` with `adjust_dmarc` enabled (enabled by default). The common case is a message that passes through a trusted forwarder and then through another ARC-sealing hop before it reaches Rspamd. That hop can be a second forwarder or your own inbound gateway. 4.2.x softened the DMARC reject for such mail. 4.3.0 keeps the full reject score.
+
+**Migration steps:**
+
+1. After the upgrade, find the messages where trust was refused:
+```bash
+grep -E 'do not trust forwarder|do not adjust dmarc reject' /var/log/rspamd/rspamd.log
+```
+2. Some lines end in `a later hop is not trusted`. For each one, find the ARC-Seal `d=` domain of the hops after the forwarder.
+3. If that hop is a system you operate or fully trust, add its domain to the map that `whitelisted_signers_map` points to. Do not add a hop you do not control: a non-whitelisted later hop is the bypass this change closes.
+
+### 3. Stricter DKIM verification
+
+DKIM verification now follows the RFCs more closely ([8fb7ab221](https://github.com/rspamd/rspamd/commit/8fb7ab221), [25f551d7b](https://github.com/rspamd/rspamd/commit/25f551d7b)):
+
+* RSA keys shorter than 1024 bits are invalid (RFC 8301).
+* A key must match the type that `k=` declares.
+* A signature that repeats a known tag is invalid.
+* `l=0` on a message that has a body is invalid.
+
+The `d=` domain is also stored in lowercase now ([b7a53d4f7](https://github.com/rspamd/rspamd/commit/b7a53d4f7)).
+
+**Who is affected:**
+
+* Domains that publish short or mismatched keys, including your own domains whose mail Rspamd verifies.
+* Maps, regexps or selectors that match `d=` (for example the `DKIM_TRACE` options) case-sensitively against mixed-case entries.
+
+**Migration steps:**
+
+1. Check the key size of each selector you publish:
+```bash
+dig +short TXT myselector._domainkey.example.com \
+  | tr -d '" \n' | sed 's/.*p=//; s/;.*//' \
+  | base64 -d | openssl pkey -pubin -inform DER -noout -text | head -1
+```
+2. If the output shows fewer than 1024 bits, generate a new key and publish the DNS record it prints:
+```bash
+rspamadm dkim_keygen -b 2048 -s myselector2 -d example.com \
+  -k /var/lib/rspamd/dkim/example.com.myselector2.key
+```
+3. Change your `dkim_signing` configuration to use the new selector.
+4. Lowercase any map or regexp entries that match DKIM `d=` domains.
+
+### 4. `max_html_len` now limits HTML parts
+
+In 4.2.x, setting `max_html_len` in `options` had the wrong effect ([4f3e94229](https://github.com/rspamd/rspamd/commit/4f3e94229)):
+
+* The value was written into `max_word_len`.
+* `words_decay` was set to zero.
+* The HTML limit stayed at its default.
+
+In 4.3.0, the option sets the HTML limit. Only the first `max_html_len` bytes of a larger HTML part are processed.
+
+**Who is affected:** users who set `max_html_len` in `local.d/options.inc` or `override.d/options.inc`.
+
+**Migration steps:**
+
+1. Check whether you set any of the affected options:
+```bash
+grep -rn 'max_html_len\|max_word_len\|words_decay' /etc/rspamd/local.d /etc/rspamd/override.d
+```
+2. Make sure the `max_html_len` value is a size you want for HTML parts. Until now it had no effect on them.
+3. If you depended on the old side effect on word length, set `max_word_len` explicitly.
+
+### 5. Lua API behaviour changes
+
+**Who is affected:** custom Lua rules and plugins that use the functions below.
+
+* **`url:get_redirected()`** is no longer an alias of `url:get_phished()` ([a0b50123d](https://github.com/rspamd/rspamd/commit/a0b50123d)). It returns only a redirect target. `get_phished()` returns `nil` for a redirected URL. Check which of the two your code needs.
+* **Image flag on URLs:** a URL that is both a link and an image source is no longer flagged as an image ([6ad398841](https://github.com/rspamd/rspamd/commit/6ad398841)). `task:get_urls()` now returns it by default.
+* **Archive file lists:** `archive:get_files(n)` and `archive:get_files_full(n)` now also list names from zip local headers and Unicode Path fields ([a63ac435c](https://github.com/rspamd/rspamd/commit/a63ac435c), [13e8976f6](https://github.com/rspamd/rspamd/commit/13e8976f6)). The result can hold more than `n` entries.
+  * To count files, skip entries of `get_files_full()` that have `alias = true`, as the stock `mime_types` checks do.
+  * Extension checks should still look at every name.
+* **`archive.unpack`:** without options, output is now capped at 1 GiB (`max_output`) and 1,000,000 entries (`max_entries`) ([a4b78a065](https://github.com/rspamd/rspamd/commit/a4b78a065)). Pass `0` for no limit.
+* **`rspamd_util.inflate`:** no longer logs an error for data it cannot decompress. It returns the error as its second value instead ([32fd27971](https://github.com/rspamd/rspamd/commit/32fd27971)).
+* **`time('message')` selector:** returns no value when the Date header is missing or invalid, instead of a 1970 timestamp ([91fb7c849](https://github.com/rspamd/rspamd/commit/91fb7c849)).
