@@ -1088,7 +1088,7 @@ grep -c R_SPF_PERMFAIL /var/log/rspamd/rspamd.log
 
 **Who is affected:** Deployments that see messages with many DKIM signatures, in particular mailing lists and forwarders that re-sign, and anyone whose policy depends on `R_DKIM_ALLOW` for such traffic.
 
-If the "stopped after N signatures" line starts appearing in your logs for legitimate mail, raise the limit in `local.d/dkim_check.conf` (and `local.d/arc.conf` if you tune ARC separately):
+If the "stopped after N checked signatures" line starts appearing in your logs for legitimate mail, raise the limit in `local.d/dkim.conf`:
 
 ~~~hcl
 max_sigs = 8;
