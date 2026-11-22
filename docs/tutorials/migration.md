@@ -2081,3 +2081,155 @@ grep -rn 'max_html_len\|max_word_len\|words_decay' /etc/rspamd/local.d /etc/rspa
 * **`archive.unpack`:** without options, output is now capped at 1 GiB (`max_output`) and 1,000,000 entries (`max_entries`) ([a4b78a065](https://github.com/rspamd/rspamd/commit/a4b78a065)). Pass `0` for no limit.
 * **`rspamd_util.inflate`:** no longer logs an error for data it cannot decompress. It returns the error as its second value instead ([32fd27971](https://github.com/rspamd/rspamd/commit/32fd27971)).
 * **`time('message')` selector:** returns no value when the Date header is missing or invalid, instead of a 1970 timestamp ([91fb7c849](https://github.com/rspamd/rspamd/commit/91fb7c849)).
+
+## Migration to Rspamd 4.3.1
+
+### 1. Dynamic Scores and Actions Moved to dynconf
+
+Scores and action thresholds saved from the WebUI (through the `/savesymbols` and `/saveactions` endpoints) are now stored by the new dynamic configuration framework, dynconf ([#6378](https://github.com/rspamd/rspamd/pull/6378), [3a20692fd](https://github.com/rspamd/rspamd/commit/3a20692fd), [58cba9b9d](https://github.com/rspamd/rspamd/commit/58cba9b9d)). The old `dynamic_cfg` code has been removed. If there is no `dynconf` section, dynconf uses a file backend at `$DBDIR/rspamd_dynconf.json`. The WebUI and both endpoints keep their formats.
+
+**Who is affected:** Anyone who has saved scores or thresholds in the WebUI, and anyone who used the `dynamic_conf` module to share them through Redis.
+
+**File-based setups (the default):** On the first start, the primary controller imports `$DBDIR/rspamd_dynamic` once and renames it to `rspamd_dynamic.imported`. Some entries are skipped and logged:
+
+- entries for unknown symbols
+- entries equal to the static value
+- entries that a value in `override.d` overrides (see section 2)
+
+1. Back up the old file before upgrading:
+```bash
+cp -p /var/lib/rspamd/rspamd_dynamic /var/lib/rspamd/rspamd_dynamic.bak
+```
+2. After the upgrade, check what was imported and what was skipped:
+```bash
+grep 'dynconf:' /var/log/rspamd/rspamd.log
+rspamadm configdump --dynamic
+```
+3. Update any scripts or configuration management that write or copy `rspamd_dynamic`. Rspamd no longer reads that file.
+
+To roll back to 4.3.0, rename `rspamd_dynamic.imported` back to `rspamd_dynamic`. Changes saved after the upgrade exist only in `rspamd_dynconf.json` and are lost on rollback.
+
+**Redis-based setups (`dynamic_conf` module):** The `dynamic_conf` module is now a stub. Rspamd does not switch the dynconf backend to Redis on its own. Until you switch it, three things happen:
+
+- the data in Redis is **not applied**
+- each node keeps its own local overrides
+- the module logs an error at every start
+
+1. Keep your existing `dynamic_conf { ... }` section for now. dynconf reads it to find the legacy hash.
+2. Switch dynconf to Redis in `local.d/dynconf.conf`:
+~~~hcl
+backend = "redis";
+# Optional: dedicated servers. The global `redis` section is used otherwise.
+# servers = "redis.example.com:6379";
+~~~
+3. Restart Rspamd. The primary controller imports the legacy hash once and marks it with a `dynconf_imported` field. New overrides are stored in the `rspamd_dynconf` hash. The `key` option changes that name.
+4. Check the import. If you changed `redis_key`, use your value instead of `dynamic_conf`:
+```bash
+redis-cli HEXISTS dynamic_conf dynconf_imported   # 1 after the import
+redis-cli HGETALL rspamd_dynconf
+```
+5. Remove the `dynamic_conf` section. The legacy hash is not deleted. Delete it yourself once you no longer need to roll back.
+
+### 2. Action Thresholds in override.d Take Precedence over WebUI Values
+
+Action thresholds now keep the priority of the file that set them ([3a20692fd](https://github.com/rspamd/rspamd/commit/3a20692fd)). A threshold from `override.d` wins over a dynamic (WebUI) one, which wins over `local.d`. Symbol scores already worked this way. Before 4.3.1, a threshold saved in the WebUI replaced the configured one, even one from `override.d`.
+
+**Who is affected:** Installations that set action thresholds in `override.d` and also change those thresholds in the WebUI.
+
+After the upgrade:
+
+- Saving such a threshold in the WebUI fails with an error saying it is defined with a higher priority.
+- The import (section 1) skips old WebUI values for such actions. The `override.d` value takes effect, so the effective threshold can change at upgrade time.
+
+**Migration procedure (before upgrading):**
+
+1. List the thresholds set in `override.d`:
+```bash
+cat /etc/rspamd/override.d/actions.conf
+```
+2. Decide where each threshold should be managed:
+   - To keep editing it in the WebUI, move it to `local.d/actions.conf`. Doing this before the upgrade lets the import pick up your current WebUI value.
+   - To pin it, leave it in `override.d`. The WebUI can no longer change it.
+3. After the upgrade, confirm the effective thresholds:
+```bash
+rspamadm configdump --dynamic
+```
+
+If you have already upgraded, the old WebUI values are in `rspamd_dynamic.imported`. Move the threshold to `local.d` and enter the value again in the WebUI.
+
+### 3. Strict Parsing of Time Interval Strings
+
+`lua_util.parse_time_interval` now has to match the whole string ([3de3a05d7](https://github.com/rspamd/rspamd/commit/3de3a05d7)). Lua modules use it for time values given as quoted strings. This includes:
+
+- Redis `timeout` and `sentinel_watch_time`
+- time options of `history_redis`, `reputation`, `clustering`, `known_senders`, `bimi`, `aws_s3` and `clickhouse` (`retention.run_every`)
+- `replies` (`cookie_valid_time`)
+- `dynconf` (`interval`, `ttl`)
+- `rspamadm statconvert` (`expire`)
+
+Plain numbers and unquoted UCL values are not affected.
+
+| Value | Before 4.3.1 | 4.3.1 |
+|---|---|---|
+| `"500ms"` | 500 minutes | 0.5 seconds |
+| `"1 d"`, `"1D"` | 1 second | 1 day |
+| `"10x"` | 10 seconds | rejected |
+| `"1month"`, `"1h30m"` | trailing text ignored | rejected |
+
+Units are case-insensitive, and a space before the unit is allowed. The accepted units are `ms`, `s`, `m`/`min`, `h`, `d`, `w` and `y`, plus long forms such as `sec`, `mins`, `hours`, `days`, `weeks` and `years`. A value with no unit is in seconds.
+
+A rejected value now fails the configuration of the module that reads it:
+
+- options checked by a schema fail validation
+- `replies` is disabled with `invalid cookie_valid_time`
+- an invalid `interval` or `ttl` fails the `dynconf` section
+- `rspamadm statconvert` stops with `invalid expire value`
+
+1. Find quoted values that carry a unit:
+```bash
+grep -rnE '=[[:space:]]*"[[:space:]]*[+-]?[0-9.]+[[:space:]]*[A-Za-z][0-9A-Za-z ]*"' /etc/rspamd/local.d /etc/rspamd/override.d
+```
+2. Rewrite rejected values with a supported unit or a plain number of seconds, for example `"1h30m"` → `"90min"`. Also check values that now mean something else. For example, a Redis `timeout = "500ms"` used to be 500 minutes and is now really 0.5 seconds.
+3. Validate the configuration:
+```bash
+rspamadm configtest
+```
+
+In UCL, an unquoted `10m` means ten million, not ten minutes. Write `10min` instead.
+
+### 4. Bayes Autolearn `check_balance` and `min_balance` Are Enforced
+
+Before 4.3.1, the `check_balance` and `min_balance` options in the classifier `autolearn` block were ignored. They now take effect ([#6375](https://github.com/rspamd/rspamd/pull/6375), [cb744c45a](https://github.com/rspamd/rspamd/commit/cb744c45a), [b7144c7ba](https://github.com/rspamd/rspamd/commit/b7144c7ba)). The balance check is still off by default.
+
+**Who is affected:** Installations that set `check_balance = true` in `autolearn`, as shown in the commented sample in `statistic.conf`.
+
+Autolearn now skips the class that is ahead. It stops learning spam once spam learns exceed `1/min_balance` times the ham learns, and the same applies to ham. With the default `min_balance = 0.9`, the limit is about 1.1:1. Most installations learn far more spam than ham, so spam autolearn can stop right after the upgrade.
+
+1. Check whether you set these options:
+```bash
+grep -rnE 'check_balance|min_balance' /etc/rspamd/local.d /etc/rspamd/override.d
+```
+2. Compare the `learned` counts of `BAYES_SPAM` and `BAYES_HAM`:
+```bash
+rspamc stat
+```
+3. In the `autolearn` block where you set the option (usually `local.d/classifier-bayes.conf`), do one of the following:
+   - To keep the pre-4.3.1 behaviour, remove `check_balance` or set it to `false`.
+   - To keep the check with a wider limit, lower `min_balance`. For example, `min_balance = 0.5` allows up to 2:1.
+
+### 5. URL Order Differs Between Worker Processes
+
+To prevent hash flooding with crafted URLs, the per-message URL sets now use a random hash seed in each process ([#6393](https://github.com/rspamd/rspamd/pull/6393), [b11a69821](https://github.com/rspamd/rspamd/commit/b11a69821)). When URLs are not sorted, the order in which they are returned now differs between worker processes. The same message can give a different first URL depending on which worker scans it.
+
+**Who is affected:** This affects two kinds of custom rules:
+
+- custom Lua rules that take a URL by position, such as `task:get_urls()[1]`, or that stop at the first URL
+- selectors that pick one element of the `urls` list with `first`, `last` or `nth`
+
+In Lua, request a sorted list:
+```lua
+local urls = task:get_urls({ sort = true })
+local first = urls[1]
+```
+
+In selectors, avoid `first`, `last` and `nth` on URL lists. Match on the whole list instead, or use a custom Lua selector that sorts the URLs first.
