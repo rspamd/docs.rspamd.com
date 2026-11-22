@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkrspamd_docs=self.webpackChunkrspamd_docs||[]).push([[884],{90884(e,s,a){a.d(s,{createTreemapServices:()=>c.d});var c=a(16527);a(4954)}}]);

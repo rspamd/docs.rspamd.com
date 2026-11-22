@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkrspamd_docs=self.webpackChunkrspamd_docs||[]).push([[1903],{1912:s=>{s.exports=JSON.parse('{"blogBasePath":"/docs.rspamd.com/branches/vstakhov-docs-search/blog","blogTitle":"Rspamd Blog","authorsListPath":"/docs.rspamd.com/branches/vstakhov-docs-search/blog/authors"}')}}]);

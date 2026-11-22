@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkrspamd_docs=self.webpackChunkrspamd_docs||[]).push([[7472],{5513:s=>{s.exports=JSON.parse('{"title":"Recent posts","items":[{"title":"Rspamd Performance Measures","permalink":"/docs.rspamd.com/branches/vstakhov-docs-search/blog/rspamd-performance","unlisted":false,"date":"2019-05-16T00:00:00.000Z"}]}')}}]);
