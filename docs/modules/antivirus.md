@@ -35,8 +35,9 @@ All scanner types support these common options:
 | `type` | string | (required) | Scanner type: `clamav`, `fprot`, `sophos`, `savapi`, `kaspersky`, `kaspersky_se`, `avast`, `virustotal`, `metadefender` |
 | `symbol` | string | (auto) | Symbol to set when virus is found |
 | `symbol_fail` | string | `{SYMBOL}_FAIL` | Symbol to set on scan failure |
-| `symbol_encrypted` | string | `{SYMBOL}_ENCRYPTED` | Symbol to set for encrypted content |
-| `symbol_macro` | string | `{SYMBOL}_MACRO` | Symbol to set for Office macros |
+| `symbol_encrypted` | string | `{SYMBOL}_ENCRYPTED` | Symbol to set for encrypted content. Its configured score applies (dynamic weight `1.0`) and it triggers `action` if set |
+| `symbol_macro` | string | `{SYMBOL}_MACRO` | Symbol to set for Office macros. Its configured score applies (dynamic weight `1.0`) and it triggers `action` if set |
+| `symbol_ignore` | string | `{SYMBOL}_IGNORE` | Symbol set instead of the main symbol when a detected threat name matches the `whitelist` map |
 | `servers` | string | (required) | Server address(es), can be TCP (`host:port`) or Unix socket path |
 | `timeout` | number | (varies) | Connection timeout in seconds |
 | `retransmits` | number | (varies) | Number of retry attempts on failure |
@@ -47,16 +48,16 @@ All scanner types support these common options:
 | `scan_text_mime` | boolean | `false` | Include text parts when scanning mime parts |
 | `scan_image_mime` | boolean | `false` | Include image parts when scanning mime parts |
 | `log_clean` | boolean | `false` | Log messages when content is clean |
-| `action` | string | (none) | Force this action when virus found (e.g., `reject`) |
+| `action` | string | (none) | Force this action when a threat, encrypted part or Office macro is reported (e.g., `reject`). Fail and other special results do not trigger it; whitelisted threats are ignored |
 | `message` | string | (varies) | Custom rejection message, supports `${SCANNER}` and `${VIRUS}` variables |
-| `whitelist` | string | (none) | Path to map of virus names/signatures to ignore |
+| `whitelist` | string | (none) | Path to map of virus names/signatures to ignore. When a detected threat name matches this map, `symbol_ignore` is set instead of the main symbol |
 | `patterns` | table | (none) | Regex patterns to map virus names to custom symbols |
 | `patterns_fail` | table | (none) | Regex patterns to map error messages to custom symbols |
 | `prefix` | string | (auto) | Redis cache key prefix |
 | `cache_expire` | number | 3600 (7200 for virustotal, metadefender, kaspersky_se) | Redis cache expiration time in seconds |
 | `no_cache` | boolean | `false` | Disable Redis caching |
 | `dynamic_scan` | boolean | `false` | Skip scanning if message already exceeds 2x reject threshold |
-| `text_part_min_words` | number | (none) | Minimum words required in text parts to scan |
+| `text_part_min_words` | number | (none) | Minimum words required in text parts to scan. Applies to whole-message and text-part scans only; a short body never suppresses scanning of attachments |
 | `show_attachments` | boolean | `false` | Include attachment filename in symbol options |
 | `symbol_type` | string | `normal` | Set to `postfilter` to run after other filters |
 | `score` | number | (none) | Score to assign to the symbol |
@@ -99,9 +100,31 @@ mime_parts_filter_ext {
 }
 ~~~
 
-The `mime_parts_filter_regex` option matches the content-type detected by Rspamd, mime part headers, or the declared filename of an attachment. This also works for files within archives. The `mime_parts_filter_ext` option matches the extension of the declared filename or files within archives.
+The matching `_exclude` filters remove a part from scanning even if it also matches an include filter above:
 
-When any filter is defined, only matching parts are scanned. Without filters, all attachments are scanned.
+~~~hcl
+mime_parts_filter_regex_exclude {
+  SIGNATURE = "^smime\.p7s$";
+}
+mime_parts_filter_ext_exclude {
+  p7s = "p7s";
+}
+~~~
+
+The `mime_parts_filter_regex` option matches the content-type detected by Rspamd, mime part headers, or the declared filename of an attachment. This also works for files within archives. The `mime_parts_filter_ext` option matches the detected extension, the extension of the declared filename, or files within archives. `mime_parts_filter_regex_exclude` and `mime_parts_filter_ext_exclude` follow the same matching rules, but remove a part from scanning instead of adding it.
+
+**How include and exclude filters interact:**
+
+| Include filters set? | Exclude filters set? | Result |
+|---|---|---|
+| no | no | every attachment is scanned |
+| yes | no | only parts matching an include filter are scanned |
+| no | yes | every attachment is scanned **except** those matching an exclude filter |
+| yes | yes | only parts matching an include filter **and not** matching an exclude filter are scanned |
+
+An exclude match always takes precedence over an include match on the same part. Exclude-only configuration switches to "scan everything except" mode; it does not make exclude filters open up scanning to parts that fail to match an include filter when one is configured. Enabling `scan_text_mime` or `scan_image_mime` can additionally select text or image parts that do not match an include filter, but explicit exclusions still prevent those parts from being scanned.
+
+Files listed inside archives are matched against these filters as well by default. Set `mime_parts_match_archive = false;` to only match the archive part itself (filename/content-type) and skip checking the files it contains. An exclusion matching the archive part itself always suppresses it. Exclusions matching files inside an archive suppress the whole archive only when **every** listed file matches an exclude filter; a mixed archive remains eligible for scanning under the include rules.
 
 ### Redis caching
 
