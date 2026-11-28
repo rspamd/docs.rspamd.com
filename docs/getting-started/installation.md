@@ -303,6 +303,8 @@ Run Rspamd as a Deployment and keep shared state in Redis. The official [Tanka e
 
 The example deploys neither Redis nor a resolver. Run them separately and point `local.d/redis.conf` and `dns.nameserver` at them. Cluster DNS (CoreDNS) forwards queries rather than resolving them itself, so use a recursive resolver such as Unbound. The `/ping` and `/ready` endpoints described above work as liveness and readiness probes.
 
+These probes leave two gaps during rollouts: neither endpoint waits for remote maps, so a fresh pod reports ready before its maps are downloaded, and a pod that receives `SIGTERM` with scans in flight drops them. [Running Rspamd in Kubernetes](/tutorials/kubernetes) covers a startup probe that waits for maps, a `preStop` hook that drains connections, and keeping the Hyperscan cache and dynamic configuration in Redis so pods carry no state.
+
 ## DNS resolver
 
 Rspamd makes many DNS queries per message: DNS blocklists, SPF, DKIM, DMARC and URL blocklists. Use a local recursive resolver, both in Docker and with packages.
