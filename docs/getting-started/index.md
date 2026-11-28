@@ -60,7 +60,7 @@ The official image is `rspamd/rspamd`. See the Docker section of [Installation](
 - Use a local recursive DNS resolver. The [Compose example](https://github.com/rspamd/rspamd-docker/tree/main/examples/compose) runs Rspamd with Redis and Unbound.
 - The image has a `HEALTHCHECK` on the controller's `/ping` endpoint, which needs no password; use `/ping` for liveness probes too. For readiness use `/ready` on the controller, which needs the controller password unless the probe comes from `secure_ip`. See [Production notes](/getting-started/installation#production-notes).
 
-For Kubernetes, see [Kubernetes](/getting-started/installation#kubernetes) in the installation guide and the [Tanka example](https://github.com/rspamd/rspamd-docker/tree/main/examples/k8s/tanka) in the same repository.
+For Kubernetes, see [Running Rspamd in Kubernetes](/tutorials/kubernetes) for a recommended architecture and the technical reasons behind it. The installation guide has a short [Kubernetes](/getting-started/installation#kubernetes) section, and the image repository has a [Tanka example](https://github.com/rspamd/rspamd-docker/tree/main/examples/k8s/tanka).
 
 ## Common questions
 

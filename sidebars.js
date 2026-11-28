@@ -37,6 +37,7 @@ const sidebars = {
         "tutorials/crypto_addresses",
         "tutorials/fuzzy_storage",
         "tutorials/redis_replication",
+        "tutorials/kubernetes",
         "tutorials/stunnel_setup",
         "tutorials/integration",
         "tutorials/feedback_from_users_with_IMAPSieve",
